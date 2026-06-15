@@ -18,7 +18,7 @@ Last reviewed: 2026-06-15
 | P0-1 | CLI surfaces `list`, `build`, `targets`, and `apply` work from README quickstart | B | validated — see `docs/verification/2026-06-14-first-run.md` |
 | P0-2 | Eight emitters registered; incompatible modalities skip (never mis-emit) | C + B | validated — unit tests + `build --strict` in CI |
 | P0-3 | `script/cibuild` passes on CI (lint, typecheck, test, dist build, `dev build --strict`) | B | validated — `POLYCAST_SKIP_CHERRI=1` on ubuntu runners |
-| P0-4 | Sample commands (`uppercase`, `open-repo`) install via `apply --write` and run in PopClip + Raycast | B + A | partial — B/B+ validated; Level A via [`docs/verification/level-a-dogfood.md`](docs/verification/level-a-dogfood.md) + `script/dogfood-level-a` |
+| P0-4 | Sample commands (`uppercase`, `open-repo`) install via `apply --write` and run in PopClip + Raycast | B + A | validated — [popclip-raycast-ui.md](docs/verification/2026-06-15-popclip-raycast-ui.md), `script/dogfood-level-a`, CI P0-4 B+ |
 | P0-5 | README first-run path reproducible without maintainer help | B | validated — see `docs/verification/2026-06-14-first-run.md` |
 
 ## P1 — soon after launch

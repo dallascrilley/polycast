@@ -17,11 +17,9 @@ definition. Write a command once; cast it everywhere.
 
 ## Status
 
-Pre-launch. Eight emitters, thin-shim dispatchers, MCP tools, and CI behavioral
-proof (B/B+) are in place. Remaining gate: **Level A** operator sign-off for
-PopClip, Raycast, and Shortcuts — see [`LAUNCH_CRITERIA.md`](LAUNCH_CRITERIA.md)
-and [`script/dogfood-level-a`](script/dogfood-level-a) (checklist:
-[`docs/verification/level-a-dogfood.md`](docs/verification/level-a-dogfood.md)).
+Pre-launch **P0 complete** (2026-06-15). All P0 launch criteria validated including
+PopClip + Raycast Level A — see [`LAUNCH_CRITERIA.md`](LAUNCH_CRITERIA.md).
+P1-5 Shortcuts Level A remains optional follow-up.
 
 Working vertical slice:
 
