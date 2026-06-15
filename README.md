@@ -61,4 +61,4 @@ Node.js / TypeScript (bun).
 
 ## License
 
-TODO: choose a license
+MIT — see [LICENSE](LICENSE).
