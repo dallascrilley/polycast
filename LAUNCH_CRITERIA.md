@@ -29,7 +29,7 @@ Last reviewed: 2026-06-15
 | P1-2 | Dropzone + agent-cli `apply --write` verified on operator machine | B | validated — `test/operator-apply.test.ts` (temp install); live Dropzone UI optional |
 | P1-3 | Shortcuts artifact import documented when Cherri absent | B | validated — README + specs document `.cherri` emit and skip path |
 | P1-4 | Agent-native MCP documented and smoke-testable from README | B | validated — README MCP section + capability map (PR #9); manual Cursor hook optional |
-| P1-5 | Shortcuts Cherri thin-shim delegates to `polycast run` + commands JSON sync on apply | B | validated — `test/shim.test.ts`, `test/run.test.ts`, emitter + apply tests |
+| P1-5 | Shortcuts Cherri thin-shim delegates to `polycast run` + commands JSON sync on apply | B + A | validated (B) — tests; Level A checklist in `docs/verification/2026-06-15-shortcuts-ui.md` |
 
 ## Explicit non-goals for v1 launch
 
