@@ -103,6 +103,26 @@ describe("shortcuts-cherri emitter", () => {
     expect(file?.contents).toContain("#define inputs text");
   });
 
+  test("emits args commands with prompt and positional setup", () => {
+    const files = shortcutsCherri.emit(argsCmd);
+    const cherri = files.find((f) => f.path.endsWith(".cherri"));
+    expect(cherri?.contents).toContain('@polycast_arg_1 = prompt("repo name"');
+    expect(cherri?.contents).toContain('set -- "{@polycast_arg_1}"');
+    expect(cherri?.contents).toContain('open "$HOME/Code/$1"');
+  });
+
+  test("skips args commands with dropdown fields", () => {
+    const cmd = defineCommand({
+      id: "pick",
+      title: "Pick",
+      description: "pick",
+      modality: "args",
+      args: [{ name: "choice", type: "dropdown", data: [{ title: "A", value: "a" }] }],
+      body: { lang: "bash", source: "echo $1" },
+    });
+    expect(shortcutsCherri.emit(cmd)).toEqual([]);
+  });
+
   test("skips files commands", () => {
     expect(shortcutsCherri.emit(filesCmd)).toEqual([]);
   });
@@ -153,6 +173,7 @@ describe("registry", () => {
   test("emitCommand marks skips", () => {
     const results = emitCommand(argsCmd);
     expect(results.find((r) => r.target === "raycast-script")?.skipped).toBe(false);
+    expect(results.find((r) => r.target === "shortcuts-cherri")?.skipped).toBe(false);
     expect(results.find((r) => r.target === "popclip")?.skipped).toBe(true);
   });
 

@@ -24,6 +24,21 @@ runShellScript('body here', ShortcutInput, '/bin/bash')
 
 Optional: `#define from sharesheet`, `#define glyph`, `#define color` from `x.shortcuts` hints.
 
+## Args modality template
+
+Runtime prompts (not import `#question` — those are setup-time only):
+
+```cherri
+#define name "Open Code Repo"
+#include 'actions/mac'
+@polycast_arg_1 = prompt("repo name", "Text", "")
+runShellScript('set -euo pipefail
+set -- "{@polycast_arg_1}"
+open "$HOME/Code/$1"', nil, '/bin/bash')
+```
+
+`dropdown` args skip Shortcuts (Raycast-only); plain `text`/`password` args supported.
+
 ## Native `shortcuts` CLI (runtime, not authoring)
 
 - `shortcuts run "Name" -i path -o path`
@@ -36,7 +51,7 @@ Optional: `#define from sharesheet`, `#define glyph`, `#define color` from `x.sh
 |----------|---------|
 | `text` | yes (Cherri + ShortcutInput) |
 | `none` | yes (no `#define inputs`) |
-| `args` | v1 skip (Cherri `#question` deferred) |
+| `args` | yes — runtime `prompt()` per arg, then `set --` + body `$1..$n` |
 | `files` | skip |
 
 ## Output layout
