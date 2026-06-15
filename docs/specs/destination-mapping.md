@@ -14,7 +14,7 @@
 | `author` | `@raycast.author` | — | `# Creator:` | — | — | meta JSON |
 | `modality` | skip matrix | skip matrix | skip matrix | skip matrix | skip matrix | skip matrix |
 | `args` | `@raycast.argumentN` | — | — | — | v1 skip | positional |
-| `body.source` | `polycast run` stub | `script.sh` → `polycast run --text` | `run.sh` → `polycast run` | wrapped in loop | `runShellScript` (inline) | `polycast run` stub |
+| `body.source` | `polycast run` stub | `script.sh` → `polycast run --text` | `run.sh` → `polycast run` | `<id>.sh` → `polycast run` | `runShellScript` (inline) | `polycast run` stub |
 
 ## Static Raycast surfaces
 

@@ -1,6 +1,6 @@
 import { POLYCAST_VERSION } from "../constants.ts";
+import { filesRunShim } from "../shim.ts";
 import type { CommandDef, EmittedFile, Emitter, ValidationIssue } from "../types.ts";
-import { wrappedScript } from "../wrappers.ts";
 
 export const dropoverScript: Emitter = {
   target: "dropover-script",
@@ -12,7 +12,7 @@ export const dropoverScript: Emitter = {
     return [
       {
         path: `${cmd.id}.sh`,
-        contents: wrappedScript(cmd),
+        contents: filesRunShim(cmd),
         mode: 0o755,
       },
       {
@@ -50,16 +50,12 @@ export const dropoverScript: Emitter = {
     if (!script.contents.startsWith("#!")) {
       return [{ target: this.target, message: "script missing shebang", severity: "error" }];
     }
-    if (
-      cmd.modality === "files" &&
-      !script.contents.includes('"$@"') &&
-      !script.contents.includes("$@")
-    ) {
+    if (!script.contents.includes(" run --commands ")) {
       return [
         {
           target: this.target,
-          message: 'files script should reference "$@"',
-          severity: "warning",
+          message: "script missing polycast run dispatcher stub",
+          severity: "error",
         },
       ];
     }
