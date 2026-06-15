@@ -94,9 +94,10 @@ describe("dropzone emitter", () => {
 });
 
 describe("dropover-script emitter", () => {
-  test("emits shell script and catalog manifest", () => {
+  test("emits dispatcher shell script and catalog manifest", () => {
     const files = dropoverScript.emit(filesCmd);
     expect(files[0]?.path).toBe("basename-files.sh");
+    expect(files[0]?.contents).toContain(" run --commands ");
     const catalog = dropoverScript.emitCatalog?.([filesCmd]) ?? [];
     expect(catalog[0]?.path).toBe("manifest.json");
     expect(catalog[0]?.contents).toContain("basename-files");
