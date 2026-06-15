@@ -1,6 +1,6 @@
 import { OWNERSHIP_MARKER } from "../constants.ts";
+import { popclipScriptShim } from "../shim.ts";
 import type { CommandDef, EmittedFile, Emitter, ValidationIssue } from "../types.ts";
-import { wrappedScript } from "../wrappers.ts";
 
 /**
  * Emits a PopClip shell-script extension with native `stdin: text` wiring.
@@ -37,7 +37,7 @@ export const popclip: Emitter = {
       },
       {
         path: `${cmd.id}.popclipext/script.sh`,
-        contents: wrappedScript(cmd),
+        contents: popclipScriptShim(cmd),
         mode: 0o755,
       },
       {
@@ -57,6 +57,16 @@ export const popclip: Emitter = {
     if (!config.contents.includes('"identifier"')) {
       return [
         { target: this.target, message: "Config.json missing identifier", severity: "error" },
+      ];
+    }
+    const script = files.find((f) => f.path.endsWith("script.sh"));
+    if (!script?.contents.includes(" run --commands ")) {
+      return [
+        {
+          target: this.target,
+          message: "script.sh missing polycast run dispatcher stub",
+          severity: "error",
+        },
       ];
     }
     return [];

@@ -1,3 +1,4 @@
+import { dispatcherRunBody } from "../shim.ts";
 import type { CommandArg, CommandDef, EmittedFile, Emitter, ValidationIssue } from "../types.ts";
 
 const SHEBANG: Record<CommandDef["body"]["lang"], string> = {
@@ -52,7 +53,7 @@ export const raycastScript: Emitter = {
     lines.push("", "# Documentation:", `# @raycast.description ${cmd.description}`);
     if (cmd.author) lines.push(`# @raycast.author ${cmd.author}`);
 
-    lines.push("", cmd.body.source.trimEnd(), "");
+    lines.push("", ...dispatcherRunBody(cmd), "");
 
     return [{ path: `${cmd.id}.sh`, contents: lines.join("\n"), mode: 0o755 }];
   },
@@ -68,6 +69,13 @@ export const raycastScript: Emitter = {
       if (!file.contents.includes(needle)) {
         issues.push({ target: this.target, message: `missing ${needle}`, severity: "error" });
       }
+    }
+    if (!file.contents.includes(" run --commands ")) {
+      issues.push({
+        target: this.target,
+        message: "missing polycast run dispatcher stub",
+        severity: "error",
+      });
     }
     if (cmd.modality === "args" && !file.contents.includes("@raycast.argument1")) {
       issues.push({

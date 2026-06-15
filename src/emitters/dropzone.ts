@@ -1,6 +1,6 @@
 import { OWNERSHIP_MARKER, POLYCAST_CREATOR, POLYCAST_URL } from "../constants.ts";
+import { dropzoneRunShim } from "../shim.ts";
 import type { CommandDef, EmittedFile, Emitter, ValidationIssue } from "../types.ts";
-import { wrappedScript } from "../wrappers.ts";
 
 export const dropzone: Emitter = {
   target: "dropzone",
@@ -37,7 +37,7 @@ export const dropzone: Emitter = {
 
     return [
       { path: `${cmd.id}.dzbundle/action.rb`, contents: ruby },
-      { path: `${cmd.id}.dzbundle/run.sh`, contents: wrappedScript(cmd), mode: 0o755 },
+      { path: `${cmd.id}.dzbundle/run.sh`, contents: dropzoneRunShim(cmd), mode: 0o755 },
       { path: `${cmd.id}.dzbundle/${OWNERSHIP_MARKER}`, contents: "polycast\n" },
     ];
   },
@@ -51,6 +51,16 @@ export const dropzone: Emitter = {
       if (!action.contents.includes(field)) {
         return [{ target: this.target, message: `action.rb missing ${field}`, severity: "error" }];
       }
+    }
+    const runSh = files.find((f) => f.path.endsWith("run.sh"));
+    if (!runSh?.contents.includes(" run --commands ")) {
+      return [
+        {
+          target: this.target,
+          message: "run.sh missing polycast run dispatcher stub",
+          severity: "error",
+        },
+      ];
     }
     return [];
   },
