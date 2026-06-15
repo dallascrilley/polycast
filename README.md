@@ -56,7 +56,7 @@ Add to your MCP client config:
 }
 ```
 
-Tools: `polycast_list`, `polycast_targets`, `polycast_build`, `polycast_apply`, `polycast_prune`, `polycast_run`, `polycast_command_upsert`. Apply and upsert default to dry-run; pass `write: true` to mutate. See [`docs/agent-native/capability-map.md`](docs/agent-native/capability-map.md).
+Tools: `polycast_list`, `polycast_targets`, `polycast_build`, `polycast_apply`, `polycast_prune`, `polycast_run`, `polycast_command_upsert`. Apply and upsert default to dry-run; pass `write: true` to mutate. See [`docs/agent-native/capability-map.md`](docs/agent-native/capability-map.md) and [`docs/verification/2026-06-15-mcp-smoke.md`](docs/verification/2026-06-15-mcp-smoke.md).
 
 With [`just`](https://github.com/casey/just): `just setup`, `just test`.
 

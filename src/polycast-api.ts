@@ -10,6 +10,7 @@ import { loadCommands } from "./load.ts";
 import { compileCherriArtifacts } from "./post-build.ts";
 import { emitCatalogs, emitCommand, emitters } from "./registry.ts";
 import { executeCommand } from "./run.ts";
+import { targetNeedsCommandsStore } from "./shim.ts";
 import type { CommandDef, EmittedFile } from "./types.ts";
 import { validateAll } from "./validate/index.ts";
 
@@ -200,7 +201,7 @@ export async function polycastApply(
         throw new PolycastError(`missing build output for ${target}`, "MISSING_BUILD");
       }
     }
-    if (targets.includes("agent-cli")) {
+    if (targets.some(targetNeedsCommandsStore)) {
       try {
         await readdir(join(outRoot, "commands"));
       } catch {
