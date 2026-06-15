@@ -23,7 +23,7 @@ Origin: ideation in the dotfiles repo,
   - `src/define.ts` — `defineCommand()` authoring helper + structural validation.
   - `src/load.ts` — loads `commands/*.ts` modules (default-exported `CommandDef`).
   - `src/emitters/*` — one module per target; `src/registry.ts` is the list.
-  - `src/cli.ts` — `polycast list | build | targets` (entry / `bin`).
+  - `src/cli.ts` — `polycast list | build | targets | apply` (entry / `bin`).
   - `commands/*.ts` — the actual command definitions (data, not engine).
 
 ## The load-bearing idea: the I/O modality contract
@@ -41,7 +41,7 @@ it `supports` and returns `[]` for anything it cannot represent (so `build`
 | Env | Where | Notes |
 |-----|-------|-------|
 | local | `bun run dev <cmd>` | `build` writes to `./build/<target>/` (gitignored) |
-| ci | `script/cibuild` | bun install → lint → test → build |
+| ci | `script/cibuild` | bun install → lint → typecheck → test → build → `dev build --strict` |
 
 ## Key decisions
 
@@ -55,11 +55,10 @@ it `supports` and returns `[]` for anything it cannot represent (so `build`
 
 ## Known constraints & gotchas
 
-- `apply` (install into each launcher's live runtime dir) is **not implemented**
-  — `build` only writes to `./build`. Installing must be idempotent and must
-  never delete artifacts polycast did not author (ownership marker — planned).
-- PopClip wrapper feeds `POPCLIP_TEXT` via stdin; bodies for PopClip must read
-  stdin. Non-bash bodies through that wrapper are untested.
+- `apply` installs into launcher runtime dirs (dry-run default; `--write` to
+  mutate). Ownership markers (`.polycast-owned`) gate safe prune. See
+  `src/apply.ts` and `docs/specs/destination-mapping.md`.
+- PopClip uses native `stdin: text` in Config.json; bodies read stdin.
 - macOS-only by design (these are macOS launchers).
 
 ## External services & secrets
