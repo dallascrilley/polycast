@@ -35,6 +35,10 @@ test *args:
 cibuild:
     ./script/cibuild
 
+# Isolated install + Level A dogfood checklist (see docs/verification/)
+dogfood-level-a *args:
+    ./script/dogfood-level-a {{args}}
+
 # Open an interactive console / REPL
 console:
     ./script/console
