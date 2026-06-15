@@ -10,7 +10,8 @@ import {
   polycastRun,
   polycastTargets,
 } from "../polycast-api.ts";
-import { jsonContent, parseCommandDef, toolError } from "./response.ts";
+import { commandDefSchema } from "../schema/command-def.ts";
+import { jsonContent, parseCommandDefJson, toolError } from "./response.ts";
 
 const dirSchema = z.string().optional();
 const targetsSchema = z.array(z.string()).optional();
@@ -136,9 +137,9 @@ export function createPolycastMcpServer(): McpServer {
     "polycast_command_upsert",
     {
       description:
-        "Create or preview a commands/<id>.ts module from a CommandDef JSON object. write defaults to false. previewBuild runs an isolated strict build and returns buildPreview.",
+        "Create or preview a commands/<id>.ts module from a CommandDef JSON object (see schemas/command-def.schema.json). write defaults to false. previewBuild runs an isolated strict build and returns buildPreview.",
       inputSchema: {
-        command: z.record(z.string(), z.unknown()),
+        command: commandDefSchema,
         dir: dirSchema,
         write: z.boolean().optional(),
         previewBuild: z.boolean().optional(),
@@ -147,7 +148,7 @@ export function createPolycastMcpServer(): McpServer {
     },
     async ({ command, dir, write, previewBuild, strict }) => {
       try {
-        const cmd = parseCommandDef(command);
+        const cmd = parseCommandDefJson(command);
         return jsonContent(await polycastCommandUpsert(cmd, { dir, write, previewBuild, strict }));
       } catch (err) {
         return toolError(err);
