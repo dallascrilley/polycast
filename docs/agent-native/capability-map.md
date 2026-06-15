@@ -6,15 +6,15 @@ Last updated: 2026-06-15
 
 ## CLI commands (source of truth today)
 
-| User action | CLI | Agent tool (planned) | Status |
-|-------------|-----|----------------------|--------|
-| List commands + surfaces | `polycast list [--dir]` | `polycast_list` | planned |
-| List emitter targets | `polycast targets` | `polycast_targets` | planned |
-| Build artifacts | `polycast build [--strict]` | `polycast_build` | planned |
-| Install to launchers | `polycast apply [--write]` | `polycast_apply` | planned |
-| Prune owned installs | `polycast apply --prune-only [--write]` | `polycast_prune` | planned |
-| Run command via dispatcher | `polycast run <id>` | `polycast_run` | planned |
-| Author command module | edit `commands/<id>.ts` | `polycast_command_upsert` | planned |
+| User action | CLI | Agent tool | Status |
+|-------------|-----|------------|--------|
+| List commands + surfaces | `polycast list [--dir]` | `polycast_list` | implemented |
+| List emitter targets | `polycast targets` | `polycast_targets` | implemented |
+| Build artifacts | `polycast build [--strict]` | `polycast_build` | implemented |
+| Install to launchers | `polycast apply [--write]` | `polycast_apply` | implemented |
+| Prune owned installs | `polycast apply --prune-only [--write]` | `polycast_prune` | implemented |
+| Run command via dispatcher | `polycast run <id>` | `polycast_run` | implemented |
+| Author command module | edit `commands/<id>.ts` | `polycast_command_upsert` | implemented |
 
 ## Out of scope (v1 agent-native)
 
