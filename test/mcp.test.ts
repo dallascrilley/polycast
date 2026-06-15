@@ -81,6 +81,17 @@ describe("polycast-api", () => {
       await rm(path, { force: true });
     }
   });
+
+  test("command upsert previewBuild returns isolated build summary", async () => {
+    const id = `mcp-upsert-build-${Date.now()}`;
+    const cmd = { ...sample, id };
+    const result = await polycastCommandUpsert(cmd, { previewBuild: true, strict: true });
+    expect(result.buildPreview?.ok).toBe(true);
+    if (result.buildPreview?.ok) {
+      expect(result.buildPreview.summary.written).toBeGreaterThan(0);
+      expect(result.buildPreview.summary.files.length).toBeGreaterThan(0);
+    }
+  });
 });
 
 describe("mcp server factory", () => {
