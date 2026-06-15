@@ -42,7 +42,9 @@ bun run mcp                      # start MCP stdio server (Cursor / Claude Deskt
 
 ### MCP (agent-native)
 
-Add to your MCP client config:
+**Cursor:** open this repo — `.cursor/mcp.json` registers the polycast stdio server automatically (reload window after pull).
+
+Other clients — add to MCP config:
 
 ```json
 {

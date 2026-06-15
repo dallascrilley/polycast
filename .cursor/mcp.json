@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "polycast": {
+      "command": "bun",
+      "args": ["run", "mcp"],
+      "env": {
+        "POLYCAST_SKIP_CHERRI": "1"
+      }
+    }
+  }
+}

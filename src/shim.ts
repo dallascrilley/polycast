@@ -36,13 +36,21 @@ export function popclipScriptShim(cmd: CommandDef): string {
   ].join("\n");
 }
 
-/** Dropzone run.sh — forwards dragged file paths as polycast run arguments. */
-export function dropzoneRunShim(cmd: CommandDef): string {
+/** Dropzone / Dropover — forward file paths to polycast run. */
+export function filesRunShim(cmd: CommandDef): string {
   return ["#!/bin/bash", ...dispatcherRunBody(cmd), ""].join("\n");
 }
 
+export const dropzoneRunShim = filesRunShim;
+
 /** Targets whose installed artifacts call polycast run and need the JSON command store. */
-export const DISPATCHER_TARGETS = ["agent-cli", "raycast-script", "popclip", "dropzone"] as const;
+export const DISPATCHER_TARGETS = [
+  "agent-cli",
+  "raycast-script",
+  "popclip",
+  "dropzone",
+  "dropover-script",
+] as const;
 
 export function targetNeedsCommandsStore(target: string): boolean {
   return (DISPATCHER_TARGETS as readonly string[]).includes(target);
