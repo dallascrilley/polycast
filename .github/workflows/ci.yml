@@ -1,0 +1,63 @@
+# Assembled to .github/workflows/ci.yml. CI runs the SAME entrypoint as local
+# dev (script/cibuild) so they can never drift. The {{CI_SETUP_STEPS}} marker is
+# filled from the language profile (toolchain setup). Baked-in defaults —
+# concurrency, shallow-but-diffable fetch, a manual trigger, a path change
+# signal, and a job timeout — are explained in
+# docs/solutions/workflow/github-actions-ci-defaults.md.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel a superseded run on the same ref so a fast follow-up push doesn't pay
+# for the stale one (BASE.md "CI & GitHub Actions": every workflow gets this).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    # Every job sets a timeout (BASE.md) so a hung step can't burn the budget.
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # >=2 so `push`-event diffs against the previous commit work; depth 1
+          # has no parent to diff and breaks the change filter below.
+          fetch-depth: 2
+      # Change signal for path-scoped follow-up steps (e.g. docs-only work).
+      # Wired but non-gating: ./script/cibuild stays the sole correctness gate
+      # and runs unconditionally. Consume `steps.changes.outputs.*` to add
+      # cheaper conditional steps without touching cibuild.
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            docs:
+              - '**/*.md'
+              - 'docs/**'
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      # setup-node's `cache:` input only accepts npm|yarn|pnpm — not bun — so
+      # cache bun's global install store keyed on the lockfile instead. Bump the
+      # v1- prefix to bust a poisoned cache.
+      - name: Cache bun dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: v1-${{ runner.os }}-bun-${{ hashFiles('**/bun.lock', '**/bun.lockb') }}
+          restore-keys: |
+            v1-${{ runner.os }}-bun-
+      - name: cibuild
+        run: ./script/cibuild

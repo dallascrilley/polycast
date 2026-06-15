@@ -1,0 +1,27 @@
+# Assembled to .gitignore (core + language profile appended).
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
+.cache/
+tmp/
+*.tmp
+.worktrees/
+
+# Editors
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# --- Node / TypeScript ---
+node_modules/
+dist/
+build/
+coverage/
+.next/
+*.tsbuildinfo
+.pnpm-store/
+npm-debug.log*
+pnpm-debug.log*

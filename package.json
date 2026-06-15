@@ -1,0 +1,22 @@
+{
+  "name": "polycast",
+  "version": "0.0.1",
+  "description": "One command definition, cast to many macOS launchers (Raycast, PopClip, Dropzone, Shortcuts, agent tools)",
+  "type": "module",
+  "bin": {
+    "polycast": "./src/cli.ts"
+  },
+  "scripts": {
+    "dev": "bun run src/cli.ts",
+    "build": "bun build src/cli.ts --target=bun --outdir dist",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.0",
+    "@types/bun": "latest",
+    "typescript": "^5.6.0"
+  }
+}
