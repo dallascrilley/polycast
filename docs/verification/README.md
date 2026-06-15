@@ -10,7 +10,7 @@ Operator and CI proof for `LAUNCH_CRITERIA.md`. Proof levels: **A** visual,
 | [2026-06-15-popclip-raycast-ui.md](./2026-06-15-popclip-raycast-ui.md) | P0-4 (UI) | A + B + B+ | B/B+ validated; A pending |
 | [2026-06-15-operator-apply.md](./2026-06-15-operator-apply.md) | P1-2 | B | validated (CI) |
 | [2026-06-15-dropover-ui.md](./2026-06-15-dropover-ui.md) | Dropover apply | B + A | B validated; A pending |
-| [2026-06-15-shortcuts-ui.md](./2026-06-15-shortcuts-ui.md) | P1-5 | B + A | B validated; A pending |
+| [2026-06-15-shortcuts-ui.md](./2026-06-15-shortcuts-ui.md) | P1-5 | B + A + B+ | B/B+ validated; A pending |
 | [2026-06-15-mcp-smoke.md](./2026-06-15-mcp-smoke.md) | P1-4 | B | validated |
 
 ## Quick commands

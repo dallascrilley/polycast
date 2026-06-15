@@ -4,6 +4,7 @@ import { access, chmod, mkdtemp, readFile, rm, writeFile } from "node:fs/promise
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { applyBuilt } from "../src/apply.ts";
+import { shortcutsTextShim } from "../src/shim.ts";
 
 async function polycastWrapperScript(root: string): Promise<string> {
   const wrapper = join(root, "polycast-wrapper.sh");
@@ -375,6 +376,100 @@ describe("operator apply verification (P0-4 B+)", () => {
                 : key === "bin"
                   ? "POLYCAST_BIN"
                   : "POLYCAST_SKIP_CHERRI";
+        if (val === undefined) delete process.env[envKey];
+        else process.env[envKey] = val;
+      }
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+});
+
+/** Level B+ for LAUNCH_CRITERIA P1-5 — Shortcuts apply syncs JSON store; shim honors edits (no Shortcuts.app). */
+describe("operator apply verification (P1-5 B+)", () => {
+  test("shortcuts-cherri apply --write: commands store sync and text shim honors JSON edits", async () => {
+    const root = await mkdtemp(join(tmpdir(), "polycast-p15-"));
+    const buildOut = join(root, "build");
+    const commandsStore = join(root, "commands-store");
+    const polycastBin = await polycastWrapperScript(root);
+
+    const prev = {
+      commands: process.env.POLYCAST_COMMANDS_DIR,
+      bin: process.env.POLYCAST_BIN,
+      skip: process.env.POLYCAST_SKIP_CHERRI,
+    };
+    process.env.POLYCAST_COMMANDS_DIR = commandsStore;
+    process.env.POLYCAST_BIN = polycastBin;
+    process.env.POLYCAST_SKIP_CHERRI = "1";
+
+    try {
+      expect(
+        spawnSync(
+          "bun",
+          [
+            "run",
+            "src/cli.ts",
+            "build",
+            "--out",
+            buildOut,
+            "--strict",
+            "--target",
+            "shortcuts-cherri",
+          ],
+          { cwd: process.cwd(), encoding: "utf8" },
+        ).status,
+      ).toBe(0);
+
+      const applied = await applyBuilt({
+        outRoot: buildOut,
+        write: true,
+        targets: ["shortcuts-cherri"],
+      });
+      expect(applied.some((r) => r.target === "commands-store" && r.action === "install")).toBe(
+        true,
+      );
+
+      await access(join(commandsStore, "uppercase.json"));
+
+      const cherriPath = join(buildOut, "shortcuts-cherri", "uppercase.cherri");
+      const cherriContents = await readFile(cherriPath, "utf8");
+      expect(cherriContents).toContain(" run --commands ");
+
+      const shimScript = `#!/usr/bin/env bash\n${shortcutsTextShim({
+        id: "uppercase",
+        title: "Uppercase",
+        description: "test",
+        modality: "text",
+        body: { lang: "bash", source: "tr '[:lower:]' '[:upper:]'" },
+      })}\n`;
+
+      const first = spawnSync("bash", ["-c", shimScript], {
+        encoding: "utf8",
+        env: process.env,
+        input: "hello",
+      });
+      expect(first.status).toBe(0);
+      expect(first.stdout?.trim()).toBe("HELLO");
+
+      const jsonPath = join(commandsStore, "uppercase.json");
+      const stored = JSON.parse(await readFile(jsonPath, "utf8"));
+      stored.body = { lang: "bash", source: "tr '[:lower:]' '[:upper:]' | rev" };
+      await writeFile(jsonPath, `${JSON.stringify(stored, null, 2)}\n`);
+
+      const second = spawnSync("bash", ["-c", shimScript], {
+        encoding: "utf8",
+        env: process.env,
+        input: "hello",
+      });
+      expect(second.status).toBe(0);
+      expect(second.stdout?.trim()).toBe("OLLEH");
+    } finally {
+      for (const [key, val] of Object.entries(prev)) {
+        const envKey =
+          key === "commands"
+            ? "POLYCAST_COMMANDS_DIR"
+            : key === "bin"
+              ? "POLYCAST_BIN"
+              : "POLYCAST_SKIP_CHERRI";
         if (val === undefined) delete process.env[envKey];
         else process.env[envKey] = val;
       }
