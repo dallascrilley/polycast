@@ -1,0 +1,34 @@
+{
+  "identifier": "com.dallascrilley.terminal-path-link",
+  "name": "Terminal Path Link",
+  "description": "Copy a markdown file:// link for a repo-relative path using the terminal tab's cwd.",
+  "popclip version": 4151,
+  "icon": "symbol:link",
+  "options": [
+    {
+      "identifier": "link_format",
+      "type": "multiple",
+      "label": "Link format",
+      "values": [
+        {
+          "value": "markdown",
+          "label": "Markdown link"
+        },
+        {
+          "value": "file_url",
+          "label": "file:// URL only"
+        }
+      ],
+      "default": "markdown"
+    }
+  ],
+  "actions": [
+    {
+      "title": "Copy file link",
+      "requirements": ["text"],
+      "regex": "(?i)(?:\\./)?(?:[a-zA-Z0-9._-]+/)*[a-zA-Z0-9._-]+\\.(?:md|mdx|ts|tsx|js|jsx|mjs|cjs|json|yaml|yml|sh|py|go|rs|toml|txt|html|css|scss|swift|rb|php|java|kt|cs|vue|svelte|lock|env|gitignore|dockerfile|Makefile)",
+      "shell script file": "resolve-link.sh",
+      "after": "copy-result"
+    }
+  ]
+}
