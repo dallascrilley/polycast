@@ -176,4 +176,97 @@ describe("operator apply verification (P1-2)", () => {
       await rm(root, { recursive: true, force: true });
     }
   });
+
+  test("dropover apply --write: staged script runs and picks up JSON edits", async () => {
+    const root = await mkdtemp(join(tmpdir(), "polycast-p12-do-"));
+    const buildOut = join(root, "build");
+    const dropoverDir = join(root, "dropover-staging");
+    const commandsStore = join(root, "commands-store");
+    const polycastBin = await polycastWrapperScript(root);
+
+    const prev = {
+      dropover: process.env.POLYCAST_DROPOVER_SCRIPTS,
+      commands: process.env.POLYCAST_COMMANDS_DIR,
+      bin: process.env.POLYCAST_BIN,
+      skip: process.env.POLYCAST_SKIP_CHERRI,
+    };
+    process.env.POLYCAST_DROPOVER_SCRIPTS = dropoverDir;
+    process.env.POLYCAST_COMMANDS_DIR = commandsStore;
+    process.env.POLYCAST_BIN = polycastBin;
+    process.env.POLYCAST_SKIP_CHERRI = "1";
+
+    try {
+      expect(
+        spawnSync(
+          "bun",
+          [
+            "run",
+            "src/cli.ts",
+            "build",
+            "--out",
+            buildOut,
+            "--strict",
+            "--target",
+            "dropover-script",
+          ],
+          { cwd: process.cwd(), encoding: "utf8" },
+        ).status,
+      ).toBe(0);
+
+      const applied = await applyBuilt({
+        outRoot: buildOut,
+        write: true,
+        targets: ["dropover-script"],
+      });
+      expect(applied.some((r) => r.target === "dropover-script" && r.action === "note")).toBe(true);
+      expect(applied.some((r) => r.path.endsWith("/basename-files.sh"))).toBe(true);
+
+      await access(join(dropoverDir, "manifest.json"));
+      await access(join(dropoverDir, "basename-files.sh"));
+      await access(join(commandsStore, "basename-files.json"));
+
+      const scriptSh = join(dropoverDir, "basename-files.sh");
+      const scriptContents = await readFile(scriptSh, "utf8");
+      expect(scriptContents).toContain(" run --commands ");
+
+      const sampleFile = join(root, "sample doc.txt");
+      await writeFile(sampleFile, "x");
+
+      const first = spawnSync("bash", [scriptSh, sampleFile], {
+        encoding: "utf8",
+        env: process.env,
+      });
+      expect(first.status).toBe(0);
+      expect(first.stdout?.trim()).toBe("sample doc.txt");
+
+      const jsonPath = join(commandsStore, "basename-files.json");
+      const stored = JSON.parse(await readFile(jsonPath, "utf8"));
+      stored.body = {
+        lang: "bash",
+        source: 'for f in "$@"; do basename "$f" | tr "[:lower:]" "[:upper:]"; done',
+      };
+      await writeFile(jsonPath, `${JSON.stringify(stored, null, 2)}\n`);
+
+      const second = spawnSync("bash", [scriptSh, sampleFile], {
+        encoding: "utf8",
+        env: process.env,
+      });
+      expect(second.status).toBe(0);
+      expect(second.stdout?.trim()).toBe("SAMPLE DOC.TXT");
+    } finally {
+      for (const [key, val] of Object.entries(prev)) {
+        const envKey =
+          key === "dropover"
+            ? "POLYCAST_DROPOVER_SCRIPTS"
+            : key === "commands"
+              ? "POLYCAST_COMMANDS_DIR"
+              : key === "bin"
+                ? "POLYCAST_BIN"
+                : "POLYCAST_SKIP_CHERRI";
+        if (val === undefined) delete process.env[envKey];
+        else process.env[envKey] = val;
+      }
+      await rm(root, { recursive: true, force: true });
+    }
+  });
 });
