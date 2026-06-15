@@ -161,12 +161,28 @@ describe("registry", () => {
 });
 
 describe("apply dry-run", () => {
-  test("returns actions without writing", async () => {
-    const results = await applyBuilt({
-      outRoot: "build",
-      write: false,
-      targets: ["agent-cli"],
-    });
-    expect(results.length).toBeGreaterThan(0);
+  test("returns install actions after build", async () => {
+    const { mkdtemp, rm } = await import("node:fs/promises");
+    const { join } = await import("node:path");
+    const { tmpdir } = await import("node:os");
+    const out = await mkdtemp(join(tmpdir(), "polycast-apply-"));
+    try {
+      process.env.POLYCAST_SKIP_CHERRI = "1";
+      const { spawnSync } = await import("node:child_process");
+      const build = spawnSync("bun", ["run", "src/cli.ts", "build", "--out", out, "--strict"], {
+        cwd: process.cwd(),
+        encoding: "utf8",
+      });
+      expect(build.status).toBe(0);
+
+      const results = await applyBuilt({
+        outRoot: out,
+        write: false,
+        targets: ["agent-cli"],
+      });
+      expect(results.some((r) => r.action === "would install")).toBe(true);
+    } finally {
+      await rm(out, { recursive: true, force: true });
+    }
   });
 });

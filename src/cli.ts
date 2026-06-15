@@ -134,10 +134,40 @@ async function cmdBuild(flags: Flags): Promise<void> {
   console.log(`\n${written} file(s) written to ${outRoot}, ${skipped} target(s) skipped.`);
 }
 
+async function validateBuilt(
+  outRoot: string,
+  dir: string,
+  targets: readonly string[],
+): Promise<string[]> {
+  const commands = await loadCommands(dir);
+  const issues: string[] = [];
+  for (const cmd of commands) {
+    for (const result of emitCommand(cmd, [...targets])) {
+      if (result.skipped) continue;
+      const emitter = emitters.find((e) => e.target === result.target);
+      if (!emitter) continue;
+      for (const issue of validateAll(emitter, cmd, result.files, true)) {
+        issues.push(`${cmd.id}/${result.target}: [${issue.severity}] ${issue.message}`);
+      }
+    }
+  }
+  return issues;
+}
+
 async function cmdApply(flags: Flags): Promise<void> {
   const targets = flags.target ?? emitters.map((e) => e.target);
+  const outRoot = resolve(flags.out);
+
+  if (flags.write) {
+    const issues = await validateBuilt(outRoot, flags.dir, targets);
+    if (issues.length > 0) {
+      console.error(issues.join("\n"));
+      process.exit(1);
+    }
+  }
+
   const results = await applyBuilt({
-    outRoot: resolve(flags.out),
+    outRoot,
     write: flags.write,
     targets,
   });

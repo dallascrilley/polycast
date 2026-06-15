@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { chmod, cp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { access, chmod, cp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { OWNERSHIP_MARKER } from "./constants.ts";
@@ -54,7 +54,42 @@ function parentDir(p: string): string {
   return i >= 0 ? p.slice(0, i) : p;
 }
 
-async function copyTree(src: string, dest: string, write: boolean): Promise<ApplyResult[]> {
+async function pathExists(p: string): Promise<boolean> {
+  try {
+    await access(p);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** True when polycast may overwrite an existing install path. */
+async function isPolycastOwned(dest: string): Promise<boolean> {
+  if (await pathExists(`${dest}.polycast-owned`)) return true;
+  if (await pathExists(join(parentDir(dest), OWNERSHIP_MARKER))) return true;
+  const popclipRoot = dest.split(".popclipext")[0];
+  if (popclipRoot !== dest) {
+    const bundleRoot = `${popclipRoot}.popclipext`;
+    if (await pathExists(join(bundleRoot, OWNERSHIP_MARKER))) return true;
+  }
+  return false;
+}
+
+async function installAllowed(
+  dest: string,
+  write: boolean,
+): Promise<"install" | "would install" | "refused"> {
+  if (!(await pathExists(dest))) return write ? "install" : "would install";
+  if (await isPolycastOwned(dest)) return write ? "install" : "would install";
+  return "refused";
+}
+
+async function copyTree(
+  src: string,
+  dest: string,
+  write: boolean,
+  target?: string,
+): Promise<ApplyResult[]> {
   const results: ApplyResult[] = [];
   const entries = await readdir(src, { withFileTypes: true });
 
@@ -63,14 +98,15 @@ async function copyTree(src: string, dest: string, write: boolean): Promise<Appl
     const to = join(dest, entry.name);
     if (entry.isDirectory()) {
       if (write) await mkdir(to, { recursive: true });
-      results.push(...(await copyTree(from, to, write)));
+      results.push(...(await copyTree(from, to, write, target)));
     } else {
+      const action = await installAllowed(to, write);
       results.push({
-        target: basename(dest),
-        action: write ? "install" : "would install",
+        target: target ?? basename(dest),
+        action,
         path: to,
       });
-      if (write) {
+      if (write && action === "install") {
         await mkdir(parentDir(to), { recursive: true });
         await cp(from, to, { force: true });
       }
@@ -86,12 +122,13 @@ async function installFile(
   write: boolean,
   mode?: number,
 ): Promise<ApplyResult> {
-  if (write) {
+  const action = await installAllowed(dest, write);
+  if (write && action === "install") {
     await mkdir(parentDir(dest), { recursive: true });
     await cp(src, dest, { force: true });
     if (mode) await chmod(dest, mode);
   }
-  return { target, action: write ? "install" : "would install", path: dest };
+  return { target, action, path: dest };
 }
 
 async function applyTarget(target: string, srcDir: string, write: boolean): Promise<ApplyResult[]> {
@@ -115,7 +152,7 @@ async function applyTarget(target: string, srcDir: string, write: boolean): Prom
     const entries = await readdir(srcDir).catch(() => []);
     for (const name of entries) {
       if (!name.endsWith(".popclipext")) continue;
-      results.push(...(await copyTree(join(srcDir, name), join(dest, name), write)));
+      results.push(...(await copyTree(join(srcDir, name), join(dest, name), write, target)));
     }
     return results.map((r) => ({ ...r, target }));
   }
@@ -125,9 +162,9 @@ async function applyTarget(target: string, srcDir: string, write: boolean): Prom
     const entries = await readdir(srcDir).catch(() => []);
     for (const name of entries) {
       if (!name.endsWith(".dzbundle")) continue;
-      results.push(...(await copyTree(join(srcDir, name), join(dest, name), write)));
+      results.push(...(await copyTree(join(srcDir, name), join(dest, name), write, target)));
     }
-    return results.map((r) => ({ ...r, target }));
+    return results;
   }
 
   if (target === "dropover-script") {
@@ -179,8 +216,9 @@ async function applyTarget(target: string, srcDir: string, write: boolean): Prom
     const dest = agentBinDir();
     const entries = await readdir(srcDir).catch(() => []);
     for (const name of entries) {
-      if (name.includes(".")) continue;
-      results.push(await installFile(target, join(srcDir, name), join(dest, name), write, 0o755));
+      if (name.endsWith(".polycast-meta.json")) continue;
+      const mode = name.endsWith(".polycast-owned") ? undefined : 0o755;
+      results.push(await installFile(target, join(srcDir, name), join(dest, name), write, mode));
     }
     return results;
   }
