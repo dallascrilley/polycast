@@ -14,7 +14,7 @@ Last updated: 2026-06-15
 | Install to launchers | `polycast apply [--write]` | `polycast_apply` | implemented |
 | Prune owned installs | `polycast apply --prune-only [--write]` | `polycast_prune` | implemented |
 | Run command via dispatcher | `polycast run <id>` | `polycast_run` | implemented |
-| Author command module | edit `commands/<id>.ts` | `polycast_command_upsert` | implemented (`previewBuild` for isolated validate) |
+| Author command module | edit `commands/<id>.ts` | `polycast_command_upsert` | implemented (`schemas/command-def.schema.json`, `previewBuild`) |
 
 ## Out of scope (v1 agent-native)
 
