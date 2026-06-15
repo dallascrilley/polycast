@@ -13,7 +13,7 @@ definition. Write a command once; cast it everywhere.
 
 ## Repository
 
-TODO: add GitHub URL after first push
+[dallascrilley/polycast](https://github.com/dallascrilley/polycast)
 
 ## Status
 
