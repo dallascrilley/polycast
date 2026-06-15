@@ -11,8 +11,10 @@ UI sign-off and close the launch gate.
 ```sh
 cd /path/to/polycast
 script/setup
-./script/dogfood-level-a --install --check-b
+./script/dogfood-level-a --install --check-b --open
 ```
+
+`--open` launches PopClip to import `uppercase.popclipext` (Setapp or direct install).
 
 For Shortcuts `.shortcut` import (needs [Cherri](https://cherrilang.org/) on PATH):
 
@@ -32,8 +34,8 @@ Default install uses isolated dirs under `/tmp/polycast-dogfood` (override with
 | Shortcuts.app | P1-5 rows |
 | Cherri | `.shortcut` compile (optional; `.cherri` emit always works) |
 
-Install PopClip from [popclip.app](https://www.popclip.app/) if missing — the
-dogfood script warns when `/Applications/PopClip.app` is absent.
+Install PopClip from [popclip.app](https://www.popclip.app/) or Setapp
+(`/Applications/Setapp/PopClip.app`). The dogfood script detects both paths.
 
 ## Level A checklist
 
