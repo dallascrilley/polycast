@@ -32,7 +32,6 @@ export const popclip: Emitter = {
     const wrapper = [
       "#!/bin/bash",
       "set -euo pipefail",
-      // biome-ignore lint/suspicious/noTemplateCurlyInString: literal bash parameter expansion, not a JS template.
       'printf %s "${POPCLIP_TEXT-}" | {',
       cmd.body.source.trimEnd(),
       "}",

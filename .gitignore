@@ -25,3 +25,4 @@ coverage/
 .pnpm-store/
 npm-debug.log*
 pnpm-debug.log*
+.todos/
