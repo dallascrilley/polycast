@@ -9,7 +9,7 @@
 | `popclip` | yes | — | — | — | `emit` returns `[]` |
 | `dropzone` | partial (`Handles: Text`) | yes | — | — | `emit` returns `[]` |
 | `dropover-script` | — | yes | — | — | `emit` returns `[]` |
-| `shortcuts-cherri` | yes | — | — | yes | `emit` returns `[]` |
+| `shortcuts-cherri` | yes | — | yes | yes | `emit` returns `[]` for unsupported (e.g. dropdown args) |
 | `raycast-snippet` | hint | — | — | hint | catalog omits command |
 | `raycast-quicklink` | — | — | hint | hint | catalog omits command |
 | `agent-cli` | yes | yes | yes | yes | `emit` returns `[]` |

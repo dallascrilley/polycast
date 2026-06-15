@@ -27,7 +27,7 @@ Last reviewed: 2026-06-14
 |----|-----------|-------|--------|
 | P1-1 | License chosen and recorded in README | C | validated — MIT in README and LICENSE |
 | P1-2 | Dropzone + agent-cli `apply --write` verified on operator machine | B | missing |
-| P1-3 | Shortcuts artifact import documented when Cherri absent | B | partial — skip path documented in specs; first-run note pending |
+| P1-3 | Shortcuts artifact import documented when Cherri absent | B | validated — README + specs document `.cherri` emit and skip path |
 
 ## Explicit non-goals for v1 launch
 
