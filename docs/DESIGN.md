@@ -65,7 +65,7 @@ commands/*.ts ──load──> CommandDef[] ──registry──> emitters[] �
    logic lives once.
 2. **Agent-native registry** (#6): MCP/CLI verbs for agents to author commands.
 3. **Dropover programmatic import** when storage schema is documented.
-4. **Cherri args modality** via `#question` / prompts.
+4. **Cherri args modality** via runtime `prompt()` + positional `set --` (dropdown args still Raycast-only).
 
 ## Non-goals
 
