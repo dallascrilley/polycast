@@ -53,7 +53,7 @@ Node.js / TypeScript (bun).
 - Entrypoints live in `script/` (Scripts to Rule Them All); `just --list` shows them.
 - CI runs `script/cibuild` — run it locally before opening a PR.
 - `bun test`, `bun run typecheck`, `bun run lint`.
-- `POLYCAST_SKIP_CHERRI=1` skips Shortcuts Cherri compile when `cherri` is not installed (CI sets this).
+- `POLYCAST_SKIP_CHERRI=1` skips Shortcuts Cherri compile when `cherri` is not installed (CI sets this). Build still emits `.cherri` sources; run `cherri build/shortcuts-cherri/*.cherri` locally or use `apply --write` after compile to import `.shortcut` files.
 - See [`AGENTS.md`](AGENTS.md) for the working agreement and
   [`docs/DESIGN.md`](docs/DESIGN.md) for the architecture and roadmap.
 - Platform specs: [`docs/specs/README.md`](docs/specs/README.md).
