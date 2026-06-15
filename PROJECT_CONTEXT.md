@@ -23,7 +23,7 @@ Origin: ideation in the dotfiles repo,
   - `src/define.ts` — `defineCommand()` authoring helper + structural validation.
   - `src/load.ts` — loads `commands/*.ts` modules (default-exported `CommandDef`).
   - `src/emitters/*` — one module per target; `src/registry.ts` is the list.
-  - `src/cli.ts` — `polycast list | build | targets | apply` (entry / `bin`).
+  - `src/cli.ts` — `polycast list | build | targets | apply | run` (entry / `bin`).
   - `commands/*.ts` — the actual command definitions (data, not engine).
 
 ## The load-bearing idea: the I/O modality contract
