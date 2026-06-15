@@ -270,3 +270,115 @@ describe("operator apply verification (P1-2)", () => {
     }
   });
 });
+
+/** Level B+ for LAUNCH_CRITERIA P0-4 — PopClip/Raycast thin-shim JSON store (no live UI). */
+describe("operator apply verification (P0-4 B+)", () => {
+  test("popclip and raycast apply --write: stubs honor JSON body edits", async () => {
+    const root = await mkdtemp(join(tmpdir(), "polycast-p04-"));
+    const buildOut = join(root, "build");
+    const popclipDir = join(root, "popclip");
+    const raycastDir = join(root, "raycast");
+    const commandsStore = join(root, "commands-store");
+    const polycastBin = await polycastWrapperScript(root);
+
+    const prev = {
+      popclip: process.env.POLYCAST_POPCLIP_EXTENSIONS,
+      raycast: process.env.POLYCAST_RAYCAST_DIR,
+      commands: process.env.POLYCAST_COMMANDS_DIR,
+      bin: process.env.POLYCAST_BIN,
+      skip: process.env.POLYCAST_SKIP_CHERRI,
+    };
+    process.env.POLYCAST_POPCLIP_EXTENSIONS = popclipDir;
+    process.env.POLYCAST_RAYCAST_DIR = raycastDir;
+    process.env.POLYCAST_COMMANDS_DIR = commandsStore;
+    process.env.POLYCAST_BIN = polycastBin;
+    process.env.POLYCAST_SKIP_CHERRI = "1";
+
+    try {
+      expect(
+        spawnSync(
+          "bun",
+          [
+            "run",
+            "src/cli.ts",
+            "build",
+            "--out",
+            buildOut,
+            "--strict",
+            "--target",
+            "popclip,raycast-script",
+          ],
+          { cwd: process.cwd(), encoding: "utf8" },
+        ).status,
+      ).toBe(0);
+
+      const applied = await applyBuilt({
+        outRoot: buildOut,
+        write: true,
+        targets: ["popclip", "raycast-script"],
+      });
+      expect(applied.some((r) => r.path.endsWith("uppercase.popclipext/script.sh"))).toBe(true);
+      expect(applied.some((r) => r.path.endsWith("open-repo.sh"))).toBe(true);
+
+      await access(join(commandsStore, "uppercase.json"));
+      await access(join(commandsStore, "open-repo.json"));
+
+      const popclipScript = join(popclipDir, "uppercase.popclipext/script.sh");
+      const popclipContents = await readFile(popclipScript, "utf8");
+      expect(popclipContents).toContain(" run --commands ");
+
+      const popFirst = spawnSync("bash", [popclipScript], {
+        encoding: "utf8",
+        env: process.env,
+        input: "hello",
+      });
+      expect(popFirst.status).toBe(0);
+      expect(popFirst.stdout?.trim()).toBe("HELLO");
+
+      const uppercaseJson = join(commandsStore, "uppercase.json");
+      const uppercaseStored = JSON.parse(await readFile(uppercaseJson, "utf8"));
+      uppercaseStored.body = { lang: "bash", source: "tr '[:lower:]' '[:upper:]' | rev" };
+      await writeFile(uppercaseJson, `${JSON.stringify(uppercaseStored, null, 2)}\n`);
+
+      const popSecond = spawnSync("bash", [popclipScript], {
+        encoding: "utf8",
+        env: process.env,
+        input: "hello",
+      });
+      expect(popSecond.status).toBe(0);
+      expect(popSecond.stdout?.trim()).toBe("OLLEH");
+
+      const raycastScript = join(raycastDir, "open-repo.sh");
+      const raycastContents = await readFile(raycastScript, "utf8");
+      expect(raycastContents).toContain(" run --commands ");
+
+      const openRepoJson = join(commandsStore, "open-repo.json");
+      const openRepoStored = JSON.parse(await readFile(openRepoJson, "utf8"));
+      openRepoStored.body = { lang: "bash", source: 'echo "repo:$1"' };
+      await writeFile(openRepoJson, `${JSON.stringify(openRepoStored, null, 2)}\n`);
+
+      const rayRun = spawnSync("bash", [raycastScript, "polycast"], {
+        encoding: "utf8",
+        env: process.env,
+      });
+      expect(rayRun.status).toBe(0);
+      expect(rayRun.stdout?.trim()).toBe("repo:polycast");
+    } finally {
+      for (const [key, val] of Object.entries(prev)) {
+        const envKey =
+          key === "popclip"
+            ? "POLYCAST_POPCLIP_EXTENSIONS"
+            : key === "raycast"
+              ? "POLYCAST_RAYCAST_DIR"
+              : key === "commands"
+                ? "POLYCAST_COMMANDS_DIR"
+                : key === "bin"
+                  ? "POLYCAST_BIN"
+                  : "POLYCAST_SKIP_CHERRI";
+        if (val === undefined) delete process.env[envKey];
+        else process.env[envKey] = val;
+      }
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+});

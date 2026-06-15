@@ -111,6 +111,8 @@ export const commandDefSchema = z
   });
 
 /** Draft 2020-12 JSON Schema for documentation and MCP clients. */
+export const COMMAND_DEF_SCHEMA_REL = "schemas/command-def.schema.json";
+
 export const commandDefJsonSchema = z.toJSONSchema(commandDefSchema, {
   target: "draft-2020-12",
 });

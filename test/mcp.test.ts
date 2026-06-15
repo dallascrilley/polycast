@@ -69,10 +69,12 @@ describe("polycast-api", () => {
     try {
       const preview = await polycastCommandUpsert(cmd, { write: false });
       expect(preview.written).toBe(false);
+      expect(preview.schemaPath).toBe("schemas/command-def.schema.json");
       expect(preview.preview).toBe(commandDefToModule(cmd));
 
       const written = await polycastCommandUpsert(cmd, { write: true });
       expect(written.written).toBe(true);
+      expect(written.schemaPath).toBe("schemas/command-def.schema.json");
       const loaded = await loadCommands("commands");
       expect(loaded.some((c) => c.id === id)).toBe(true);
       const disk = await readFile(path, "utf8");
