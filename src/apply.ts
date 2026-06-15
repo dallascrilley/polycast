@@ -36,6 +36,10 @@ function agentBinDir(): string {
   return expandHome(process.env.POLYCAST_AGENT_BIN ?? "~/.agents/tools");
 }
 
+function commandsStoreDir(): string {
+  return expandHome(process.env.POLYCAST_COMMANDS_DIR ?? "~/.polycast/commands");
+}
+
 function raycastScriptDir(): string {
   return expandHome(
     process.env.POLYCAST_RAYCAST_DIR ?? "~/Code/dotfiles/raycast/script-commands/_enabled",
@@ -299,6 +303,24 @@ async function applyTarget(target: string, srcDir: string, write: boolean): Prom
   return [{ target, action: "skip", path: srcDir }];
 }
 
+async function applyCommandsJson(outRoot: string, write: boolean): Promise<ApplyResult[]> {
+  const src = join(outRoot, "commands");
+  const dest = commandsStoreDir();
+  const results: ApplyResult[] = [];
+  const entries = await readdir(src).catch(() => []);
+  for (const name of entries) {
+    if (!name.endsWith(".json")) continue;
+    const to = join(dest, name);
+    const action = await installAllowed(to, write);
+    results.push({ target: "commands-store", action, path: to });
+    if (write && action === "install") {
+      await mkdir(dest, { recursive: true });
+      await cp(join(src, name), to, { force: true });
+    }
+  }
+  return results;
+}
+
 /** Install root for targets that write to a persistent directory (undefined = UI import only). */
 export function installDirForTarget(target: string): string | undefined {
   switch (target) {
@@ -331,6 +353,10 @@ export async function applyBuilt(options: ApplyOptions): Promise<ApplyResult[]> 
       continue;
     }
     results.push(...(await applyTarget(target, srcDir, options.write)));
+  }
+
+  if (selected.includes("agent-cli")) {
+    results.push(...(await applyCommandsJson(outRoot, options.write)));
   }
 
   return results;

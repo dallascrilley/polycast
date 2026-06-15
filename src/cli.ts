@@ -2,9 +2,11 @@
 import { chmod, mkdir, readdir, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { applyBuilt, installDirForTarget, pruneOwned } from "./apply.ts";
+import { defaultCommandsDir, loadCommandJson, writeCommandsJson } from "./commands-store.ts";
 import { loadCommands } from "./load.ts";
 import { compileCherriArtifacts } from "./post-build.ts";
 import { emitCatalogs, emitCommand, emitters } from "./registry.ts";
+import { executeCommand } from "./run.ts";
 import type { CommandDef, EmittedFile } from "./types.ts";
 import { validateAll } from "./validate/index.ts";
 
@@ -14,12 +16,14 @@ Usage:
   polycast list [--dir <commands>]
   polycast build [--dir <commands>] [--out <dir>] [--target <a,b>] [--strict]
   polycast targets
+  polycast run <id> [--commands <dir>] [--] [args...]
   polycast apply [--out <dir>] [--target <a,b>] [--write] [--prune] [--prune-only]
 
 Options:
-  --dir     <path>   command definitions directory (default: ./commands)
-  --out     <path>   build output root (default: ./build)
-  --target  <list>   comma-separated target ids (default: all)
+  --dir       <path>   command definitions directory (default: ./commands)
+  --out       <path>   build output root (default: ./build)
+  --commands  <path>   JSON command store for run (default: <out>/commands)
+  --target    <list>   comma-separated target ids (default: all)
   --strict           fail build on validation warnings/errors
   --write            apply writes to install locations (default: dry-run)
   --prune            remove polycast-owned artifacts before install
@@ -32,12 +36,15 @@ Environment:
   POLYCAST_DROPZONE_ACTIONS  Dropzone Actions folder
   POLYCAST_DROPOVER_SCRIPTS  Dropover staging directory
   POLYCAST_AGENT_BIN         agent-cli install dir
+  POLYCAST_COMMANDS_DIR      JSON command store (default: ~/.polycast/commands on apply)
+  POLYCAST_BIN               polycast executable for agent-cli stubs (default: polycast)
 `;
 
 interface Flags {
   readonly _: string[];
   readonly dir: string;
   readonly out: string;
+  readonly commands?: string;
   readonly target?: string[];
   readonly strict: boolean;
   readonly write: boolean;
@@ -49,6 +56,7 @@ function parseFlags(argv: string[]): Flags {
   const positional: string[] = [];
   let dir = "commands";
   let out = "build";
+  let commands: string | undefined;
   let target: string[] | undefined;
   let strict = false;
   let write = false;
@@ -59,6 +67,7 @@ function parseFlags(argv: string[]): Flags {
     const a = argv[i];
     if (a === "--dir") dir = argv[++i] ?? dir;
     else if (a === "--out") out = argv[++i] ?? out;
+    else if (a === "--commands") commands = argv[++i] ?? commands;
     else if (a === "--target") target = (argv[++i] ?? "").split(",").filter(Boolean);
     else if (a === "--strict") strict = true;
     else if (a === "--write") write = true;
@@ -68,7 +77,7 @@ function parseFlags(argv: string[]): Flags {
       pruneOnly = true;
     } else if (a) positional.push(a);
   }
-  return { _: positional, dir, out, target, strict, write, prune, pruneOnly };
+  return { _: positional, dir, out, commands, target, strict, write, prune, pruneOnly };
 }
 
 async function writeEmitted(outRoot: string, target: string, file: EmittedFile): Promise<void> {
@@ -106,6 +115,7 @@ async function cmdList(flags: Flags): Promise<void> {
 async function cmdBuild(flags: Flags): Promise<void> {
   const commands = await loadCommands(flags.dir);
   const outRoot = resolve(flags.out);
+  await writeCommandsJson(commands, join(outRoot, "commands"));
   const targets = flags.target ?? emitters.map((e) => e.target);
   let written = 0;
   let skipped = 0;
@@ -197,6 +207,14 @@ async function cmdApply(flags: Flags): Promise<void> {
         process.exit(1);
       }
     }
+    if (targets.includes("agent-cli")) {
+      try {
+        await readdir(join(outRoot, "commands"));
+      } catch {
+        console.error("missing build/commands JSON store; run build first");
+        process.exit(1);
+      }
+    }
     const issues = await validateBuilt(flags.dir, targets);
     if (issues.length > 0) {
       console.error(issues.join("\n"));
@@ -228,6 +246,20 @@ function cmdTargets(): void {
   }
 }
 
+async function cmdRun(
+  id: string | undefined,
+  flags: Flags,
+  runArgv: readonly string[],
+): Promise<void> {
+  if (!id) {
+    console.error("usage: polycast run <id> [--commands <dir>] [--] [args...]");
+    process.exit(1);
+  }
+  const commandsDir = flags.commands ?? defaultCommandsDir(flags.out);
+  const cmd = await loadCommandJson(id, commandsDir);
+  process.exit(executeCommand(cmd, { argv: runArgv }));
+}
+
 async function main(): Promise<void> {
   const [sub, ...rest] = process.argv.slice(2);
   const flags = parseFlags(rest);
@@ -239,6 +271,8 @@ async function main(): Promise<void> {
       return cmdBuild(flags);
     case "apply":
       return cmdApply(flags);
+    case "run":
+      return cmdRun(flags._[0], flags, flags._.slice(1));
     case "targets":
       return cmdTargets();
     case undefined:
