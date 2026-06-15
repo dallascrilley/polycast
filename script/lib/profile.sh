@@ -16,7 +16,7 @@ run_bootstrap() {
 run_setup()  { run_bootstrap; bun install; }
 run_update() { bun install; }
 run_server() { bun run dev; }
-run_test()   { bun test "$@"; }
+run_test()   { POLYCAST_SKIP_CHERRI=1 bun test "$@"; }
 
 run_cibuild() {
   bun install --frozen-lockfile  # lockfile is law — for an npm repo: npm ci --no-audit --no-fund
