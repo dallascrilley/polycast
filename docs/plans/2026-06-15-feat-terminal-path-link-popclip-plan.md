@@ -8,7 +8,7 @@ td_epic: td-5e7ddd
 
 **Summary:** Ship a standalone `.popclipext` package that, when a partial repo-relative path is selected in a supported terminal, resolves it against that terminal session’s cwd and copies a markdown `file://` link to the clipboard.
 
-**Status:** ready for ce-work
+**Status:** implemented — PR #32; Level A UI pending operator
 
 **td:** td-5e7ddd (U1 td-b236ed → U2 td-294adc → U3 td-7110b3 → U4 td-165479)
 
