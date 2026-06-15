@@ -4,6 +4,8 @@
 **Criterion:** `LAUNCH_CRITERIA.md` P0-4
 **Proof level:** A (launcher UI) + B (script contract — see [core-path log](./2026-06-14-core-path.md))
 
+> **Combined session:** [level-a-dogfood.md](./level-a-dogfood.md) · `./script/dogfood-level-a`
+
 Level B script proof exists from 2026-06-14. This log is the **operator checklist**
 for Level A confirmation after thin-shim dispatchers (Raycast/PopClip call
 `polycast run` + JSON store).

@@ -17,7 +17,13 @@ definition. Write a command once; cast it everywhere.
 
 ## Status
 
-Early skeleton. Working vertical slice:
+Pre-launch. Eight emitters, thin-shim dispatchers, MCP tools, and CI behavioral
+proof (B/B+) are in place. Remaining gate: **Level A** operator sign-off for
+PopClip, Raycast, and Shortcuts — see [`LAUNCH_CRITERIA.md`](LAUNCH_CRITERIA.md)
+and [`script/dogfood-level-a`](script/dogfood-level-a) (checklist:
+[`docs/verification/level-a-dogfood.md`](docs/verification/level-a-dogfood.md)).
+
+Working vertical slice:
 
 - A canonical command IR (`src/types.ts`) with an explicit **I/O modality**
   (`text | files | args | none`) — the semantic that lets one body render to
@@ -98,6 +104,7 @@ Node.js / TypeScript (bun).
 - Platform specs: [`docs/specs/README.md`](docs/specs/README.md).
 - Research: [`docs/research/2026-06-14-destination-emitters-findings.md`](docs/research/2026-06-14-destination-emitters-findings.md).
 - Verification logs: [`docs/verification/README.md`](docs/verification/README.md).
+- Level A dogfood (launch gate): `./script/dogfood-level-a --install --check-b` — see [`docs/verification/level-a-dogfood.md`](docs/verification/level-a-dogfood.md).
 
 ## License
 

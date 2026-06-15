@@ -5,6 +5,7 @@ Operator and CI proof for `LAUNCH_CRITERIA.md`. Proof levels: **A** visual,
 
 | Log | Criterion | Level | Status |
 |-----|-----------|-------|--------|
+| [level-a-dogfood.md](./level-a-dogfood.md) | P0-4 + P1-5 | A | **pending** — combined session (`td-ff727f`) |
 | [2026-06-14-first-run.md](./2026-06-14-first-run.md) | P0-1, P0-5 | B | validated |
 | [2026-06-14-core-path.md](./2026-06-14-core-path.md) | P0-4 (script) | B | validated |
 | [2026-06-15-popclip-raycast-ui.md](./2026-06-15-popclip-raycast-ui.md) | P0-4 (UI) | A + B + B+ | B/B+ validated; A pending |

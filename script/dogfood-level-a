@@ -25,8 +25,9 @@ Prepare isolated polycast install for Level A dogfood (PopClip, Raycast, Shortcu
   --help          this message
 
 Checklists:
-  docs/verification/2026-06-15-popclip-raycast-ui.md  (P0-4 Level A)
-  docs/verification/2026-06-15-shortcuts-ui.md          (P1-5 Level A)
+  docs/verification/level-a-dogfood.md                 (combined session)
+  docs/verification/2026-06-15-popclip-raycast-ui.md  (P0-4 detail)
+  docs/verification/2026-06-15-shortcuts-ui.md          (P1-5 detail)
 
 Task: td-ff727f
 EOF
@@ -78,11 +79,8 @@ print_checklist() {
   log "Level A checklist (manual — attach screenshots to verification docs)"
   cat <<EOF
 
-  PopClip + Raycast (P0-4):
-    docs/verification/2026-06-15-popclip-raycast-ui.md
-
-  Shortcuts (P1-5):
-    docs/verification/2026-06-15-shortcuts-ui.md
+  PopClip + Raycast (P0-4) + Shortcuts (P1-5):
+    docs/verification/level-a-dogfood.md
 
   Prerequisites:
     - PopClip.app + Raycast.app installed

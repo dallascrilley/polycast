@@ -17,6 +17,6 @@ describe("script/dogfood-level-a", () => {
     const r = spawnSync(script, ["--help"], { encoding: "utf8" });
     expect(r.status).toBe(0);
     expect(r.stdout).toContain("td-ff727f");
-    expect(r.stdout).toContain("popclip-raycast-ui");
+    expect(r.stdout).toContain("level-a-dogfood");
   });
 });
