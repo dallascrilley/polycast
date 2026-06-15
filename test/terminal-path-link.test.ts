@@ -6,6 +6,8 @@ import { $ } from "bun";
 const PKG = join(import.meta.dir, "..", "extensions", "terminal-path-link.popclipext");
 const CONFIG_PATH = join(PKG, "Config.json");
 const GET_CWD = join(PKG, "get-terminal-cwd.sh");
+const RESOLVE = join(PKG, "resolve-link.sh");
+const REPO_ROOT = join(import.meta.dir, "..");
 
 function loadConfig(): {
   actions: Array<{ regex?: string }>;
@@ -61,5 +63,50 @@ describe("get-terminal-cwd.sh", () => {
     const stderr = await new Response(proc.stderr).text();
     expect(code).toBe(2);
     expect(stderr).toContain("iTerm2 or Terminal.app");
+  });
+});
+
+describe("resolve-link.sh", () => {
+  test("resolves repo-relative path with cwd override", async () => {
+    const target = "docs/agent-native/capability-map.md";
+    const out =
+      await $`TERMINAL_PATH_LINK_CWD=${REPO_ROOT} POPCLIP_TEXT=${target} ${RESOLVE}`.text();
+    expect(out.trim()).toContain(`[${target}]`);
+    expect(out).toContain("capability-map.md");
+    expect(out).toContain("file://");
+  });
+
+  test("supports absolute existing paths", async () => {
+    const out = await $`POPCLIP_TEXT=/etc/hosts ${RESOLVE}`.text();
+    expect(out).toContain("file://");
+    expect(out).toContain("/etc/hosts");
+  });
+
+  test("strips trailing :line from selection", async () => {
+    const out =
+      await $`TERMINAL_PATH_LINK_CWD=${REPO_ROOT} POPCLIP_TEXT=docs/agent-native/capability-map.md:42 ${RESOLVE}`.text();
+    expect(out).toContain("[docs/agent-native/capability-map.md]");
+    expect(out).not.toContain(":42]");
+  });
+
+  test("file_url option emits bare URL", async () => {
+    const out =
+      await $`TERMINAL_PATH_LINK_CWD=${REPO_ROOT} POPCLIP_TEXT=README.md POPCLIP_OPTION_LINK_FORMAT=file_url ${RESOLVE}`.text();
+    expect(out.trim()).toMatch(/^file:\/\//);
+    expect(out).not.toContain("[");
+  });
+
+  test("missing relative path exits non-zero", async () => {
+    const proc = Bun.spawn(["bash", RESOLVE], {
+      env: {
+        ...process.env,
+        TERMINAL_PATH_LINK_CWD: REPO_ROOT,
+        POPCLIP_TEXT: "does/not/exist.md",
+      },
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const code = await proc.exited;
+    expect(code).toBe(1);
   });
 });
