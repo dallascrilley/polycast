@@ -10,6 +10,7 @@ import { loadCommands } from "./load.ts";
 import { compileCherriArtifacts } from "./post-build.ts";
 import { emitCatalogs, emitCommand, emitters } from "./registry.ts";
 import { executeCommand } from "./run.ts";
+import { COMMAND_DEF_SCHEMA_REL } from "./schema/command-def.ts";
 import { targetNeedsCommandsStore } from "./shim.ts";
 import type { CommandDef, EmittedFile } from "./types.ts";
 import { validateAll } from "./validate/index.ts";
@@ -75,6 +76,7 @@ export interface CommandUpsertResult {
   readonly path: string;
   readonly preview: string;
   readonly written: boolean;
+  readonly schemaPath: typeof COMMAND_DEF_SCHEMA_REL;
   readonly buildPreview?: BuildPreview;
 }
 
@@ -286,7 +288,7 @@ export async function polycastCommandUpsert(
   if (options.write) {
     await mkdir(commandsDir, { recursive: true });
     await writeFile(path, preview);
-    return { path, preview, written: true, buildPreview };
+    return { path, preview, written: true, schemaPath: COMMAND_DEF_SCHEMA_REL, buildPreview };
   }
-  return { path, preview, written: false, buildPreview };
+  return { path, preview, written: false, schemaPath: COMMAND_DEF_SCHEMA_REL, buildPreview };
 }
