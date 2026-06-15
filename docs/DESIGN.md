@@ -53,7 +53,7 @@ commands/*.ts ──load──> CommandDef[] ──registry──> emitters[] �
 |---|---|---|
 | 1 | Canonical IR = extended Raycast header | **done** (`CommandDef`; `x.raycast` hints) |
 | 2 | I/O modality contract | **done** (`Modality` + per-emitter `supports` + wrapper injection) |
-| 3 | Thin shims over one dispatcher | planned — emitters currently inline the body |
+| 3 | Thin shims over one dispatcher | **done** for agent-cli (`polycast run` + JSON store); other emitters still inline |
 | 4 | Pluggable target emitters | **done** (8 targets in registry) |
 | 5 | Idempotent `apply` into live runtime dirs | **done** (dry-run default; `--write` to install) |
 | 6 | Agent-native action registry | planned — IR is already machine-writable |
@@ -61,11 +61,9 @@ commands/*.ts ──load──> CommandDef[] ──registry──> emitters[] �
 
 ## Roadmap
 
-1. **Thin-shim dispatcher** (#3): generate stubs that call `polycast run <id>`;
-   logic lives once.
-2. **Agent-native registry** (#6): MCP/CLI verbs for agents to author commands.
-3. **Dropover programmatic import** when storage schema is documented.
-4. **Cherri args modality** via runtime `prompt()` + positional `set --` (dropdown args still Raycast-only).
+1. **Agent-native registry** (#6): MCP/CLI verbs for agents to author commands.
+2. **Dropover programmatic import** when storage schema is documented.
+3. **Extend thin-shim dispatcher** to Raycast/PopClip/Dropzone emitters.
 
 ## Non-goals
 

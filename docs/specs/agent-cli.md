@@ -10,22 +10,36 @@ Standalone executable per command for terminal and agent use. Compatible with `f
 ## Output layout
 
 ```
-build/agent-cli/<id>              # mode 755 executable
+build/commands/<id>.json        # runtime IR for polycast run
+build/agent-cli/<id>            # mode 755 dispatcher stub
 build/agent-cli/<id>.polycast-meta.json
 ```
 
-Meta sidecar:
+Apply syncs `build/commands/*.json` to `~/.polycast/commands/` (or `POLYCAST_COMMANDS_DIR`) when installing agent-cli targets.
+
+## Dispatcher stub
+
+Each executable delegates to the polycast CLI:
+
+```bash
+exec polycast run --commands "$POLYCAST_COMMANDS_DIR" <id> "$@"
+```
+
+Edit command bodies in `commands/*.ts`, run `build`, re-apply JSON (or copy to `~/.polycast/commands/`) — stubs stay unchanged.
+
+## Meta sidecar
 
 ```json
 {
   "id": "uppercase",
   "title": "Uppercase",
   "modality": "text",
-  "polycastVersion": "0.0.1"
+  "polycastVersion": "0.0.1",
+  "dispatcher": "polycast run"
 }
 ```
 
-## I/O contract
+## I/O contract (via polycast run)
 
 | Modality | Invocation |
 |----------|------------|

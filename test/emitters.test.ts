@@ -158,9 +158,11 @@ describe("raycast catalog emitters", () => {
 });
 
 describe("agent-cli emitter", () => {
-  test("emits executable and meta sidecar", () => {
+  test("emits dispatcher stub and meta sidecar", () => {
     const files = agentCli.emit(textCmd);
-    expect(files.some((f) => f.path === "uppercase")).toBe(true);
+    const bin = files.find((f) => f.path === "uppercase");
+    expect(bin?.contents).toContain(" run --commands ");
+    expect(bin?.contents).toContain("uppercase");
     expect(files.some((f) => f.path === "uppercase.polycast-meta.json")).toBe(true);
   });
 });
