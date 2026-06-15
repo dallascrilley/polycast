@@ -16,6 +16,7 @@ entrypoints, and `just <recipe>` is a thin alias for each.
 | Run locally | `script/server` | `just server` |
 | Run tests | `script/test` | `just test` |
 | What CI runs | `script/cibuild` | `just cibuild` |
+| Level A dogfood prep | `script/dogfood-level-a` | `just dogfood-level-a` |
 | REPL / console | `script/console` | `just console` |
 
 `script/cibuild` is the single source of truth for CI — if it passes locally, CI passes.

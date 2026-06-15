@@ -1,0 +1,141 @@
+#!/usr/bin/env bash
+#
+# script/dogfood-level-a — isolated install + checklist for LAUNCH_CRITERIA Level A.
+#
+# PopClip / Raycast / Shortcuts UI proof is manual; this script removes setup friction.
+#
+# Usage:
+#   script/dogfood-level-a              # print env + checklist links
+#   script/dogfood-level-a --install    # mkdir, build, apply (isolated dirs)
+#   script/dogfood-level-a --check-b    # Level B spot checks (after --install)
+#   script/dogfood-level-a --install --check-b
+#
+set -euo pipefail
+. "$(dirname "$0")/lib/common.sh"
+
+usage() {
+  cat <<EOF
+Usage: script/dogfood-level-a [--install] [--check-b] [--with-cherri]
+
+Prepare isolated polycast install for Level A dogfood (PopClip, Raycast, Shortcuts).
+
+  --install       build + apply popclip, raycast-script, shortcuts-cherri
+  --check-b       run Level B spot checks (PopClip script + Raycast script)
+  --with-cherri   allow Cherri compile during build (Shortcuts .shortcut import)
+  --help          this message
+
+Checklists:
+  docs/verification/2026-06-15-popclip-raycast-ui.md  (P0-4 Level A)
+  docs/verification/2026-06-15-shortcuts-ui.md          (P1-5 Level A)
+
+Task: td-ff727f
+EOF
+}
+
+DO_INSTALL=0
+DO_CHECK_B=0
+WITH_CHERRI=0
+for arg in "$@"; do
+  case "$arg" in
+    --install) DO_INSTALL=1 ;;
+    --check-b) DO_CHECK_B=1 ;;
+    --with-cherri) WITH_CHERRI=1 ;;
+    --help | -h) usage; exit 0 ;;
+    *) die "unknown arg: $arg (try --help)" ;;
+  esac
+done
+
+if [ "$(uname -s)" != "Darwin" ]; then
+  warn "Level A dogfood expects macOS launchers; continuing for env/check-b only."
+fi
+
+BASE="${POLYCAST_DOGFOOD_DIR:-/tmp/polycast-dogfood}"
+export POLYCAST_RAYCAST_DIR="$BASE/raycast"
+export POLYCAST_POPCLIP_EXTENSIONS="$BASE/popclip"
+export POLYCAST_COMMANDS_DIR="$BASE/commands"
+export POLYCAST_BIN="$ROOT/script/polycast"
+BUILD_OUT="$BASE/build"
+
+if [ "$WITH_CHERRI" -eq 0 ]; then
+  export POLYCAST_SKIP_CHERRI=1
+else
+  unset POLYCAST_SKIP_CHERRI || true
+fi
+
+print_env() {
+  log "isolated dogfood env (export or eval from this script's output)"
+  printf 'export POLYCAST_DOGFOOD_DIR=%q\n' "$BASE"
+  printf 'export POLYCAST_RAYCAST_DIR=%q\n' "$POLYCAST_RAYCAST_DIR"
+  printf 'export POLYCAST_POPCLIP_EXTENSIONS=%q\n' "$POLYCAST_POPCLIP_EXTENSIONS"
+  printf 'export POLYCAST_COMMANDS_DIR=%q\n' "$POLYCAST_COMMANDS_DIR"
+  printf 'export POLYCAST_BIN=%q\n' "$POLYCAST_BIN"
+  if [ "${POLYCAST_SKIP_CHERRI:-}" = "1" ]; then
+    printf 'export POLYCAST_SKIP_CHERRI=1\n'
+  fi
+}
+
+print_checklist() {
+  log "Level A checklist (manual — attach screenshots to verification docs)"
+  cat <<EOF
+
+  PopClip + Raycast (P0-4):
+    docs/verification/2026-06-15-popclip-raycast-ui.md
+
+  Shortcuts (P1-5):
+    docs/verification/2026-06-15-shortcuts-ui.md
+
+  Prerequisites:
+    - PopClip.app + Raycast.app installed
+    - polycast on PATH or POLYCAST_BIN above
+    - ~/Code/polycast (or any folder) for open-repo Raycast test
+
+  After --install:
+    - PopClip: open Extensions → install from $POLYCAST_POPCLIP_EXTENSIONS/uppercase.popclipext
+    - Raycast: Settings → Extensions → Scripts → add folder $POLYCAST_RAYCAST_DIR
+    - Shortcuts: import .shortcut from $BUILD_OUT/shortcuts-cherri (needs --with-cherri + cherri)
+
+EOF
+  if [ ! -d "/Applications/PopClip.app" ]; then
+    warn "PopClip.app not found — install before Level A PopClip steps."
+  fi
+  if [ ! -d "/Applications/Raycast.app" ]; then
+    warn "Raycast.app not found — install before Level A Raycast steps."
+  fi
+}
+
+do_install() {
+  log "install: isolated build + apply under $BASE"
+  mkdir -p "$POLYCAST_RAYCAST_DIR" "$POLYCAST_POPCLIP_EXTENSIONS" "$POLYCAST_COMMANDS_DIR" "$BUILD_OUT"
+  bun run dev build --out "$BUILD_OUT" --strict --target popclip,raycast-script,shortcuts-cherri
+  bun run dev apply --write --out "$BUILD_OUT" --target popclip,raycast-script,shortcuts-cherri
+  log "install complete — stubs under popclip/ and raycast/; JSON store at $POLYCAST_COMMANDS_DIR"
+}
+
+do_check_b() {
+  log "Level B spot checks"
+  local pop_script="$POLYCAST_POPCLIP_EXTENSIONS/uppercase.popclipext/script.sh"
+  local ray_script="$POLYCAST_RAYCAST_DIR/open-repo.sh"
+  [ -x "$pop_script" ] || die "missing $pop_script — run with --install first"
+  [ -x "$ray_script" ] || die "missing $ray_script — run with --install first"
+
+  local pop_out
+  pop_out="$(echo hello | "$pop_script")"
+  [ "$pop_out" = "HELLO" ] || die "PopClip uppercase: expected HELLO, got: $pop_out"
+  log "PopClip script.sh uppercase: PASS ($pop_out)"
+
+  if "$ray_script" polycast 2>/dev/null; then
+    log "Raycast open-repo.sh polycast: PASS (exit 0)"
+  else
+    warn "Raycast open-repo.sh failed — ensure ~/Code/polycast exists or pick another folder name"
+  fi
+}
+
+print_env
+print_checklist
+
+if [ "$DO_INSTALL" -eq 1 ]; then
+  do_install
+fi
+if [ "$DO_CHECK_B" -eq 1 ]; then
+  do_check_b
+fi

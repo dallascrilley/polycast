@@ -22,6 +22,8 @@ for Level A confirmation after thin-shim dispatchers (Raycast/PopClip call
 ### Isolated (recommended first pass)
 
 ```sh
+./script/dogfood-level-a --install --check-b   # sets env, build, apply, Level B spot checks
+# or manually:
 export POLYCAST_RAYCAST_DIR=/tmp/polycast-ui/raycast
 export POLYCAST_POPCLIP_EXTENSIONS=/tmp/polycast-ui/popclip
 export POLYCAST_COMMANDS_DIR=/tmp/polycast-ui/commands
