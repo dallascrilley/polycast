@@ -118,19 +118,22 @@ describe("dropover import note", () => {
 });
 
 describe("shortcuts-cherri emitter", () => {
-  test("emits cherri with runShellScript", () => {
+  test("emits cherri with runShellScript dispatcher stub", () => {
     const [file] = shortcutsCherri.emit(textCmd);
     expect(file?.path).toBe("uppercase.cherri");
     expect(file?.contents).toContain("runShellScript");
     expect(file?.contents).toContain("#define inputs text");
+    expect(file?.contents).toContain('run --commands "$COMMANDS" uppercase --text');
+    expect(file?.contents).not.toContain("tr '[:lower:]'");
   });
 
-  test("emits args commands with prompt and positional setup", () => {
+  test("emits args commands with prompt and polycast run stub", () => {
     const files = shortcutsCherri.emit(argsCmd);
     const cherri = files.find((f) => f.path.endsWith(".cherri"));
     expect(cherri?.contents).toContain('@polycast_arg_1 = prompt("repo name"');
     expect(cherri?.contents).toContain('set -- "{@polycast_arg_1}"');
-    expect(cherri?.contents).toContain('open "$HOME/Code/$1"');
+    expect(cherri?.contents).toContain('run --commands "$COMMANDS" open-repo "$@"');
+    expect(cherri?.contents).not.toContain('open "$HOME/Code/$1"');
   });
 
   test("skips args commands with dropdown fields", () => {
@@ -229,6 +232,36 @@ describe("apply dry-run", () => {
       });
       expect(results.some((r) => r.action === "would install")).toBe(true);
       expect(results.some((r) => r.target === "commands-store")).toBe(true);
+    } finally {
+      if (prevSkip === undefined) delete process.env.POLYCAST_SKIP_CHERRI;
+      else process.env.POLYCAST_SKIP_CHERRI = prevSkip;
+      await rm(out, { recursive: true, force: true });
+    }
+  });
+
+  test("shortcuts-cherri apply dry-run syncs commands store", async () => {
+    const { mkdtemp, rm } = await import("node:fs/promises");
+    const { join } = await import("node:path");
+    const { tmpdir } = await import("node:os");
+    const out = await mkdtemp(join(tmpdir(), "polycast-apply-sc-"));
+    const prevSkip = process.env.POLYCAST_SKIP_CHERRI;
+    process.env.POLYCAST_SKIP_CHERRI = "1";
+    try {
+      const { spawnSync } = await import("node:child_process");
+      const build = spawnSync(
+        "bun",
+        ["run", "src/cli.ts", "build", "--out", out, "--strict", "--target", "shortcuts-cherri"],
+        { cwd: process.cwd(), encoding: "utf8" },
+      );
+      expect(build.status).toBe(0);
+
+      const results = await applyBuilt({
+        outRoot: out,
+        write: false,
+        targets: ["shortcuts-cherri"],
+      });
+      expect(results.some((r) => r.target === "commands-store")).toBe(true);
+      expect(results.some((r) => r.action === "note" && r.path.includes("Re-import"))).toBe(true);
     } finally {
       if (prevSkip === undefined) delete process.env.POLYCAST_SKIP_CHERRI;
       else process.env.POLYCAST_SKIP_CHERRI = prevSkip;

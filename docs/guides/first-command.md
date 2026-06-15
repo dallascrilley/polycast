@@ -108,6 +108,9 @@ bun run dev apply --write --target popclip,agent-cli
 `export POLYCAST_BIN=/absolute/path/to/polycast` when Shortcuts or other sandboxes
 cannot see your shell PATH. See README *Install on PATH*.
 
+**Shortcuts:** first `apply --write` after thin-shim upgrade opens `.shortcut` for
+one-time re-import; edit `~/.polycast/commands/<id>.json` afterward without recompile.
+
 Override destinations with env vars (see mapping doc):
 
 | Variable | Default role |

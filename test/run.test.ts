@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadCommandJson, writeCommandsJson } from "../src/commands-store.ts";
 import { defineCommand } from "../src/define.ts";
+import { shortcutsTextShim } from "../src/shim.ts";
 
 const uppercase = defineCommand({
   id: "uppercase",
@@ -59,6 +60,55 @@ describe("polycast run integration", () => {
       );
       expect(second.status).toBe(0);
       expect(second.stdout?.trim()).toBe("changed");
+    } finally {
+      await rm(out, { recursive: true, force: true });
+    }
+  });
+
+  test("shortcuts text shim runs JSON body after store edit", async () => {
+    const { spawnSync } = await import("node:child_process");
+    const { chmod, writeFile } = await import("node:fs/promises");
+    const out = await mkdtemp(join(tmpdir(), "polycast-run-sc-"));
+    const commandsDir = join(out, "commands");
+    const polycastBin = join(out, "polycast-bin");
+    try {
+      await writeCommandsJson([uppercase], commandsDir);
+      await writeFile(
+        polycastBin,
+        `#!/usr/bin/env bash\nexec bun run ${join(process.cwd(), "src/cli.ts")} "$@"\n`,
+      );
+      await chmod(polycastBin, 0o755);
+
+      const shimScript = `#!/usr/bin/env bash\n${shortcutsTextShim(uppercase)}\n`;
+      const first = spawnSync("bash", ["-c", shimScript], {
+        cwd: process.cwd(),
+        encoding: "utf8",
+        input: "hi",
+        env: {
+          ...process.env,
+          POLYCAST_BIN: polycastBin,
+          POLYCAST_COMMANDS_DIR: commandsDir,
+        },
+      });
+      expect(first.status).toBe(0);
+      expect(first.stdout?.trim()).toBe("HI");
+
+      await writeFile(
+        join(commandsDir, "uppercase.json"),
+        `${JSON.stringify({ ...uppercase, body: { lang: "bash", source: "echo shortcut-changed" } }, null, 2)}\n`,
+      );
+      const second = spawnSync("bash", ["-c", shimScript], {
+        cwd: process.cwd(),
+        encoding: "utf8",
+        input: "ignored",
+        env: {
+          ...process.env,
+          POLYCAST_BIN: polycastBin,
+          POLYCAST_COMMANDS_DIR: commandsDir,
+        },
+      });
+      expect(second.status).toBe(0);
+      expect(second.stdout?.trim()).toBe("shortcut-changed");
     } finally {
       await rm(out, { recursive: true, force: true });
     }

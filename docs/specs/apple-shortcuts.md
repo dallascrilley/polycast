@@ -19,8 +19,15 @@ cherri file.cherri --open       # import into Shortcuts.app
 #define name "My Shortcut"
 #define inputs text
 #include 'actions/mac'
-runShellScript('body here', ShortcutInput, '/bin/bash')
+runShellScript('set -euo pipefail
+POLYCAST="${POLYCAST_BIN:-polycast}"
+COMMANDS="${POLYCAST_COMMANDS_DIR:-$HOME/.polycast/commands}"
+TEXT="$(cat)"
+exec "$POLYCAST" run --commands "$COMMANDS" my-command --text "$TEXT"', ShortcutInput, '/bin/bash')
 ```
+
+Body lives in `~/.polycast/commands/<id>.json` after `apply --write`. Set
+`POLYCAST_BIN` when Shortcuts cannot see your shell PATH (see `script/polycast`).
 
 Optional: `#define from sharesheet`, `#define glyph`, `#define color` from `x.shortcuts` hints.
 
@@ -33,8 +40,10 @@ Runtime prompts (not import `#question` — those are setup-time only):
 #include 'actions/mac'
 @polycast_arg_1 = prompt("repo name", "Text", "")
 runShellScript('set -euo pipefail
+POLYCAST="${POLYCAST_BIN:-polycast}"
+COMMANDS="${POLYCAST_COMMANDS_DIR:-$HOME/.polycast/commands}"
 set -- "{@polycast_arg_1}"
-open "$HOME/Code/$1"', nil, '/bin/bash')
+exec "$POLYCAST" run --commands "$COMMANDS" open-repo "$@"', nil, '/bin/bash')
 ```
 
 `dropdown` args skip Shortcuts (Raycast-only); plain `text`/`password` args supported.
@@ -51,7 +60,7 @@ open "$HOME/Code/$1"', nil, '/bin/bash')
 |----------|---------|
 | `text` | yes (Cherri + ShortcutInput) |
 | `none` | yes (no `#define inputs`) |
-| `args` | yes — runtime `prompt()` per arg, then `set --` + body `$1..$n` |
+| `args` | yes — runtime `prompt()` per arg, then `polycast run` with `"$@"` |
 | `files` | skip |
 
 ## Output layout
@@ -62,3 +71,6 @@ open "$HOME/Code/$1"', nil, '/bin/bash')
 ## Apply
 
 `open` the signed `.shortcut` or run `cherri --open` — user must confirm import in Shortcuts.app.
+
+After upgrading to thin-shim stubs, **re-import once**; later body edits sync via
+`~/.polycast/commands/` without recompile.
