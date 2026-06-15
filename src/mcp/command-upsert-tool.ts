@@ -1,5 +1,7 @@
 /** MCP tool copy for polycast_command_upsert — points agents at the committed JSON Schema. */
-export const COMMAND_DEF_SCHEMA_REL = "schemas/command-def.schema.json";
+import { COMMAND_DEF_SCHEMA_REL } from "../schema/command-def.ts";
+
+export { COMMAND_DEF_SCHEMA_REL };
 
 export function polycastCommandUpsertDescription(): string {
   return [

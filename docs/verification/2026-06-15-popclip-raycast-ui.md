@@ -94,14 +94,15 @@ echo hello | "$POLYCAST_POPCLIP_EXTENSIONS/uppercase.popclipext/script.sh"
 
 | Check | Result |
 |-------|--------|
-| JSON store present after apply | ☐ PASS ☐ FAIL |
-| Body edit reflected at runtime | ☐ PASS ☐ FAIL |
+| JSON store present after apply | ☑ PASS | CI `test/operator-apply.test.ts` P0-4 B+ |
+| Body edit reflected at runtime | ☑ PASS | CI PopClip + Raycast thin-shim JSON edit |
 
 ## Conclusion
 
 | Proof | Status |
 |-------|--------|
 | B — script execution | validated — [2026-06-14-core-path.md](./2026-06-14-core-path.md) + operator re-run above |
+| B+ — thin-shim JSON edit | validated — CI `test/operator-apply.test.ts` (P0-4 B+) |
 | A — PopClip UI | ☐ pending operator sign-off |
 | A — Raycast UI | ☐ pending operator sign-off |
 
