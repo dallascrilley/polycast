@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { applyBuilt } from "../src/apply.ts";
+import { applyBuilt, installDirForTarget, pruneOwned } from "../src/apply.ts";
+import { OWNERSHIP_MARKER } from "../src/constants.ts";
 import { defineCommand } from "../src/define.ts";
 import { agentCli } from "../src/emitters/agent-cli.ts";
 import { dropoverScript } from "../src/emitters/dropover-script.ts";
@@ -222,6 +223,53 @@ describe("apply dry-run", () => {
       if (prevAgent === undefined) delete process.env.POLYCAST_AGENT_BIN;
       else process.env.POLYCAST_AGENT_BIN = prevAgent;
       await rm(out, { recursive: true, force: true });
+      await rm(installRoot, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("pruneOwned", () => {
+  test("removes owned agent-cli artifacts and leaves foreign files", async () => {
+    const { mkdtemp, rm, writeFile, readFile, access } = await import("node:fs/promises");
+    const { join } = await import("node:path");
+    const { tmpdir } = await import("node:os");
+    const installRoot = await mkdtemp(join(tmpdir(), "polycast-prune-"));
+    const prevAgent = process.env.POLYCAST_AGENT_BIN;
+    process.env.POLYCAST_AGENT_BIN = installRoot;
+    try {
+      await writeFile(join(installRoot, "uppercase"), "#!/bin/sh\n");
+      await writeFile(join(installRoot, "uppercase.polycast-owned"), "polycast\n");
+      await writeFile(join(installRoot, "foreign-tool"), "keep\n");
+
+      const root = installDirForTarget("agent-cli");
+      expect(root).toBe(installRoot);
+
+      const removed = await pruneOwned(root!, true);
+      expect(removed.some((p) => p.endsWith("uppercase.polycast-owned"))).toBe(true);
+
+      await expect(access(join(installRoot, "uppercase.polycast-owned"))).rejects.toThrow();
+      await readFile(join(installRoot, "foreign-tool"), "utf8");
+    } finally {
+      if (prevAgent === undefined) delete process.env.POLYCAST_AGENT_BIN;
+      else process.env.POLYCAST_AGENT_BIN = prevAgent;
+      await rm(installRoot, { recursive: true, force: true });
+    }
+  });
+
+  test("removes owned bundle directories", async () => {
+    const { mkdtemp, rm, writeFile, mkdir } = await import("node:fs/promises");
+    const { join } = await import("node:path");
+    const { tmpdir } = await import("node:os");
+    const installRoot = await mkdtemp(join(tmpdir(), "polycast-prune-pop-"));
+    const bundle = join(installRoot, "Uppercase.popclipext");
+    try {
+      await mkdir(bundle, { recursive: true });
+      await writeFile(join(bundle, OWNERSHIP_MARKER), "polycast\n");
+      await writeFile(join(bundle, "Config.plist"), "{}");
+
+      const removed = await pruneOwned(installRoot, true);
+      expect(removed).toContain(bundle);
+    } finally {
       await rm(installRoot, { recursive: true, force: true });
     }
   });

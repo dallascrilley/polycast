@@ -2,6 +2,7 @@
   "name": "polycast",
   "version": "0.0.1",
   "description": "One command definition, cast to many macOS launchers (Raycast, PopClip, Dropzone, Shortcuts, agent tools)",
+  "license": "MIT",
   "type": "module",
   "bin": {
     "polycast": "./src/cli.ts"

@@ -33,6 +33,11 @@ steps (e.g. skip a heavy job when only docs changed). It does **not** gate
 `./script/cibuild` — that stays the single correctness gate and runs every time.
 Consume the outputs to add conditional steps; never make cibuild conditional.
 
+On `pull_request` events the action lists changed files via the GitHub API, so
+workflow `permissions` must include `pull-requests: read` in addition to
+`contents: read`. Without it the step fails with
+`Resource not accessible by integration` even though cibuild never runs.
+
 ### `workflow_dispatch`
 A manual "Run workflow" button for re-running CI without an empty commit.
 
