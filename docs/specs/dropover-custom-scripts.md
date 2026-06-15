@@ -1,6 +1,6 @@
 # Dropover custom scripts
 
-**Fetched:** 2026-06-14
+**Fetched:** 2026-06-14 (storage re-validated 2026-06-15 — see [research note](../research/2026-06-15-dropover-import-findings.md))
 **Source:** [dropover-actions hub skill](~/.hub/artifacts/skills/dropover-actions), [Dropover KB](https://dropoverapp.com/kb/instant-actions), local container inspection (Dropover 5.2.0, macOS 26.4)
 
 ## Scope
@@ -34,8 +34,9 @@ Dropover is sandboxed. Observed paths on a Dropover 5.2.0 install:
 | `.../Data/Library/Preferences/me.damir.dropover-mac.plist` | User prefs (no custom script payload on test machine) |
 | `.../Data/Library/Application Support/.item_store_instant-actions` | JSON array of instant-action identifiers, e.g. `[{"identifier":"dropoverLink"}, ...]` |
 | `.../Data/Documents/.instance-*` | Cloud/subscription instance metadata (JSON) |
+| `~/Library/Group Containers/D3Y7QS482H.group.me.damir.dropover-mac/` | Drag sessions + shelf file snapshots — **no script definitions** |
 
-**Verdict:** Custom script *source text* is not exposed as plain files in the container on this install (no user-defined scripts configured). Storage is **opaque / UI-managed** — scripts are created via Settings → Custom Scripts. polycast `apply` uses a **staging + manifest** strategy:
+**Verdict (confirmed 2026-06-15):** Custom script *source text* is **not exposed as plain files**. Storage is **opaque / UI-managed**. polycast `apply` uses **staging + manifest** (see [F1 research](../research/2026-06-15-dropover-import-findings.md)):
 
 1. Copy polycast-owned scripts to `~/Library/Containers/me.damir.dropover-mac/Data/Documents/.polycast-scripts/<id>.sh`
 2. Write `.polycast-owned` marker beside each script

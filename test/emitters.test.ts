@@ -95,6 +95,19 @@ describe("dropover-script emitter", () => {
   });
 });
 
+describe("dropover import note", () => {
+  test("formats operator checklist from manifest", async () => {
+    const { formatDropoverImportNote, parseDropoverManifest } = await import(
+      "../src/dropover-manifest.ts"
+    );
+    const raw = dropoverScript.emitCatalog?.([filesCmd])?.[0]?.contents ?? "";
+    const note = formatDropoverImportNote("/tmp/staging", parseDropoverManifest(raw));
+    expect(note).toContain("/tmp/staging/basename-files.sh");
+    expect(note).toContain("Custom Scripts");
+    expect(note).toContain("never edits Dropover prefs");
+  });
+});
+
 describe("shortcuts-cherri emitter", () => {
   test("emits cherri with runShellScript", () => {
     const [file] = shortcutsCherri.emit(textCmd);
