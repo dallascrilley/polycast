@@ -5,10 +5,10 @@ Operator and CI proof for `LAUNCH_CRITERIA.md`. Proof levels: **A** visual,
 
 | Log | Criterion | Level | Status |
 |-----|-----------|-------|--------|
-| [level-a-dogfood.md](./level-a-dogfood.md) | P0-4 + P1-5 | A | **pending** — combined session (`td-ff727f`) |
+| [level-a-dogfood.md](./level-a-dogfood.md) | P0-4 + P1-5 | A | PopClip done; Raycast + Shortcuts pending |
 | [2026-06-14-first-run.md](./2026-06-14-first-run.md) | P0-1, P0-5 | B | validated |
 | [2026-06-14-core-path.md](./2026-06-14-core-path.md) | P0-4 (script) | B | validated |
-| [2026-06-15-popclip-raycast-ui.md](./2026-06-15-popclip-raycast-ui.md) | P0-4 (UI) | A + B + B+ | B/B+ validated; A pending |
+| [2026-06-15-popclip-raycast-ui.md](./2026-06-15-popclip-raycast-ui.md) | P0-4 (UI) | A + B + B+ | PopClip A validated; Raycast A pending |
 | [2026-06-15-operator-apply.md](./2026-06-15-operator-apply.md) | P1-2 | B | validated (CI) |
 | [2026-06-15-dropover-ui.md](./2026-06-15-dropover-ui.md) | Dropover apply | B + A | B validated; A pending |
 | [2026-06-15-shortcuts-ui.md](./2026-06-15-shortcuts-ui.md) | P1-5 | B + A + B+ | B/B+ validated; A pending |
