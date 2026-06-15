@@ -133,7 +133,8 @@ bun run dev apply --write --target agent-cli
 ```
 
 See [`docs/verification/2026-06-14-core-path.md`](../verification/2026-06-14-core-path.md)
-for PopClip + Raycast script-level proof.
+for PopClip + Raycast script-level proof. Level A UI checklist:
+[`docs/verification/2026-06-15-popclip-raycast-ui.md`](../verification/2026-06-15-popclip-raycast-ui.md).
 
 ## 6. Agents (MCP)
 

@@ -18,7 +18,7 @@ Last reviewed: 2026-06-15
 | P0-1 | CLI surfaces `list`, `build`, `targets`, and `apply` work from README quickstart | B | validated — see `docs/verification/2026-06-14-first-run.md` |
 | P0-2 | Eight emitters registered; incompatible modalities skip (never mis-emit) | C + B | validated — unit tests + `build --strict` in CI |
 | P0-3 | `script/cibuild` passes on CI (lint, typecheck, test, dist build, `dev build --strict`) | B | validated — `POLYCAST_SKIP_CHERRI=1` on ubuntu runners |
-| P0-4 | Sample commands (`uppercase`, `open-repo`) install via `apply --write` and run in PopClip + Raycast | B | partial — script-level proof in `docs/verification/2026-06-14-core-path.md`; launcher UI optional |
+| P0-4 | Sample commands (`uppercase`, `open-repo`) install via `apply --write` and run in PopClip + Raycast | B + A | partial — Level B in `docs/verification/2026-06-14-core-path.md`; Level A checklist in `docs/verification/2026-06-15-popclip-raycast-ui.md` |
 | P0-5 | README first-run path reproducible without maintainer help | B | validated — see `docs/verification/2026-06-14-first-run.md` |
 
 ## P1 — soon after launch
