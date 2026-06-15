@@ -103,6 +103,11 @@ Write to install paths:
 bun run dev apply --write --target popclip,agent-cli
 ```
 
+**PATH:** installed stubs default to `polycast` on PATH. Use
+[`script/polycast`](../../script/polycast) (symlink to `~/.local/bin/polycast`) or
+`export POLYCAST_BIN=/absolute/path/to/polycast` when Shortcuts or other sandboxes
+cannot see your shell PATH. See README *Install on PATH*.
+
 Override destinations with env vars (see mapping doc):
 
 | Variable | Default role |

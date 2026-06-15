@@ -62,6 +62,23 @@ Tools: `polycast_list`, `polycast_targets`, `polycast_build`, `polycast_apply`, 
 
 With [`just`](https://github.com/casey/just): `just setup`, `just test`.
 
+### Install on PATH
+
+Dispatcher stubs call `polycast run` (override with `POLYCAST_BIN`). Options:
+
+```sh
+# Dev: repo wrapper (works when symlinked)
+ln -sf "$(pwd)/script/polycast" ~/.local/bin/polycast
+
+# Or add script/ to PATH for this clone
+export PATH="$(pwd)/script:$PATH"
+
+# Global via bun (package.json bin → src/cli.ts)
+bun link
+```
+
+Verify: `polycast list` or `script/polycast list`.
+
 Commands live in `commands/*.ts`, each default-exporting a `CommandDef` via
 `defineCommand(...)`. Sample pack: [`commands/README.md`](commands/README.md).
 Walkthrough: [`docs/guides/first-command.md`](docs/guides/first-command.md).

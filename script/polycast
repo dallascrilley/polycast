@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+#
+# script/polycast — polycast CLI on PATH without baking repo paths into stubs.
+#
+# Symlink or copy to ~/.local/bin/polycast (or add this repo's script/ to PATH).
+# Dispatcher stubs use POLYCAST_BIN (default: polycast); point them here when
+# the global `polycast` name is not on PATH.
+#
+# Usage: script/polycast list | build | apply | run …
+set -euo pipefail
+
+SELF="${BASH_SOURCE[0]}"
+while [ -L "$SELF" ]; do
+  SELF_DIR="$(cd -P "$(dirname "$SELF")" && pwd)"
+  SELF="$(readlink "$SELF")"
+  [[ "$SELF" != /* ]] && SELF="$SELF_DIR/$SELF"
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$SELF")" && pwd)"
+ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+if ! command -v bun >/dev/null 2>&1; then
+  printf 'error: bun not on PATH — install from https://bun.sh\n' >&2
+  exit 127
+fi
+
+exec bun run "$ROOT/src/cli.ts" "$@"
