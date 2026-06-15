@@ -76,3 +76,20 @@ self-contained repo.
 Use `/library load <id>` for on-demand hub skills. **Project-relevant skills**
 discovered during bootstrap are appended below this baseline as a
 `### Project-relevant skills` subsection (structured entries with path and load command).
+
+### Project-relevant skills
+
+- **`create-cli`** — Design CLI parameters, subcommands, help text, exit codes, and dry-run behavior.
+  - **Why this project:** polycast grows via `list` / `build` / `targets` (and future `apply`); each new emitter and flag needs a consistent, composable surface.
+  - **Path:** `~/.hub/artifacts/skills/create-cli/source/original/SKILL.md`
+  - **Load:** `/library load create-cli`
+
+- **`ast-grep`** — Structural code search via AST patterns (beyond text grep).
+  - **Why this project:** emitter registry + `CommandDef` IR benefit from pattern queries across `src/emitters/*` and `commands/*.ts` when adding targets or refactoring the modality contract.
+  - **Path:** `~/.hub/artifacts/skills/ast-grep/source/original/SKILL.md`
+  - **Load:** `/library load ast-grep`
+
+- **`bun-executable-cli`** — Turn TS entrypoints into Bun standalone executables.
+  - **Why this project:** ship `polycast` as a single binary for Raycast/PopClip install paths without requiring a global bun runtime.
+  - **Path:** `~/.hub/artifacts/skills/bun-executable-cli/source/original/SKILL.md`
+  - **Load:** `/library load bun-executable-cli`
