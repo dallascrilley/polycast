@@ -31,7 +31,7 @@ Last reviewed: 2026-06-14
 
 ## Explicit non-goals for v1 launch
 
-- Thin-shim `polycast run <id>` dispatcher
+- Extend thin-shim dispatcher to other emitters (agent-cli uses `polycast run` today)
 - Dropover programmatic import (staging + manual import is acceptable)
 - Agent-native MCP command authoring
 - Cross-OS launcher targets
