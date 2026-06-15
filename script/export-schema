@@ -1,0 +1,9 @@
+#!/usr/bin/env bun
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { commandDefJsonSchema } from "../src/schema/command-def.ts";
+
+const out = resolve("schemas/command-def.schema.json");
+mkdirSync(dirname(out), { recursive: true });
+writeFileSync(out, `${JSON.stringify(commandDefJsonSchema, null, 2)}\n`);
+console.log(`wrote ${out}`);
