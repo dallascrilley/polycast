@@ -1,3 +1,4 @@
+import { shortcutsArgsShim, shortcutsNoneShim, shortcutsTextShim } from "../shim.ts";
 import type { CommandArg, CommandDef, EmittedFile, Emitter, ValidationIssue } from "../types.ts";
 import { escapeCherriString } from "../wrappers.ts";
 
@@ -23,11 +24,23 @@ function emitArgsCherri(cmd: CommandDef): string[] {
     lines.push(`@${varName} = prompt("${prompt}", "${inputType}", "")`);
   }
 
-  const setLine = `set -- ${args.map((_, i) => `"{@polycast_arg_${i + 1}}"`).join(" ")}`;
-  const script = ["set -euo pipefail", setLine, cmd.body.source.trimEnd()].join("\n");
-  lines.push(`runShellScript('${escapeCherriString(script)}', nil, '/bin/bash')`, "");
+  lines.push(
+    `runShellScript('${escapeCherriString(shortcutsArgsShim(cmd))}', nil, '/bin/bash')`,
+    "",
+  );
 
   return lines;
+}
+
+function shellShimFor(cmd: CommandDef): string {
+  switch (cmd.modality) {
+    case "text":
+      return shortcutsTextShim(cmd);
+    case "none":
+      return shortcutsNoneShim(cmd);
+    default:
+      return shortcutsArgsShim(cmd);
+  }
 }
 
 export const shortcutsCherri: Emitter = {
@@ -51,9 +64,11 @@ export const shortcutsCherri: Emitter = {
     if (cmd.modality === "args") {
       lines.push(...emitArgsCherri(cmd));
     } else {
-      const body = escapeCherriString(cmd.body.source.trimEnd());
       const inputArg = cmd.modality === "text" ? "ShortcutInput" : "nil";
-      lines.push(`runShellScript('${body}', ${inputArg}, '/bin/bash')`, "");
+      lines.push(
+        `runShellScript('${escapeCherriString(shellShimFor(cmd))}', ${inputArg}, '/bin/bash')`,
+        "",
+      );
     }
 
     return [
@@ -72,6 +87,13 @@ export const shortcutsCherri: Emitter = {
       issues.push({
         target: this.target,
         message: "cherri missing runShellScript",
+        severity: "error",
+      });
+    }
+    if (!cherri.contents.includes("run --commands")) {
+      issues.push({
+        target: this.target,
+        message: "cherri missing polycast run dispatcher",
         severity: "error",
       });
     }

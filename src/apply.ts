@@ -279,6 +279,11 @@ async function applyTarget(target: string, srcDir: string, write: boolean): Prom
         });
       }
     }
+    results.push({
+      target,
+      action: "note",
+      path: "Re-import .shortcut once after thin-shim upgrade; body edits then live in ~/.polycast/commands/",
+    });
     return results;
   }
 

@@ -4,6 +4,9 @@ Maps user/operator actions to agent-accessible surfaces. Target: full parity wit
 
 Last updated: 2026-06-15
 
+Thin-shim dispatchers (including Shortcuts Cherri) delegate to `polycast run` and
+sync `~/.polycast/commands/` on `apply --write`.
+
 ## CLI commands (source of truth today)
 
 | User action | CLI | Agent tool | Status |
