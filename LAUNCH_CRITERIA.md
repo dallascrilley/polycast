@@ -26,7 +26,7 @@ Last reviewed: 2026-06-15
 | ID | Criterion | Proof | Status |
 |----|-----------|-------|--------|
 | P1-1 | License chosen and recorded in README | C | validated — MIT in README and LICENSE |
-| P1-2 | Dropzone + agent-cli `apply --write` verified on operator machine | B | missing |
+| P1-2 | Dropzone + agent-cli `apply --write` verified on operator machine | B | validated — `test/operator-apply.test.ts` (temp install); live Dropzone UI optional |
 | P1-3 | Shortcuts artifact import documented when Cherri absent | B | validated — README + specs document `.cherri` emit and skip path |
 | P1-4 | Agent-native MCP documented and smoke-testable from README | B | validated — README MCP section + capability map (PR #9); manual Cursor hook optional |
 

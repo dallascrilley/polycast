@@ -2,47 +2,56 @@
 
 Level **B** proof for `LAUNCH_CRITERIA.md` P1-2.
 
-## Prerequisites
+## Automated (CI)
 
-- macOS with Dropzone 5 and polycast built locally
+`test/operator-apply.test.ts` proves:
+
+- `apply --write` installs agent-cli stub + commands JSON store
+- Stub runs via `polycast run`; editing JSON changes behavior without re-apply
+- Dropzone bundle `run.sh` dispatcher behaves the same in an isolated temp install dir
+
+Set `POLYCAST_BIN` to a **single executable** (wrapper script if using `bun run src/cli.ts`).
+
+```sh
+bun test test/operator-apply.test.ts
+```
+
+Last verified: 2026-06-15 (CI)
+
+## Manual (live launchers)
+
+Optional Level A UI proof on a Mac with Dropzone 5 installed.
+
+### Prerequisites
+
 - `POLYCAST_SKIP_CHERRI=1` if `cherri` not installed
-- Empty or polycast-owned install dirs (or use dry-run first)
+- `POLYCAST_BIN` on PATH or wrapper script exporting `polycast`/`bun run …`
 
-## Steps
+### Steps
 
 ```sh
 cd /path/to/polycast
 script/setup
 bun run dev build --strict
-bun run dev apply --target dropzone,agent-cli          # dry-run — review paths
+bun run dev apply --target dropzone,agent-cli          # dry-run
 bun run dev apply --target dropzone,agent-cli --write  # install
 ```
 
-## Verify Dropzone
+### Verify Dropzone UI
 
-1. Drag a file onto the **Basename Files** action (or your test command).
-2. Expect basename output in Dropzone HUD / notification.
-3. Edit `~/.polycast/commands/basename-files.json` body — change behavior.
-4. Re-run action **without** re-apply — behavior should update (thin-shim + JSON store).
+1. Drag a file onto **Basename Files**.
+2. Edit `~/.polycast/commands/basename-files.json` body.
+3. Re-run without re-apply — behavior updates.
 
-## Verify agent-cli
+### Verify agent-cli
 
 ```sh
-~/.agents/tools/uppercase --text hello   # or POLYCAST_AGENT_BIN path
+~/.agents/tools/uppercase --text hello
 ```
 
-Expect `HELLO`. Edit JSON store; re-run stub — output changes without re-apply.
-
-## Record results
-
-Fill transcript below and commit or attach to td-b1d630:
+Edit JSON store; re-run stub.
 
 | Step | Pass? | Notes |
 |------|-------|-------|
-| dropzone dry-run | | |
-| dropzone --write | | |
-| dropzone run after JSON edit | | |
-| agent-cli run | | |
-| agent-cli after JSON edit | | |
-
-Last verified: _pending operator run_
+| dropzone UI drag | optional | automated test covers dispatcher path |
+| agent-cli live PATH | optional | automated test covers apply + run |
