@@ -61,7 +61,7 @@ commands/*.ts ──load──> CommandDef[] ──registry──> emitters[] �
 
 ## Roadmap
 
-1. **Agent-native registry** (#6): MCP/CLI verbs for agents to author commands.
+1. **Agent-native registry** (#6): MCP tools for command authoring — [plan](../plans/2026-06-15-feat-agent-native-mcp-plan.md).
 2. **Dropover programmatic import** — **closed (opaque)**; staging + manifest until API documented ([research](../research/2026-06-15-dropover-import-findings.md)).
 3. **Extend thin-shim dispatcher** to Raycast/PopClip/Dropzone emitters.
 
