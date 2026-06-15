@@ -2,7 +2,7 @@
 # Return absolute cwd for the frontmost supported terminal tab.
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 
 if [[ -n "${TERMINAL_PATH_LINK_CWD:-}" ]]; then
 	printf '%s\n' "$TERMINAL_PATH_LINK_CWD"

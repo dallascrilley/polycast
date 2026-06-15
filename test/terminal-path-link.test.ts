@@ -96,6 +96,23 @@ describe("resolve-link.sh", () => {
     expect(out).not.toContain("[");
   });
 
+  test("works when invoked via relative path", async () => {
+    const proc = Bun.spawn(["bash", "extensions/terminal-path-link.popclipext/resolve-link.sh"], {
+      cwd: REPO_ROOT,
+      env: {
+        ...process.env,
+        TERMINAL_PATH_LINK_CWD: REPO_ROOT,
+        POPCLIP_TEXT: "README.md",
+      },
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const code = await proc.exited;
+    const out = await new Response(proc.stdout).text();
+    expect(code).toBe(0);
+    expect(out).toContain("file://");
+  });
+
   test("missing relative path exits non-zero", async () => {
     const proc = Bun.spawn(["bash", RESOLVE], {
       env: {

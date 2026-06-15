@@ -2,7 +2,7 @@
 # Resolve selected path against terminal cwd and print a markdown or file:// link.
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 
 trim() {
 	local s="$1"
