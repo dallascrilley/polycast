@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 import { chmod, mkdir, readdir, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
-import { applyBuilt } from "./apply.ts";
+import { applyBuilt, installDirForTarget, pruneOwned } from "./apply.ts";
 import { loadCommands } from "./load.ts";
 import { compileCherriArtifacts } from "./post-build.ts";
 import { emitCatalogs, emitCommand, emitters } from "./registry.ts";
@@ -14,7 +14,7 @@ Usage:
   polycast list [--dir <commands>]
   polycast build [--dir <commands>] [--out <dir>] [--target <a,b>] [--strict]
   polycast targets
-  polycast apply [--out <dir>] [--target <a,b>] [--write]
+  polycast apply [--out <dir>] [--target <a,b>] [--write] [--prune] [--prune-only]
 
 Options:
   --dir     <path>   command definitions directory (default: ./commands)
@@ -22,6 +22,8 @@ Options:
   --target  <list>   comma-separated target ids (default: all)
   --strict           fail build on validation warnings/errors
   --write            apply writes to install locations (default: dry-run)
+  --prune            remove polycast-owned artifacts before install
+  --prune-only       remove polycast-owned artifacts only (skip install)
 
 Environment:
   POLYCAST_SKIP_CHERRI=1     skip Cherri compile step
@@ -39,6 +41,8 @@ interface Flags {
   readonly target?: string[];
   readonly strict: boolean;
   readonly write: boolean;
+  readonly prune: boolean;
+  readonly pruneOnly: boolean;
 }
 
 function parseFlags(argv: string[]): Flags {
@@ -48,6 +52,8 @@ function parseFlags(argv: string[]): Flags {
   let target: string[] | undefined;
   let strict = false;
   let write = false;
+  let prune = false;
+  let pruneOnly = false;
 
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -56,9 +62,13 @@ function parseFlags(argv: string[]): Flags {
     else if (a === "--target") target = (argv[++i] ?? "").split(",").filter(Boolean);
     else if (a === "--strict") strict = true;
     else if (a === "--write") write = true;
-    else if (a) positional.push(a);
+    else if (a === "--prune") prune = true;
+    else if (a === "--prune-only") {
+      prune = true;
+      pruneOnly = true;
+    } else if (a) positional.push(a);
   }
-  return { _: positional, dir, out, target, strict, write };
+  return { _: positional, dir, out, target, strict, write, prune, pruneOnly };
 }
 
 async function writeEmitted(outRoot: string, target: string, file: EmittedFile): Promise<void> {
@@ -162,6 +172,21 @@ async function validateBuilt(dir: string, targets: readonly string[]): Promise<s
 async function cmdApply(flags: Flags): Promise<void> {
   const targets = flags.target ?? emitters.map((e) => e.target);
   const outRoot = resolve(flags.out);
+
+  if (flags.prune) {
+    for (const target of targets) {
+      const root = installDirForTarget(target);
+      if (!root) {
+        console.log(`prune skip         ${target}  (no install dir)`);
+        continue;
+      }
+      const removed = await pruneOwned(root, flags.write);
+      const label = flags.write ? "prune" : "would prune";
+      for (const p of removed) console.log(`${label.padEnd(18)} ${target}  ${p}`);
+    }
+    if (!flags.write) console.log("\nDry run. Pass --write to remove owned artifacts.");
+    if (flags.pruneOnly) return;
+  }
 
   if (flags.write) {
     for (const target of targets) {

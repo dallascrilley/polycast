@@ -299,6 +299,24 @@ async function applyTarget(target: string, srcDir: string, write: boolean): Prom
   return [{ target, action: "skip", path: srcDir }];
 }
 
+/** Install root for targets that write to a persistent directory (undefined = UI import only). */
+export function installDirForTarget(target: string): string | undefined {
+  switch (target) {
+    case "raycast-script":
+      return raycastScriptDir();
+    case "popclip":
+      return popclipExtensionsDir();
+    case "dropzone":
+      return dropzoneActionsDir();
+    case "dropover-script":
+      return dropoverStagingDir();
+    case "agent-cli":
+      return agentBinDir();
+    default:
+      return undefined;
+  }
+}
+
 export async function applyBuilt(options: ApplyOptions): Promise<ApplyResult[]> {
   const outRoot = resolve(options.outRoot);
   const selected = options.targets ?? [];
