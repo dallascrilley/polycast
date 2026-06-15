@@ -97,6 +97,7 @@ Node.js / TypeScript (bun).
   [`docs/DESIGN.md`](docs/DESIGN.md) for the architecture and roadmap.
 - Platform specs: [`docs/specs/README.md`](docs/specs/README.md).
 - Research: [`docs/research/2026-06-14-destination-emitters-findings.md`](docs/research/2026-06-14-destination-emitters-findings.md).
+- Verification logs: [`docs/verification/README.md`](docs/verification/README.md).
 
 ## License
 
