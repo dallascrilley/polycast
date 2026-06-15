@@ -25,7 +25,8 @@ Early skeleton. Working vertical slice:
 - A pluggable **emitter registry** (`src/registry.ts`) with eight targets:
   `raycast-script`, `popclip`, `dropzone`, `dropover-script`, `shortcuts-cherri`,
   `raycast-snippet`, `raycast-quicklink`, `agent-cli`.
-- CLI: `list`, `build` (`--strict`), `targets`, `apply` (`--write` to install).
+- CLI: `list`, `build` (`--strict`), `targets`, `apply` (`--write` to install), `run`.
+- **MCP server** (`bun run mcp`): stdio tools mirroring CLI — see [capability map](docs/agent-native/capability-map.md).
 - Platform specs in `docs/specs/`; mapping in `docs/specs/destination-mapping.md`.
 
 ## Quickstart
@@ -36,7 +37,26 @@ bun run dev list                 # show commands + which surfaces each supports
 bun run dev build                # emit artifacts into ./build/<target>/
 bun run dev build --target popclip
 bun run dev targets              # list registered emitters
+bun run mcp                      # start MCP stdio server (Cursor / Claude Desktop)
 ```
+
+### MCP (agent-native)
+
+Add to your MCP client config:
+
+```json
+{
+  "mcpServers": {
+    "polycast": {
+      "command": "bun",
+      "args": ["run", "mcp"],
+      "cwd": "/path/to/polycast"
+    }
+  }
+}
+```
+
+Tools: `polycast_list`, `polycast_targets`, `polycast_build`, `polycast_apply`, `polycast_prune`, `polycast_run`, `polycast_command_upsert`. Apply and upsert default to dry-run; pass `write: true` to mutate. See [`docs/agent-native/capability-map.md`](docs/agent-native/capability-map.md).
 
 With [`just`](https://github.com/casey/just): `just setup`, `just test`.
 

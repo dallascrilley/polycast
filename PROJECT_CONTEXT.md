@@ -24,6 +24,8 @@ Origin: ideation in the dotfiles repo,
   - `src/load.ts` — loads `commands/*.ts` modules (default-exported `CommandDef`).
   - `src/emitters/*` — one module per target; `src/registry.ts` is the list.
   - `src/cli.ts` — `polycast list | build | targets | apply | run` (entry / `bin`).
+  - `src/polycast-api.ts` — shared API used by CLI and MCP tools.
+  - `src/mcp/server.ts` — stdio MCP server (`bun run mcp`).
   - `commands/*.ts` — the actual command definitions (data, not engine).
 
 ## The load-bearing idea: the I/O modality contract
@@ -67,6 +69,6 @@ None. Local codegen only.
 
 ## Agent model
 
-- **Model:** agent-assisted. Features (parsers, emitters) are normal code. An
-  agent *consuming* polycast to author commands across surfaces is a planned use
-  case (ideation survivor #6), not an agent-native architecture of this repo.
+- **Model:** agent-native via MCP. CLI parity documented in
+  `docs/agent-native/capability-map.md`; agents author commands with
+  `polycast_command_upsert` and build/apply through MCP tools.

@@ -1,14 +1,14 @@
 #!/usr/bin/env bun
-import { chmod, mkdir, readdir, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
-import { applyBuilt, installDirForTarget, pruneOwned } from "./apply.ts";
-import { defaultCommandsDir, loadCommandJson, writeCommandsJson } from "./commands-store.ts";
-import { loadCommands } from "./load.ts";
-import { compileCherriArtifacts } from "./post-build.ts";
-import { emitCatalogs, emitCommand, emitters } from "./registry.ts";
-import { executeCommand } from "./run.ts";
-import type { CommandDef, EmittedFile } from "./types.ts";
-import { validateAll } from "./validate/index.ts";
+import { join, resolve } from "node:path";
+import {
+  PolycastError,
+  polycastApply,
+  polycastBuild,
+  polycastCommandUpsert,
+  polycastList,
+  polycastRun,
+  polycastTargets,
+} from "./polycast-api.ts";
 
 const HELP = `polycast — one command definition, cast to many launchers
 
@@ -80,168 +80,72 @@ function parseFlags(argv: string[]): Flags {
   return { _: positional, dir, out, commands, target, strict, write, prune, pruneOnly };
 }
 
-async function writeEmitted(outRoot: string, target: string, file: EmittedFile): Promise<void> {
-  const dest = join(outRoot, target, file.path);
-  await mkdir(dirname(dest), { recursive: true });
-  await writeFile(dest, file.contents);
-  if (file.mode) await chmod(dest, file.mode);
-  console.log(`emit  ${target}/${file.path}`);
-}
-
-function emitterListedForCommand(emitter: (typeof emitters)[number], cmd: CommandDef): boolean {
-  if (emitter.supports.includes(cmd.modality) && emitter.emit(cmd).length > 0) return true;
-  if (!emitter.emitCatalog) return false;
-  if (emitter.target === "raycast-snippet") return Boolean(cmd.x?.raycast?.snippet?.text);
-  if (emitter.target === "raycast-quicklink") return Boolean(cmd.x?.raycast?.quicklink?.link);
-  return emitter.emitCatalog([cmd]).length > 0;
+function fail(err: unknown): never {
+  console.error(err instanceof Error ? err.message : String(err));
+  process.exit(1);
 }
 
 async function cmdList(flags: Flags): Promise<void> {
-  const commands = await loadCommands(flags.dir);
-  if (commands.length === 0) {
+  const entries = await polycastList(flags.dir);
+  if (entries.length === 0) {
     console.log(`no commands found in ${resolve(flags.dir)}`);
     return;
   }
-  for (const cmd of commands) {
-    const surfaces = emitters
-      .filter((e) => emitterListedForCommand(e, cmd))
-      .map((e) => e.target)
-      .join(", ");
+  for (const cmd of entries) {
+    const surfaces = cmd.surfaces.join(", ");
     console.log(`${cmd.id}  [${cmd.modality}]  -> ${surfaces || "(no compatible surface)"}`);
     console.log(`    ${cmd.title} — ${cmd.description}`);
   }
 }
 
 async function cmdBuild(flags: Flags): Promise<void> {
-  const commands = await loadCommands(flags.dir);
-  const outRoot = resolve(flags.out);
-  await writeCommandsJson(commands, join(outRoot, "commands"));
-  const targets = flags.target ?? emitters.map((e) => e.target);
-  let written = 0;
-  let skipped = 0;
-  const issues: string[] = [];
-
-  for (const cmd of commands) {
-    for (const result of emitCommand(cmd, targets)) {
-      if (result.skipped) {
-        skipped++;
-        console.log(`skip  ${cmd.id} -> ${result.target} (modality "${cmd.modality}" unsupported)`);
-        continue;
-      }
-      const emitter = emitters.find((e) => e.target === result.target);
-      if (emitter) {
-        const validation = validateAll(emitter, cmd, result.files, flags.strict);
-        if (validation.length > 0) {
-          issues.push(
-            ...validation.map((v) => `${cmd.id}/${result.target}: [${v.severity}] ${v.message}`),
-          );
-        }
-      }
-      for (const file of result.files) {
-        await writeEmitted(outRoot, result.target, file);
-        written++;
-      }
-      if (result.target === "shortcuts-cherri") {
-        await compileCherriArtifacts(join(outRoot, result.target), result.files);
-      }
+  try {
+    const summary = await polycastBuild({
+      dir: flags.dir,
+      out: flags.out,
+      targets: flags.target,
+      strict: flags.strict,
+    });
+    for (const file of summary.files) {
+      console.log(`emit  ${file}`);
     }
+    console.log(
+      `\n${summary.written} file(s) written to ${summary.outRoot}, ${summary.skipped} target(s) skipped.`,
+    );
+  } catch (err) {
+    fail(err);
   }
-
-  for (const result of emitCatalogs(commands, targets)) {
-    if (result.skipped) continue;
-    for (const file of result.files) {
-      await writeEmitted(outRoot, result.target, file);
-      written++;
-    }
-  }
-
-  if (issues.length > 0) {
-    console.error(issues.join("\n"));
-    process.exit(1);
-  }
-
-  console.log(`\n${written} file(s) written to ${outRoot}, ${skipped} target(s) skipped.`);
-}
-
-async function validateBuilt(dir: string, targets: readonly string[]): Promise<string[]> {
-  const commands = await loadCommands(dir);
-  const issues: string[] = [];
-  for (const cmd of commands) {
-    for (const result of emitCommand(cmd, [...targets])) {
-      if (result.skipped) continue;
-      const emitter = emitters.find((e) => e.target === result.target);
-      if (!emitter) continue;
-      for (const issue of validateAll(emitter, cmd, result.files, true)) {
-        issues.push(`${cmd.id}/${result.target}: [${issue.severity}] ${issue.message}`);
-      }
-    }
-  }
-  return issues;
 }
 
 async function cmdApply(flags: Flags): Promise<void> {
-  const targets = flags.target ?? emitters.map((e) => e.target);
-  const outRoot = resolve(flags.out);
-
-  if (flags.prune) {
-    for (const target of targets) {
-      const root = installDirForTarget(target);
-      if (!root) {
-        console.log(`prune skip         ${target}  (no install dir)`);
-        continue;
-      }
-      const removed = await pruneOwned(root, flags.write);
-      const label = flags.write ? "prune" : "would prune";
-      for (const p of removed) console.log(`${label.padEnd(18)} ${target}  ${p}`);
+  try {
+    const { results, refused } = await polycastApply({
+      dir: flags.dir,
+      out: flags.out,
+      targets: flags.target,
+      write: flags.write,
+      prune: flags.prune,
+      pruneOnly: flags.pruneOnly,
+    });
+    for (const r of results) {
+      console.log(`${r.action.padEnd(18)} ${r.target}  ${r.path}`);
     }
-    if (!flags.write) console.log("\nDry run. Pass --write to remove owned artifacts.");
-    if (flags.pruneOnly) return;
-  }
-
-  if (flags.write) {
-    for (const target of targets) {
-      try {
-        await readdir(join(outRoot, target));
-      } catch {
-        console.error(`missing build output for ${target}; run build first`);
-        process.exit(1);
-      }
-    }
-    if (targets.includes("agent-cli")) {
-      try {
-        await readdir(join(outRoot, "commands"));
-      } catch {
-        console.error("missing build/commands JSON store; run build first");
-        process.exit(1);
-      }
-    }
-    const issues = await validateBuilt(flags.dir, targets);
-    if (issues.length > 0) {
-      console.error(issues.join("\n"));
+    if (!flags.write) {
+      console.log("\nDry run. Pass --write to install.");
+    } else if (refused > 0) {
+      console.error(`\n${refused} path(s) refused — not polycast-owned`);
       process.exit(1);
     }
-  }
-
-  const results = await applyBuilt({
-    outRoot,
-    write: flags.write,
-    targets,
-  });
-  let refused = 0;
-  for (const r of results) {
-    console.log(`${r.action.padEnd(18)} ${r.target}  ${r.path}`);
-    if (r.action === "refused") refused++;
-  }
-  if (!flags.write) {
-    console.log("\nDry run. Pass --write to install.");
-  } else if (refused > 0) {
-    console.error(`\n${refused} path(s) refused — not polycast-owned`);
-    process.exit(1);
+  } catch (err) {
+    if (err instanceof PolycastError && err.code === "APPLY_REFUSED") {
+      fail(err);
+    }
+    fail(err);
   }
 }
 
 function cmdTargets(): void {
-  for (const e of emitters) {
+  for (const e of polycastTargets()) {
     console.log(`${e.target}  (supports: ${e.supports.join(", ") || "catalog"})`);
   }
 }
@@ -255,9 +159,14 @@ async function cmdRun(
     console.error("usage: polycast run <id> [--commands <dir>] [--] [args...]");
     process.exit(1);
   }
-  const commandsDir = flags.commands ?? defaultCommandsDir(flags.out);
-  const cmd = await loadCommandJson(id, commandsDir);
-  process.exit(executeCommand(cmd, { argv: runArgv }));
+  const commandsDir = flags.commands ?? join(resolve(flags.out), "commands");
+  process.exit(
+    await polycastRun({
+      id,
+      commandsDir,
+      argv: runArgv,
+    }),
+  );
 }
 
 async function main(): Promise<void> {
@@ -288,7 +197,4 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((err: unknown) => {
-  console.error(err instanceof Error ? err.message : String(err));
-  process.exit(1);
-});
+main().catch(fail);
