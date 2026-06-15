@@ -72,5 +72,6 @@ Install PopClip from [popclip.app](https://www.popclip.app/) or Setapp
 
 - [Verification index](./README.md)
 - [PopClip + Raycast detail](./2026-06-15-popclip-raycast-ui.md)
+- [Terminal path link PopClip](./2026-06-15-terminal-path-link-popclip.md) — standalone extension (not polycast apply)
 - [Shortcuts detail](./2026-06-15-shortcuts-ui.md)
 - [First-command guide](../guides/first-command.md)

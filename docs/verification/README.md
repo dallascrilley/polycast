@@ -13,6 +13,7 @@ Operator and CI proof for `LAUNCH_CRITERIA.md`. Proof levels: **A** visual,
 | [2026-06-15-dropover-ui.md](./2026-06-15-dropover-ui.md) | Dropover apply | B + A | B validated; A pending |
 | [2026-06-15-shortcuts-ui.md](./2026-06-15-shortcuts-ui.md) | P1-5 | B + A + B+ | B/B+ validated; A pending |
 | [2026-06-15-mcp-smoke.md](./2026-06-15-mcp-smoke.md) | P1-4 | B | validated |
+| [2026-06-15-terminal-path-link-popclip.md](./2026-06-15-terminal-path-link-popclip.md) | terminal path link | B + A | B validated; A pending |
 
 ## Quick commands
 
