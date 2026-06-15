@@ -166,8 +166,9 @@ describe("apply dry-run", () => {
     const { join } = await import("node:path");
     const { tmpdir } = await import("node:os");
     const out = await mkdtemp(join(tmpdir(), "polycast-apply-"));
+    const prevSkip = process.env.POLYCAST_SKIP_CHERRI;
+    process.env.POLYCAST_SKIP_CHERRI = "1";
     try {
-      process.env.POLYCAST_SKIP_CHERRI = "1";
       const { spawnSync } = await import("node:child_process");
       const build = spawnSync("bun", ["run", "src/cli.ts", "build", "--out", out, "--strict"], {
         cwd: process.cwd(),
@@ -182,7 +183,46 @@ describe("apply dry-run", () => {
       });
       expect(results.some((r) => r.action === "would install")).toBe(true);
     } finally {
+      if (prevSkip === undefined) delete process.env.POLYCAST_SKIP_CHERRI;
+      else process.env.POLYCAST_SKIP_CHERRI = prevSkip;
       await rm(out, { recursive: true, force: true });
+    }
+  });
+
+  test("refuses overwrite of unowned install paths", async () => {
+    const { mkdtemp, rm, writeFile, mkdir } = await import("node:fs/promises");
+    const { join } = await import("node:path");
+    const { tmpdir } = await import("node:os");
+    const out = await mkdtemp(join(tmpdir(), "polycast-apply-"));
+    const installRoot = await mkdtemp(join(tmpdir(), "polycast-install-"));
+    const prevAgent = process.env.POLYCAST_AGENT_BIN;
+    process.env.POLYCAST_AGENT_BIN = installRoot;
+    process.env.POLYCAST_SKIP_CHERRI = "1";
+    try {
+      const { spawnSync } = await import("node:child_process");
+      expect(
+        spawnSync("bun", ["run", "src/cli.ts", "build", "--out", out, "--strict"], {
+          cwd: process.cwd(),
+          encoding: "utf8",
+        }).status,
+      ).toBe(0);
+
+      await mkdir(installRoot, { recursive: true });
+      await writeFile(join(installRoot, "uppercase"), "#!/bin/bash\necho foreign\n", "utf8");
+
+      const results = await applyBuilt({
+        outRoot: out,
+        write: true,
+        targets: ["agent-cli"],
+      });
+      const upper = results.find((r) => r.path.endsWith("/uppercase"));
+      expect(upper?.action).toBe("refused");
+      expect(results.some((r) => r.path.endsWith("/uppercase.polycast-owned"))).toBe(false);
+    } finally {
+      if (prevAgent === undefined) delete process.env.POLYCAST_AGENT_BIN;
+      else process.env.POLYCAST_AGENT_BIN = prevAgent;
+      await rm(out, { recursive: true, force: true });
+      await rm(installRoot, { recursive: true, force: true });
     }
   });
 });

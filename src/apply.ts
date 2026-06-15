@@ -84,6 +84,17 @@ async function installAllowed(
   return "refused";
 }
 
+async function bundleInstallAllowed(
+  destBundle: string,
+  write: boolean,
+): Promise<"install" | "would install" | "refused"> {
+  if (!(await pathExists(destBundle))) return write ? "install" : "would install";
+  if (await pathExists(join(destBundle, OWNERSHIP_MARKER))) {
+    return write ? "install" : "would install";
+  }
+  return "refused";
+}
+
 async function copyTree(
   src: string,
   dest: string,
@@ -131,6 +142,44 @@ async function installFile(
   return { target, action, path: dest };
 }
 
+function markerResult(
+  target: string,
+  installAction: ApplyResult["action"],
+  markerDest: string,
+  write: boolean,
+): ApplyResult | undefined {
+  if (installAction === "refused") return undefined;
+  return {
+    target,
+    action: write && installAction === "install" ? "marker" : "would marker",
+    path: markerDest,
+  };
+}
+
+async function writeMarker(
+  markerDest: string,
+  installAction: ApplyResult["action"],
+  write: boolean,
+): Promise<void> {
+  if (write && installAction === "install") {
+    await mkdir(parentDir(markerDest), { recursive: true });
+    await writeFile(markerDest, "polycast\n");
+  }
+}
+
+async function applyBundleTree(
+  target: string,
+  srcBundle: string,
+  destBundle: string,
+  write: boolean,
+): Promise<ApplyResult[]> {
+  const bundleAction = await bundleInstallAllowed(destBundle, write);
+  if (bundleAction === "refused") {
+    return [{ target, action: "refused", path: destBundle }];
+  }
+  return copyTree(srcBundle, destBundle, write, target);
+}
+
 async function applyTarget(target: string, srcDir: string, write: boolean): Promise<ApplyResult[]> {
   const results: ApplyResult[] = [];
 
@@ -139,10 +188,15 @@ async function applyTarget(target: string, srcDir: string, write: boolean): Prom
     const entries = await readdir(srcDir).catch(() => []);
     for (const name of entries) {
       if (!name.endsWith(".sh")) continue;
-      results.push(await installFile(target, join(srcDir, name), join(dest, name), write, 0o755));
+      const scriptDest = join(dest, name);
+      const fileResult = await installFile(target, join(srcDir, name), scriptDest, write, 0o755);
+      results.push(fileResult);
       const markerDest = join(dest, `${name}.polycast-owned`);
-      if (write) await writeFile(markerDest, "polycast\n");
-      results.push({ target, action: write ? "marker" : "would marker", path: markerDest });
+      const marker = markerResult(target, fileResult.action, markerDest, write);
+      if (marker) {
+        await writeMarker(markerDest, fileResult.action, write);
+        results.push(marker);
+      }
     }
     return results;
   }
@@ -152,9 +206,9 @@ async function applyTarget(target: string, srcDir: string, write: boolean): Prom
     const entries = await readdir(srcDir).catch(() => []);
     for (const name of entries) {
       if (!name.endsWith(".popclipext")) continue;
-      results.push(...(await copyTree(join(srcDir, name), join(dest, name), write, target)));
+      results.push(...(await applyBundleTree(target, join(srcDir, name), join(dest, name), write)));
     }
-    return results.map((r) => ({ ...r, target }));
+    return results;
   }
 
   if (target === "dropzone") {
@@ -162,7 +216,7 @@ async function applyTarget(target: string, srcDir: string, write: boolean): Prom
     const entries = await readdir(srcDir).catch(() => []);
     for (const name of entries) {
       if (!name.endsWith(".dzbundle")) continue;
-      results.push(...(await copyTree(join(srcDir, name), join(dest, name), write, target)));
+      results.push(...(await applyBundleTree(target, join(srcDir, name), join(dest, name), write)));
     }
     return results;
   }
@@ -205,7 +259,10 @@ async function applyTarget(target: string, srcDir: string, write: boolean): Prom
         await new Promise<void>((resolve, reject) => {
           spawn("open", [path], { stdio: "inherit" })
             .on("error", reject)
-            .on("close", () => resolve());
+            .on("close", (code) => {
+              if (code === 0) resolve();
+              else reject(new Error(`open exited ${code} for ${path}`));
+            });
         });
       }
     }
@@ -216,9 +273,16 @@ async function applyTarget(target: string, srcDir: string, write: boolean): Prom
     const dest = agentBinDir();
     const entries = await readdir(srcDir).catch(() => []);
     for (const name of entries) {
-      if (name.endsWith(".polycast-meta.json")) continue;
-      const mode = name.endsWith(".polycast-owned") ? undefined : 0o755;
-      results.push(await installFile(target, join(srcDir, name), join(dest, name), write, mode));
+      if (name.endsWith(".polycast-meta.json") || name.endsWith(".polycast-owned")) continue;
+      const binDest = join(dest, name);
+      const fileResult = await installFile(target, join(srcDir, name), binDest, write, 0o755);
+      results.push(fileResult);
+      const markerDest = join(dest, `${name}.polycast-owned`);
+      const marker = markerResult(target, fileResult.action, markerDest, write);
+      if (marker) {
+        await writeMarker(markerDest, fileResult.action, write);
+        results.push(marker);
+      }
     }
     return results;
   }
@@ -268,7 +332,7 @@ export async function pruneOwned(targetDir: string, write: boolean): Promise<str
       } catch {
         removed.push(...(await pruneOwned(p, write)));
       }
-    } else if (entry.name.includes("polycast-owned")) {
+    } else if (entry.name.endsWith(".polycast-owned")) {
       if (write) await rm(p, { force: true });
       removed.push(p);
     }

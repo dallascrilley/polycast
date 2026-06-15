@@ -1,11 +1,11 @@
 #!/usr/bin/env bun
-import { chmod, mkdir, writeFile } from "node:fs/promises";
+import { chmod, mkdir, readdir, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { applyBuilt } from "./apply.ts";
 import { loadCommands } from "./load.ts";
 import { compileCherriArtifacts } from "./post-build.ts";
 import { emitCatalogs, emitCommand, emitters } from "./registry.ts";
-import type { EmittedFile } from "./types.ts";
+import type { CommandDef, EmittedFile } from "./types.ts";
 import { validateAll } from "./validate/index.ts";
 
 const HELP = `polycast — one command definition, cast to many launchers
@@ -26,6 +26,7 @@ Options:
 Environment:
   POLYCAST_SKIP_CHERRI=1     skip Cherri compile step
   POLYCAST_RAYCAST_DIR       Raycast script install dir
+  POLYCAST_POPCLIP_EXTENSIONS PopClip extensions dir
   POLYCAST_DROPZONE_ACTIONS  Dropzone Actions folder
   POLYCAST_DROPOVER_SCRIPTS  Dropover staging directory
   POLYCAST_AGENT_BIN         agent-cli install dir
@@ -68,6 +69,14 @@ async function writeEmitted(outRoot: string, target: string, file: EmittedFile):
   console.log(`emit  ${target}/${file.path}`);
 }
 
+function emitterListedForCommand(emitter: (typeof emitters)[number], cmd: CommandDef): boolean {
+  if (emitter.supports.includes(cmd.modality) && emitter.emit(cmd).length > 0) return true;
+  if (!emitter.emitCatalog) return false;
+  if (emitter.target === "raycast-snippet") return Boolean(cmd.x?.raycast?.snippet?.text);
+  if (emitter.target === "raycast-quicklink") return Boolean(cmd.x?.raycast?.quicklink?.link);
+  return emitter.emitCatalog([cmd]).length > 0;
+}
+
 async function cmdList(flags: Flags): Promise<void> {
   const commands = await loadCommands(flags.dir);
   if (commands.length === 0) {
@@ -76,7 +85,7 @@ async function cmdList(flags: Flags): Promise<void> {
   }
   for (const cmd of commands) {
     const surfaces = emitters
-      .filter((e) => e.supports.includes(cmd.modality) || e.emitCatalog)
+      .filter((e) => emitterListedForCommand(e, cmd))
       .map((e) => e.target)
       .join(", ");
     console.log(`${cmd.id}  [${cmd.modality}]  -> ${surfaces || "(no compatible surface)"}`);
@@ -134,11 +143,7 @@ async function cmdBuild(flags: Flags): Promise<void> {
   console.log(`\n${written} file(s) written to ${outRoot}, ${skipped} target(s) skipped.`);
 }
 
-async function validateBuilt(
-  outRoot: string,
-  dir: string,
-  targets: readonly string[],
-): Promise<string[]> {
+async function validateBuilt(dir: string, targets: readonly string[]): Promise<string[]> {
   const commands = await loadCommands(dir);
   const issues: string[] = [];
   for (const cmd of commands) {
@@ -159,7 +164,15 @@ async function cmdApply(flags: Flags): Promise<void> {
   const outRoot = resolve(flags.out);
 
   if (flags.write) {
-    const issues = await validateBuilt(outRoot, flags.dir, targets);
+    for (const target of targets) {
+      try {
+        await readdir(join(outRoot, target));
+      } catch {
+        console.error(`missing build output for ${target}; run build first`);
+        process.exit(1);
+      }
+    }
+    const issues = await validateBuilt(flags.dir, targets);
     if (issues.length > 0) {
       console.error(issues.join("\n"));
       process.exit(1);
@@ -171,11 +184,16 @@ async function cmdApply(flags: Flags): Promise<void> {
     write: flags.write,
     targets,
   });
+  let refused = 0;
   for (const r of results) {
     console.log(`${r.action.padEnd(18)} ${r.target}  ${r.path}`);
+    if (r.action === "refused") refused++;
   }
   if (!flags.write) {
     console.log("\nDry run. Pass --write to install.");
+  } else if (refused > 0) {
+    console.error(`\n${refused} path(s) refused — not polycast-owned`);
+    process.exit(1);
   }
 }
 
