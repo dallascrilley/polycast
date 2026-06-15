@@ -21,8 +21,10 @@ run_test()   { bun test "$@"; }
 run_cibuild() {
   bun install --frozen-lockfile  # lockfile is law — for an npm repo: npm ci --no-audit --no-fund
   bun run lint
+  bun run typecheck
   bun test
   bun run build
+  POLYCAST_SKIP_CHERRI=1 bun run dev build --strict
 }
 
 run_console() { node; }

@@ -1,16 +1,9 @@
-import type { CommandDef, EmittedFile, Emitter } from "../types.ts";
+import { OWNERSHIP_MARKER } from "../constants.ts";
+import type { CommandDef, EmittedFile, Emitter, ValidationIssue } from "../types.ts";
+import { wrappedScript } from "../wrappers.ts";
 
 /**
- * Emits a PopClip shell-script extension: a `<id>.popclipext/` bundle with a
- * `Config.json` and a wrapper script. PopClip acts on a text selection, which
- * it exposes to the script via the `POPCLIP_TEXT` env var — so this surface
- * supports the `text` modality only.
- *
- * This is where the I/O modality contract earns its keep: the command body is
- * written once as a pure `stdin -> stdout` function, and this emitter injects
- * the wrapper that pipes PopClip's `POPCLIP_TEXT` into that contract. A
- * different emitter (Dropzone) would inject a `"$@"`-paths wrapper instead, over
- * the very same body.
+ * Emits a PopClip shell-script extension with native `stdin: text` wiring.
  */
 export const popclip: Emitter = {
   target: "popclip",
@@ -19,24 +12,23 @@ export const popclip: Emitter = {
   emit(cmd: CommandDef): EmittedFile[] {
     if (!this.supports.includes(cmd.modality)) return [];
 
+    const action: Record<string, unknown> = {
+      title: cmd.title,
+      "shell script file": "script.sh",
+      stdin: "text",
+    };
+    if (cmd.x?.popclip?.regex) action.regex = cmd.x.popclip.regex;
+    if (cmd.x?.popclip?.after) action.after = cmd.x.popclip.after;
+    if (cmd.x?.popclip?.requirements) action.requirements = cmd.x.popclip.requirements;
+
     const config = {
       identifier: `com.polycast.${cmd.id}`,
       name: cmd.title,
+      "popclip version": 4050,
       ...(cmd.icon ? { icon: cmd.icon } : {}),
       description: cmd.description,
-      actions: [{ title: cmd.title, "shell script file": "script.sh" }],
-      ...(cmd.x?.popclip?.requirements ? { requirements: cmd.x.popclip.requirements } : {}),
+      actions: [action],
     };
-
-    // Wrapper: feed the selection into the body's stdin contract.
-    const wrapper = [
-      "#!/bin/bash",
-      "set -euo pipefail",
-      'printf %s "${POPCLIP_TEXT-}" | {',
-      cmd.body.source.trimEnd(),
-      "}",
-      "",
-    ].join("\n");
 
     return [
       {
@@ -45,9 +37,28 @@ export const popclip: Emitter = {
       },
       {
         path: `${cmd.id}.popclipext/script.sh`,
-        contents: wrapper,
+        contents: wrappedScript(cmd),
         mode: 0o755,
       },
+      {
+        path: `${cmd.id}.popclipext/${OWNERSHIP_MARKER}`,
+        contents: "polycast\n",
+      },
     ];
+  },
+
+  validate(_cmd: CommandDef, files: readonly EmittedFile[]): ValidationIssue[] {
+    const config = files.find((f) => f.path.endsWith("Config.json"));
+    if (!config?.contents.includes('"stdin": "text"')) {
+      return [
+        { target: this.target, message: "Config.json missing stdin: text", severity: "error" },
+      ];
+    }
+    if (!config.contents.includes('"identifier"')) {
+      return [
+        { target: this.target, message: "Config.json missing identifier", severity: "error" },
+      ];
+    }
+    return [];
   },
 };

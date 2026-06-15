@@ -22,10 +22,11 @@ Early skeleton. Working vertical slice:
 - A canonical command IR (`src/types.ts`) with an explicit **I/O modality**
   (`text | files | args | none`) — the semantic that lets one body render to
   multiple surfaces and skip the ones it can't represent.
-- A pluggable **emitter registry** (`src/registry.ts`). Adding a launcher = one
-  emitter; every existing command instantly gains the surface.
-- Two real emitters: `raycast-script` (args/none) and `popclip` (text).
-- A CLI: `list`, `build`, `targets` (`apply` is stubbed).
+- A pluggable **emitter registry** (`src/registry.ts`) with eight targets:
+  `raycast-script`, `popclip`, `dropzone`, `dropover-script`, `shortcuts-cherri`,
+  `raycast-snippet`, `raycast-quicklink`, `agent-cli`.
+- CLI: `list`, `build` (`--strict`), `targets`, `apply` (`--write` to install).
+- Platform specs in `docs/specs/`; mapping in `docs/specs/destination-mapping.md`.
 
 ## Quickstart
 
@@ -52,8 +53,11 @@ Node.js / TypeScript (bun).
 - Entrypoints live in `script/` (Scripts to Rule Them All); `just --list` shows them.
 - CI runs `script/cibuild` — run it locally before opening a PR.
 - `bun test`, `bun run typecheck`, `bun run lint`.
+- `POLYCAST_SKIP_CHERRI=1` skips Shortcuts Cherri compile when `cherri` is not installed (CI sets this).
 - See [`AGENTS.md`](AGENTS.md) for the working agreement and
   [`docs/DESIGN.md`](docs/DESIGN.md) for the architecture and roadmap.
+- Platform specs: [`docs/specs/README.md`](docs/specs/README.md).
+- Research: [`docs/research/2026-06-14-destination-emitters-findings.md`](docs/research/2026-06-14-destination-emitters-findings.md).
 
 ## License
 
