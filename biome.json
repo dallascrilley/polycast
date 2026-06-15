@@ -19,6 +19,14 @@
     }
   },
   "files": {
-    "includes": ["**", "!**/dist", "!**/build", "!**/coverage", "!**/node_modules", "!**/*.min.*"]
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/build",
+      "!**/coverage",
+      "!**/node_modules",
+      "!**/*.min.*",
+      "!**/.todos"
+    ]
   }
 }

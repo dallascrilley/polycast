@@ -52,7 +52,6 @@ describe("popclip emitter", () => {
     expect(config?.contents).toContain('"shell script file": "script.sh"');
     expect(script?.mode).toBe(0o755);
     // The modality wrapper pipes the selection into the body's stdin contract.
-    // biome-ignore lint/suspicious/noTemplateCurlyInString: asserting literal bash output, not a JS template.
     expect(script?.contents).toContain('printf %s "${POPCLIP_TEXT-}" | {');
     expect(script?.contents).toContain("tr '[:lower:]' '[:upper:]'");
   });
