@@ -56,14 +56,15 @@ commands/*.ts ──load──> CommandDef[] ──registry──> emitters[] �
 | 3 | Thin shims over one dispatcher | **done** for agent-cli (`polycast run` + JSON store); other emitters still inline |
 | 4 | Pluggable target emitters | **done** (8 targets in registry) |
 | 5 | Idempotent `apply` into live runtime dirs | **done** (dry-run default; `--write` to install) |
-| 6 | Agent-native action registry | planned — IR is already machine-writable |
+| 6 | Agent-native action registry | **done** (stdio MCP + `docs/agent-native/capability-map.md`; PR #9) |
 | 7 | Per-target validation of emitted artifacts | **done** (`build --strict`) |
 
 ## Roadmap
 
-1. **Agent-native registry** (#6): MCP tools for command authoring — [plan](../plans/2026-06-15-feat-agent-native-mcp-plan.md).
+1. ~~**Agent-native registry** (#6)~~ — shipped (MCP stdio server, PR #9).
 2. **Dropover programmatic import** — **closed (opaque)**; staging + manifest until API documented ([research](../research/2026-06-15-dropover-import-findings.md)).
 3. **Extend thin-shim dispatcher** to Raycast/PopClip/Dropzone emitters.
+4. **Operator verification** — P1-2 in `LAUNCH_CRITERIA.md` (Dropzone + agent-cli `apply --write` on a real Mac).
 
 ## Non-goals
 

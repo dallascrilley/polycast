@@ -9,7 +9,7 @@ Proof levels:
 - **B — Behavioral:** reproducible manual log, CLI transcript, or integration test.
 - **C — Structural:** code, route, or unit test exists (insufficient alone for UI flows).
 
-Last reviewed: 2026-06-14
+Last reviewed: 2026-06-15
 
 ## P0 — must pass before launch
 
@@ -28,12 +28,12 @@ Last reviewed: 2026-06-14
 | P1-1 | License chosen and recorded in README | C | validated — MIT in README and LICENSE |
 | P1-2 | Dropzone + agent-cli `apply --write` verified on operator machine | B | missing |
 | P1-3 | Shortcuts artifact import documented when Cherri absent | B | validated — README + specs document `.cherri` emit and skip path |
+| P1-4 | Agent-native MCP documented and smoke-testable from README | B | validated — README MCP section + capability map (PR #9); manual Cursor hook optional |
 
 ## Explicit non-goals for v1 launch
 
 - Extend thin-shim dispatcher to other emitters (agent-cli uses `polycast run` today)
 - Dropover programmatic import (staging + manual import is acceptable)
-- Agent-native MCP command authoring
 - Cross-OS launcher targets
 
 ## References
