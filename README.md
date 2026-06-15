@@ -63,8 +63,8 @@ Tools: `polycast_list`, `polycast_targets`, `polycast_build`, `polycast_apply`, 
 With [`just`](https://github.com/casey/just): `just setup`, `just test`.
 
 Commands live in `commands/*.ts`, each default-exporting a `CommandDef` via
-`defineCommand(...)`. See `commands/uppercase.ts` (text → PopClip) and
-`commands/open-repo.ts` (args → Raycast).
+`defineCommand(...)`. Sample pack: [`commands/README.md`](commands/README.md).
+Walkthrough: [`docs/guides/first-command.md`](docs/guides/first-command.md).
 
 ## Stack
 
