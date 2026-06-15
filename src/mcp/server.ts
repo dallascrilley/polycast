@@ -11,6 +11,7 @@ import {
   polycastTargets,
 } from "../polycast-api.ts";
 import { commandDefSchema } from "../schema/command-def.ts";
+import { polycastCommandUpsertDescription } from "./command-upsert-tool.ts";
 import { jsonContent, parseCommandDefJson, toolError } from "./response.ts";
 
 const dirSchema = z.string().optional();
@@ -136,8 +137,7 @@ export function createPolycastMcpServer(): McpServer {
   server.registerTool(
     "polycast_command_upsert",
     {
-      description:
-        "Create or preview a commands/<id>.ts module from a CommandDef JSON object (see schemas/command-def.schema.json). write defaults to false. previewBuild runs an isolated strict build and returns buildPreview.",
+      description: polycastCommandUpsertDescription(),
       inputSchema: {
         command: commandDefSchema,
         dir: dirSchema,

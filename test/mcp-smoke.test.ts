@@ -29,4 +29,24 @@ describe("MCP stdio smoke", () => {
       await transport.close();
     }
   }, 30_000);
+
+  test("polycast_command_upsert description references JSON Schema", async () => {
+    const transport = new StdioClientTransport({
+      command: "bun",
+      args: ["run", "src/mcp/server.ts"],
+      cwd: process.cwd(),
+    });
+    const client = new Client({ name: "polycast-mcp-smoke", version: "1.0.0" });
+    await client.connect(transport);
+    try {
+      const { tools } = await client.listTools();
+      const upsert = tools.find((t) => t.name === "polycast_command_upsert");
+      expect(upsert).toBeDefined();
+      expect(upsert?.description).toContain("schemas/command-def.schema.json");
+      expect(upsert?.description).toContain("modality");
+      expect(upsert?.description).toContain("previewBuild");
+    } finally {
+      await transport.close();
+    }
+  }, 30_000);
 });
