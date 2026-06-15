@@ -39,14 +39,13 @@ Install PopClip from [popclip.app](https://www.popclip.app/) or Setapp
 
 ## Level A checklist
 
-### PopClip (P0-4)
+### PopClip (P0-4) — ☑ done (2026-06-15)
 
-1. Open PopClip → Extensions, or double-click
-   `$POLYCAST_POPCLIP_EXTENSIONS/uppercase.popclipext`.
-2. Select text `hello` in any app → PopClip → **Uppercase** → paste → `HELLO`.
-3. Tick rows + screenshot in [popclip-raycast-ui.md](./2026-06-15-popclip-raycast-ui.md).
+1. ~~Open PopClip → Extensions~~ — `dogfood-level-a --open` (Setapp path).
+2. ~~Select text `hello` → **Uppercase** → paste `HELLO`.~~ Operator confirmed.
+3. Detail log: [popclip-raycast-ui.md](./2026-06-15-popclip-raycast-ui.md).
 
-### Raycast (P0-4)
+### Raycast (P0-4) — pending
 
 1. Raycast → Settings → Extensions → Scripts → add `$POLYCAST_RAYCAST_DIR`.
 2. Run **Open Code Repo** → enter `polycast` (or any `~/Code` subfolder).
