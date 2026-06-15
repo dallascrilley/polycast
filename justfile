@@ -23,6 +23,10 @@ update:
 server:
     ./script/server
 
+# polycast CLI (same as script/polycast — for PATH / POLYCAST_BIN)
+polycast *args:
+    ./script/polycast "$@"
+
 # Run the test suite (extra args pass through: `just test -k name`)
 test *args:
     ./script/test "$@"
