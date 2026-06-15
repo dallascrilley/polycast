@@ -12,14 +12,14 @@ verification checklist shipped?
 
 ## Survivors (ranked)
 
-### 1. npm global publish story
+### 1. npm global publish story — **deferred**
 
 **Basis:** `package.json` has `bin`; README documents `bun link` + `script/polycast`
 but no npm install path for non-cloners.
 
 **Effort:** M — publish workflow, version policy, CI release job, README install section.
 
-**Route:** ce-plan → npm publish or documented `npm pack` install.
+**Route:** ce-plan when ready; **deferred 2026-06-15** — `script/polycast` + `bun link` enough for v1 operators.
 
 ### 2. Dropover end-to-end operator log
 
@@ -68,8 +68,8 @@ PopClip share sheet demos.
 
 ## Q1
 
-1. **npm global publish** (recommended — completes distribution arc)
-2. **Dropover operator verification log**
-3. **Shortcuts UI verification checklist**
-4. **CI cherri test isolation**
+1. **Dropover operator verification log** (recommended next)
+2. **Shortcuts UI verification checklist**
+3. **CI cherri test isolation**
+4. **npm global publish** (deferred)
 5. Other

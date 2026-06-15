@@ -160,5 +160,6 @@ Use forge when you are promoting one wrapped script through a single surface.
 ## Next steps
 
 - Platform details: [`docs/specs/README.md`](../specs/README.md)
+- Dropover staging + manual import: [`docs/verification/2026-06-15-dropover-ui.md`](../verification/2026-06-15-dropover-ui.md)
 - Architecture: [`docs/DESIGN.md`](../DESIGN.md)
 - Operator apply proof: [`docs/verification/2026-06-15-operator-apply.md`](../verification/2026-06-15-operator-apply.md)
