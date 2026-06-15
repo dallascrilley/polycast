@@ -10,6 +10,7 @@ Three built-in commands cover every modality polycast ships today:
 | Command | Modality | Surfaces | File |
 |---------|----------|----------|------|
 | **Uppercase** | `text` | PopClip, Shortcuts, agent-cli | [`commands/uppercase.ts`](../../commands/uppercase.ts) |
+| **Copy to Clipboard** | `text` | PopClip, Shortcuts, agent-cli | [`commands/copy-to-clipboard.ts`](../../commands/copy-to-clipboard.ts) |
 | **Open Code Repo** | `args` | Raycast script, Shortcuts, agent-cli | [`commands/open-repo.ts`](../../commands/open-repo.ts) |
 | **Basename Files** | `files` | Dropzone, Dropover, agent-cli | [`commands/basename-files.ts`](../../commands/basename-files.ts) |
 
