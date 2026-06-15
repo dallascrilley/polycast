@@ -42,6 +42,8 @@ export POLYCAST_BIN="$(pwd)/script/polycast"
 ## Build + apply
 
 ```sh
+./script/dogfood-level-a --install --with-cherri   # isolated dirs + Shortcuts .shortcut when cherri on PATH
+# or manually:
 cd /path/to/polycast
 export POLYCAST_COMMANDS_DIR=~/.polycast/commands   # or isolated temp dir
 

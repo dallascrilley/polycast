@@ -17,7 +17,8 @@ Operator and CI proof for `LAUNCH_CRITERIA.md`. Proof levels: **A** visual,
 
 ```sh
 ./script/cibuild                              # full CI parity
-bun test test/operator-apply.test.ts          # P1-2 + Dropover B proof
+./script/dogfood-level-a --install --check-b  # isolated Level A prep + B spot checks
+bun test test/operator-apply.test.ts          # P1-2 + P0-4/P1-5 B+ proof
 bun test test/mcp-smoke.test.ts               # MCP stdio
 ```
 
