@@ -42,12 +42,15 @@ const filesCmd: CommandDef = defineCommand({
 });
 
 describe("raycast-script emitter", () => {
-  test("emits a header + body for an args command", () => {
+  test("emits a header + polycast run stub for an args command", () => {
     const [file] = raycastScript.emit(argsCmd);
     expect(file?.path).toBe("open-repo.sh");
     expect(file?.contents).toContain("# @raycast.schemaVersion 1");
     expect(file?.contents).toContain("# @raycast.mode silent");
     expect(file?.contents).toContain('"type":"text"');
+    expect(file?.contents).toContain(" run --commands ");
+    expect(file?.contents).toContain("open-repo");
+    expect(file?.contents).not.toContain('open "$HOME/Code/$1"');
   });
 
   test("skips text commands", () => {
@@ -62,11 +65,14 @@ describe("raycast-script emitter", () => {
 });
 
 describe("popclip emitter", () => {
-  test("emits bundle with stdin:text", () => {
+  test("emits bundle with stdin:text and dispatcher script", () => {
     const files = popclip.emit(textCmd);
     const config = files.find((f) => f.path.endsWith("Config.json"));
     expect(config?.contents).toContain('"stdin": "text"');
     expect(config?.contents).toContain('"popclip version": 4050');
+    const script = files.find((f) => f.path.endsWith("script.sh"));
+    expect(script?.contents).toContain(" run --commands ");
+    expect(script?.contents).toContain('--text "$TEXT"');
   });
 
   test("skips args commands", () => {
@@ -75,10 +81,12 @@ describe("popclip emitter", () => {
 });
 
 describe("dropzone emitter", () => {
-  test("emits dzbundle for files", () => {
+  test("emits dzbundle for files with dispatcher run.sh", () => {
     const files = dropzone.emit(filesCmd);
     expect(files.some((f) => f.path.endsWith("action.rb"))).toBe(true);
-    expect(files.some((f) => f.path.endsWith("run.sh"))).toBe(true);
+    const runSh = files.find((f) => f.path.endsWith("run.sh"));
+    expect(runSh?.contents).toContain(" run --commands ");
+    expect(runSh?.contents).toContain("basename-files");
     const action = files.find((f) => f.path.endsWith("action.rb"));
     expect(action?.contents).toContain("# Name: Basename Files");
     expect(action?.contents).toContain("# Handles: Files");
@@ -219,6 +227,7 @@ describe("apply dry-run", () => {
         targets: ["agent-cli"],
       });
       expect(results.some((r) => r.action === "would install")).toBe(true);
+      expect(results.some((r) => r.target === "commands-store")).toBe(true);
     } finally {
       if (prevSkip === undefined) delete process.env.POLYCAST_SKIP_CHERRI;
       else process.env.POLYCAST_SKIP_CHERRI = prevSkip;

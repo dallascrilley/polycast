@@ -32,7 +32,7 @@ Last reviewed: 2026-06-15
 
 ## Explicit non-goals for v1 launch
 
-- Extend thin-shim dispatcher to other emitters (agent-cli uses `polycast run` today)
+- Extend thin-shim dispatcher to other emitters (shortcuts-cherri, dropover still inline body)
 - Dropover programmatic import (staging + manual import is acceptable)
 - Cross-OS launcher targets
 

@@ -4,6 +4,7 @@ import { homedir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { OWNERSHIP_MARKER } from "./constants.ts";
 import { formatDropoverImportNote, parseDropoverManifest } from "./dropover-manifest.ts";
+import { targetNeedsCommandsStore } from "./shim.ts";
 
 export interface ApplyOptions {
   readonly outRoot: string;
@@ -363,7 +364,7 @@ export async function applyBuilt(options: ApplyOptions): Promise<ApplyResult[]> 
     results.push(...(await applyTarget(target, srcDir, options.write)));
   }
 
-  if (selected.includes("agent-cli")) {
+  if (selected.some(targetNeedsCommandsStore)) {
     results.push(...(await applyCommandsJson(outRoot, options.write)));
   }
 
