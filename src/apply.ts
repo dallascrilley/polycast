@@ -3,6 +3,7 @@ import { access, chmod, cp, mkdir, readdir, readFile, rm, writeFile } from "node
 import { homedir } from "node:os";
 import { basename, join, resolve } from "node:path";
 import { OWNERSHIP_MARKER } from "./constants.ts";
+import { formatDropoverImportNote, parseDropoverManifest } from "./dropover-manifest.ts";
 
 export interface ApplyOptions {
   readonly outRoot: string;
@@ -241,10 +242,17 @@ async function applyTarget(target: string, srcDir: string, write: boolean): Prom
         ),
       );
     }
+    let note = "Import scripts manually in Dropover Settings → Custom Scripts";
+    try {
+      const manifestRaw = await readFile(join(srcDir, "manifest.json"), "utf8");
+      note = formatDropoverImportNote(dest, parseDropoverManifest(manifestRaw));
+    } catch {
+      // build output may lack manifest when targeting a single script file
+    }
     results.push({
       target,
       action: "note",
-      path: "Import scripts manually in Dropover Settings → Custom Scripts",
+      path: note,
     });
     return results;
   }

@@ -150,7 +150,7 @@ Full detail: [docs/specs/dropover-custom-scripts.md](../specs/dropover-custom-sc
 | `td-22186c` | U7 Shortcuts/Cherri | closed |
 | `td-eb4c76` | U8 Agent CLI | closed |
 | `td-2ea4f0` | U9–U10 Validate + apply | closed |
-| `td-88eb8d` | F1 Dropover programmatic import | **open** (critical path) |
+| `td-88eb8d` | F1 Dropover programmatic import | **closed** — [2026-06-15 research](../research/2026-06-15-dropover-import-findings.md): opaque storage; staging + manifest |
 | `td-5b9d3a` | F2 Cherri args modality | open |
 | `td-84b163` | F3 Thin-shim dispatcher | open |
 | `td-635ac9` | F4 Agent-native MCP | open |
