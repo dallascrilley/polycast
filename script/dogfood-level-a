@@ -8,7 +8,7 @@
 #   script/dogfood-level-a              # print env + checklist links
 #   script/dogfood-level-a --install    # mkdir, build, apply (isolated dirs)
 #   script/dogfood-level-a --check-b    # Level B spot checks (after --install)
-#   script/dogfood-level-a --install --check-b
+#   script/dogfood-level-a --install --check-b --open
 #
 set -euo pipefail
 . "$(dirname "$0")/lib/common.sh"
@@ -22,11 +22,13 @@ Prepare isolated polycast install for Level A dogfood (PopClip, Raycast, Shortcu
   --install       build + apply popclip, raycast-script, shortcuts-cherri
   --check-b       run Level B spot checks (PopClip script + Raycast script)
   --with-cherri   allow Cherri compile during build (Shortcuts .shortcut import)
+  --open          after --install, open PopClip extension bundle for import
   --help          this message
 
 Checklists:
-  docs/verification/2026-06-15-popclip-raycast-ui.md  (P0-4 Level A)
-  docs/verification/2026-06-15-shortcuts-ui.md          (P1-5 Level A)
+  docs/verification/level-a-dogfood.md                 (combined session)
+  docs/verification/2026-06-15-popclip-raycast-ui.md  (P0-4 detail)
+  docs/verification/2026-06-15-shortcuts-ui.md          (P1-5 detail)
 
 Task: td-ff727f
 EOF
@@ -35,11 +37,13 @@ EOF
 DO_INSTALL=0
 DO_CHECK_B=0
 WITH_CHERRI=0
+DO_OPEN=0
 for arg in "$@"; do
   case "$arg" in
     --install) DO_INSTALL=1 ;;
     --check-b) DO_CHECK_B=1 ;;
     --with-cherri) WITH_CHERRI=1 ;;
+    --open) DO_OPEN=1 ;;
     --help | -h) usage; exit 0 ;;
     *) die "unknown arg: $arg (try --help)" ;;
   esac
@@ -62,6 +66,20 @@ else
   unset POLYCAST_SKIP_CHERRI || true
 fi
 
+popclip_app() {
+  if [ -d "/Applications/PopClip.app" ]; then
+    printf '%s' "/Applications/PopClip.app"
+  elif [ -d "/Applications/Setapp/PopClip.app" ]; then
+    printf '%s' "/Applications/Setapp/PopClip.app"
+  fi
+}
+
+raycast_app() {
+  if [ -d "/Applications/Raycast.app" ]; then
+    printf '%s' "/Applications/Raycast.app"
+  fi
+}
+
 print_env() {
   log "isolated dogfood env (export or eval from this script's output)"
   printf 'export POLYCAST_DOGFOOD_DIR=%q\n' "$BASE"
@@ -78,11 +96,8 @@ print_checklist() {
   log "Level A checklist (manual — attach screenshots to verification docs)"
   cat <<EOF
 
-  PopClip + Raycast (P0-4):
-    docs/verification/2026-06-15-popclip-raycast-ui.md
-
-  Shortcuts (P1-5):
-    docs/verification/2026-06-15-shortcuts-ui.md
+  PopClip + Raycast (P0-4) + Shortcuts (P1-5):
+    docs/verification/level-a-dogfood.md
 
   Prerequisites:
     - PopClip.app + Raycast.app installed
@@ -95,10 +110,18 @@ print_checklist() {
     - Shortcuts: import .shortcut from $BUILD_OUT/shortcuts-cherri (needs --with-cherri + cherri)
 
 EOF
-  if [ ! -d "/Applications/PopClip.app" ]; then
-    warn "PopClip.app not found — install before Level A PopClip steps."
+  local popclip
+  popclip="$(popclip_app)"
+  if [ -n "$popclip" ]; then
+    log "PopClip: $popclip"
+  else
+    warn "PopClip.app not found (/Applications or Setapp) — install before Level A PopClip steps."
   fi
-  if [ ! -d "/Applications/Raycast.app" ]; then
+  local raycast
+  raycast="$(raycast_app)"
+  if [ -n "$raycast" ]; then
+    log "Raycast: $raycast"
+  else
     warn "Raycast.app not found — install before Level A Raycast steps."
   fi
 }
@@ -130,6 +153,20 @@ do_check_b() {
   fi
 }
 
+do_open_popclip() {
+  local bundle="$POLYCAST_POPCLIP_EXTENSIONS/uppercase.popclipext"
+  [ -d "$bundle" ] || die "missing $bundle — run with --install first"
+  local popclip
+  popclip="$(popclip_app)"
+  if [ -n "$popclip" ]; then
+    log "opening $bundle with PopClip"
+    open -a "$popclip" "$bundle"
+  else
+    log "opening $bundle (default handler)"
+    open "$bundle"
+  fi
+}
+
 print_env
 print_checklist
 
@@ -138,4 +175,7 @@ if [ "$DO_INSTALL" -eq 1 ]; then
 fi
 if [ "$DO_CHECK_B" -eq 1 ]; then
   do_check_b
+fi
+if [ "$DO_OPEN" -eq 1 ]; then
+  do_open_popclip
 fi
