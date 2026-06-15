@@ -1,5 +1,11 @@
+import { agentCli } from "./emitters/agent-cli.ts";
+import { dropoverScript } from "./emitters/dropover-script.ts";
+import { dropzone } from "./emitters/dropzone.ts";
 import { popclip } from "./emitters/popclip.ts";
+import { raycastQuicklink } from "./emitters/raycast-quicklink.ts";
 import { raycastScript } from "./emitters/raycast-script.ts";
+import { raycastSnippet } from "./emitters/raycast-snippet.ts";
+import { shortcutsCherri } from "./emitters/shortcuts-cherri.ts";
 import type { CommandDef, EmittedFile, Emitter } from "./types.ts";
 
 /**
@@ -7,7 +13,16 @@ import type { CommandDef, EmittedFile, Emitter } from "./types.ts";
  * here. Every existing command instantly gains the new surface — that is the
  * compounding leverage polycast exists for.
  */
-export const emitters: readonly Emitter[] = [raycastScript, popclip];
+export const emitters: readonly Emitter[] = [
+  raycastScript,
+  popclip,
+  dropzone,
+  dropoverScript,
+  shortcutsCherri,
+  raycastSnippet,
+  raycastQuicklink,
+  agentCli,
+];
 
 export function emitterFor(target: string): Emitter | undefined {
   return emitters.find((e) => e.target === target);
@@ -31,4 +46,19 @@ export function emitCommand(
     const files = emitter.emit(cmd);
     return { target, files, skipped: files.length === 0 };
   });
+}
+
+/** Catalog pass for targets that aggregate across commands (snippets, manifest). */
+export function emitCatalogs(
+  commands: readonly CommandDef[],
+  targets: readonly string[] = emitters.map((e) => e.target),
+): TargetOutput[] {
+  return targets
+    .map((target) => {
+      const emitter = emitterFor(target);
+      if (!emitter?.emitCatalog) return undefined;
+      const files = emitter.emitCatalog(commands);
+      return { target, files, skipped: files.length === 0 };
+    })
+    .filter((r): r is TargetOutput => r != null);
 }

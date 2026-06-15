@@ -22,8 +22,9 @@ canonical definition, emit each dialect.
 | Raycast quicklink | JSON `{name,link,openWith}` | (URL template) | JSON array entry |
 | PopClip | `Config.json` / YAML header | `text` (selection) | `.popclipext` bundle |
 | Dropzone | `# Name:/# Handles:/# Events:` header | `files` (dragged) | `.dzbundle` |
-| Apple/iOS Shortcuts | `shortcuts` CLI | `text` / share input | binary `.shortcut` |
-| Agent CLI | argv | `args` / stdin | executable on PATH |
+| Dropover | Custom Script (Settings) | `files` (`"$@"`) | shell + manifest |
+| Apple/iOS Shortcuts | Cherri → `.shortcut` | `text` / share input | signed `.shortcut` |
+| Agent CLI | argv / stdin | all modalities | executable on PATH |
 
 ## Components (current)
 
@@ -35,10 +36,16 @@ commands/*.ts ──load──> CommandDef[] ──registry──> emitters[] �
 
 - **`CommandDef`** (`src/types.ts`) — the IR. `modality` is the load-bearing
   field; `x.<target>` holds surface-specific hints with no agnostic home.
-- **`Emitter`** — `{ target, supports[], emit(cmd) -> EmittedFile[] }`.
+- **`Emitter`** — `{ target, supports[], emit, emitCatalog?, validate? }`.
   `supports` is the modality compatibility list; `emit` returns `[]` to skip.
+  Catalog emitters aggregate static Raycast JSON; optional `validate` runs on
+  `build --strict`.
 - **`registry.ts`** — the emitter list + `emitCommand()` fan-out (with `skipped`
   bookkeeping). Adding a target is: write an emitter, add it here.
+- **Forge boundary** — polycast syncs multi-target artifacts via `apply`; forge
+  manages single-tool install/promotion. Agent-cli output is forge-wrap compatible.
+  See [`docs/specs/destination-mapping.md`](specs/destination-mapping.md) and
+  [`docs/research/2026-06-14-destination-emitters-findings.md`](research/2026-06-14-destination-emitters-findings.md).
 
 ## Mapping to the ideation survivors
 
@@ -47,22 +54,18 @@ commands/*.ts ──load──> CommandDef[] ──registry──> emitters[] �
 | 1 | Canonical IR = extended Raycast header | **done** (`CommandDef`; `x.raycast` hints) |
 | 2 | I/O modality contract | **done** (`Modality` + per-emitter `supports` + wrapper injection) |
 | 3 | Thin shims over one dispatcher | planned — emitters currently inline the body |
-| 4 | Pluggable target emitters | **done** (registry; 2 of N emitters) |
-| 5 | Idempotent `apply` into live runtime dirs | planned — `apply` stubbed in CLI |
+| 4 | Pluggable target emitters | **done** (8 targets in registry) |
+| 5 | Idempotent `apply` into live runtime dirs | **done** (dry-run default; `--write` to install) |
 | 6 | Agent-native action registry | planned — IR is already machine-writable |
-| 7 | Per-target validation of emitted artifacts | planned — `assertValid` covers the IR only |
+| 7 | Per-target validation of emitted artifacts | **done** (`build --strict`) |
 
 ## Roadmap
 
-1. **More emitters** (#4): `dropzone` (files), `shortcuts` (text/share),
-   `raycast-snippet` + `raycast-quicklink` (static surfaces), `agent-cli`.
-2. **`apply`** (#5): map each target → install dir + reload; diff desired vs.
-   installed; prune only polycast-owned artifacts (ownership marker). Mirror the
-   dotfiles `_enabled/` generated-mirror contract.
-3. **Per-target validation** (#7): each emitter asserts its loader's required
-   fields before `apply` writes (reuse the dotfiles Raycast validator as a model).
-4. **Thin-shim dispatcher** (#3): generate stubs that call `polycast run <id>`;
+1. **Thin-shim dispatcher** (#3): generate stubs that call `polycast run <id>`;
    logic lives once.
+2. **Agent-native registry** (#6): MCP/CLI verbs for agents to author commands.
+3. **Dropover programmatic import** when storage schema is documented.
+4. **Cherri args modality** via `#question` / prompts.
 
 ## Non-goals
 

@@ -17,14 +17,19 @@
  */
 export type Modality =
   | "text" // a text selection (PopClip, Shortcuts share sheet)
-  | "files" // one or more dragged file paths (Dropzone)
+  | "files" // one or more dragged file paths (Dropzone, Dropover)
   | "args" // typed launcher arguments (Raycast argument fields)
   | "none"; // no input; pure launcher trigger
+
+export type ArgType = "text" | "password" | "dropdown";
 
 export interface CommandArg {
   readonly name: string;
   readonly placeholder?: string;
   readonly optional?: boolean;
+  readonly type?: ArgType;
+  readonly percentEncoded?: boolean;
+  readonly data?: readonly { readonly title: string; readonly value: string }[];
 }
 
 export type BodyLang = "bash" | "node" | "applescript";
@@ -45,15 +50,32 @@ export interface CrossTargetHints {
   readonly raycast?: {
     readonly mode?: "silent" | "fullOutput" | "compact" | "inline";
     readonly packageName?: string;
+    readonly iconDark?: string;
+    readonly needsConfirmation?: boolean;
+    readonly currentDirectoryPath?: string;
+    readonly refreshTime?: string;
+    readonly snippet?: { readonly text: string; readonly keyword?: string };
+    readonly quicklink?: { readonly link: string; readonly openWith?: string };
   };
   readonly popclip?: {
     readonly requirements?: readonly string[];
+    readonly regex?: string;
+    readonly after?: string;
   };
   readonly dropzone?: {
     readonly events?: readonly ("Dragged" | "Clicked")[];
+    readonly handles?: "Files" | "Text" | "Files, Text";
+    readonly skipConfig?: boolean;
+    readonly minVersion?: string;
+  };
+  readonly dropover?: {
+    readonly instantAction?: boolean;
   };
   readonly shortcuts?: {
     readonly name?: string;
+    readonly glyph?: string;
+    readonly color?: string;
+    readonly from?: string;
   };
 }
 
@@ -81,6 +103,12 @@ export interface EmittedFile {
   readonly mode?: number;
 }
 
+export interface ValidationIssue {
+  readonly target: string;
+  readonly message: string;
+  readonly severity: "error" | "warning";
+}
+
 /**
  * A target adapter. Adding a new launcher is implementing one of these and
  * registering it — every existing command instantly gains the new surface.
@@ -92,4 +120,8 @@ export interface Emitter {
   readonly supports: readonly Modality[];
   /** Render the command, or return [] when the command is incompatible. */
   emit(cmd: CommandDef): readonly EmittedFile[];
+  /** Optional catalog pass for aggregated outputs (snippets, quicklinks, manifest). */
+  emitCatalog?(commands: readonly CommandDef[]): readonly EmittedFile[];
+  /** Validate emitted artifacts for a command (strict build). */
+  validate?(cmd: CommandDef, files: readonly EmittedFile[]): readonly ValidationIssue[];
 }

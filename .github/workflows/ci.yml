@@ -61,4 +61,6 @@ jobs:
           restore-keys: |
             v1-${{ runner.os }}-bun-
       - name: cibuild
+        env:
+          POLYCAST_SKIP_CHERRI: "1"
         run: ./script/cibuild
