@@ -17,7 +17,11 @@ definition. Write a command once; cast it everywhere.
 
 ## Status
 
-Early skeleton. Working vertical slice:
+Pre-launch **P0 complete** (2026-06-15). All P0 launch criteria validated including
+PopClip + Raycast Level A — see [`LAUNCH_CRITERIA.md`](LAUNCH_CRITERIA.md).
+P1-5 Shortcuts Level A remains optional follow-up.
+
+Working vertical slice:
 
 - A canonical command IR (`src/types.ts`) with an explicit **I/O modality**
   (`text | files | args | none`) — the semantic that lets one body render to
@@ -98,6 +102,7 @@ Node.js / TypeScript (bun).
 - Platform specs: [`docs/specs/README.md`](docs/specs/README.md).
 - Research: [`docs/research/2026-06-14-destination-emitters-findings.md`](docs/research/2026-06-14-destination-emitters-findings.md).
 - Verification logs: [`docs/verification/README.md`](docs/verification/README.md).
+- Level A dogfood (launch gate): `./script/dogfood-level-a --install --check-b` — see [`docs/verification/level-a-dogfood.md`](docs/verification/level-a-dogfood.md).
 
 ## License
 

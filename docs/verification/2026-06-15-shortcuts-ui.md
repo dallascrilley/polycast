@@ -5,6 +5,8 @@
 **Criterion:** `LAUNCH_CRITERIA.md` P1-5 (thin-shim) + Level A UI
 **Proof level:** B (CI + script) + A (Shortcuts.app — manual)
 
+> **Combined session:** [level-a-dogfood.md](./level-a-dogfood.md) · `./script/dogfood-level-a`
+
 Shortcuts emit `.cherri` → `cherri` compiles → signed `.shortcut` → one-time import.
 After thin-shim upgrade, **re-import once**; body edits live in `~/.polycast/commands/`.
 

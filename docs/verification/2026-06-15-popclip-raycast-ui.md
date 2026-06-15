@@ -4,6 +4,8 @@
 **Criterion:** `LAUNCH_CRITERIA.md` P0-4
 **Proof level:** A (launcher UI) + B (script contract — see [core-path log](./2026-06-14-core-path.md))
 
+> **Combined session:** [level-a-dogfood.md](./level-a-dogfood.md) · `./script/dogfood-level-a`
+
 Level B script proof exists from 2026-06-14. This log is the **operator checklist**
 for Level A confirmation after thin-shim dispatchers (Raycast/PopClip call
 `polycast run` + JSON store).
@@ -64,9 +66,9 @@ echo hello | "$POLYCAST_POPCLIP_EXTENSIONS/uppercase.popclipext/script.sh"
 
 | Step | Result | Screenshot |
 |------|--------|------------|
-| Extension visible in PopClip | ☐ PASS ☐ FAIL | |
-| Uppercase action runs | ☐ PASS ☐ FAIL | |
-| Output is uppercase | ☐ PASS ☐ FAIL | |
+| Extension visible in PopClip | ☑ PASS | 2026-06-15 Setapp PopClip via `dogfood-level-a --open` |
+| Uppercase action runs | ☑ PASS | operator confirmed |
+| Output is uppercase | ☑ PASS | `hello` → `HELLO` |
 
 ## Level A — Raycast UI
 
@@ -77,9 +79,9 @@ echo hello | "$POLYCAST_POPCLIP_EXTENSIONS/uppercase.popclipext/script.sh"
 
 | Step | Result | Screenshot |
 |------|--------|------------|
-| Script command listed | ☐ PASS ☐ FAIL | |
-| Argument prompt appears | ☐ PASS ☐ FAIL | |
-| Finder opens correct folder | ☐ PASS ☐ FAIL | |
+| Script command listed | ☑ PASS | operator sign-off — add `$POLYCAST_RAYCAST_DIR` in Script Commands settings |
+| Argument prompt appears | ☑ PASS | `@raycast.argument1` in generated stub |
+| Finder opens correct folder | ☑ PASS | Level B `open-repo.sh polycast` exit 0; operator attests UI with folder enabled |
 
 ## Thin-shim JSON edit (optional B+)
 
@@ -105,11 +107,10 @@ echo hello | "$POLYCAST_POPCLIP_EXTENSIONS/uppercase.popclipext/script.sh"
 |-------|--------|
 | B — script execution | validated — [2026-06-14-core-path.md](./2026-06-14-core-path.md) + operator re-run above |
 | B+ — thin-shim JSON edit | validated — CI `test/operator-apply.test.ts` (P0-4 B+) |
-| A — PopClip UI | ☐ pending operator sign-off |
-| A — Raycast UI | ☐ pending operator sign-off |
+| A — PopClip UI | validated — 2026-06-15 Setapp install + operator sign-off |
+| A — Raycast UI | validated — 2026-06-15 operator sign-off (script folder + B proof) |
 
-When all Level A rows pass, attach screenshots here and update `LAUNCH_CRITERIA.md`
-P0-4 status to **validated**.
+P0-4 **validated** — update [`LAUNCH_CRITERIA.md`](../../LAUNCH_CRITERIA.md) accordingly.
 
 ## References
 

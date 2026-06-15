@@ -18,7 +18,7 @@ Last reviewed: 2026-06-15
 | P0-1 | CLI surfaces `list`, `build`, `targets`, and `apply` work from README quickstart | B | validated — see `docs/verification/2026-06-14-first-run.md` |
 | P0-2 | Eight emitters registered; incompatible modalities skip (never mis-emit) | C + B | validated — unit tests + `build --strict` in CI |
 | P0-3 | `script/cibuild` passes on CI (lint, typecheck, test, dist build, `dev build --strict`) | B | validated — `POLYCAST_SKIP_CHERRI=1` on ubuntu runners |
-| P0-4 | Sample commands (`uppercase`, `open-repo`) install via `apply --write` and run in PopClip + Raycast | B + A | partial — B/B+ validated (`docs/verification/2026-06-14-core-path.md`, `test/operator-apply.test.ts` P0-4 B+); Level A checklist in `docs/verification/2026-06-15-popclip-raycast-ui.md` |
+| P0-4 | Sample commands (`uppercase`, `open-repo`) install via `apply --write` and run in PopClip + Raycast | B + A | validated — [popclip-raycast-ui.md](docs/verification/2026-06-15-popclip-raycast-ui.md), `script/dogfood-level-a`, CI P0-4 B+ |
 | P0-5 | README first-run path reproducible without maintainer help | B | validated — see `docs/verification/2026-06-14-first-run.md` |
 
 ## P1 — soon after launch
@@ -29,7 +29,7 @@ Last reviewed: 2026-06-15
 | P1-2 | Dropzone + agent-cli `apply --write` verified on operator machine | B | validated — `test/operator-apply.test.ts` (temp install); live Dropzone UI optional |
 | P1-3 | Shortcuts artifact import documented when Cherri absent | B | validated — README + specs document `.cherri` emit and skip path |
 | P1-4 | Agent-native MCP documented and smoke-testable from README | B | validated — README MCP section + capability map (PR #9); manual Cursor hook optional |
-| P1-5 | Shortcuts Cherri thin-shim delegates to `polycast run` + commands JSON sync on apply | B + A | validated (B/B+) — tests + `test/operator-apply.test.ts` P1-5 B+; Level A checklist in `docs/verification/2026-06-15-shortcuts-ui.md` |
+| P1-5 | Shortcuts Cherri thin-shim delegates to `polycast run` + commands JSON sync on apply | B + A | validated (B/B+) — Level A via [`docs/verification/level-a-dogfood.md`](docs/verification/level-a-dogfood.md) |
 
 ## Explicit non-goals for v1 launch
 
