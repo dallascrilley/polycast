@@ -16,6 +16,7 @@ After thin-shim upgrade, **re-import once**; body edits live in `~/.polycast/com
 | `test/run.test.ts` | Text shim + JSON store edit without stub change |
 | `test/emitters.test.ts` | `.cherri` output has dispatcher, not inline body |
 | `test/operator-apply.test.ts` | (Dropzone/agent-cli pattern; shortcuts apply opens `.shortcut`) |
+| `test/operator-apply.test.ts` P1-5 B+ | apply syncs commands store; text shim + JSON edit |
 
 ```sh
 bun test test/shim.test.ts test/run.test.ts
@@ -105,6 +106,7 @@ bun run dev apply --write --target shortcuts-cherri --out ./build \
 | Proof | Status |
 |-------|--------|
 | B — thin-shim + JSON store | validated — P1-5 tests |
+| B+ — apply syncs store + shim JSON edit | validated — CI `test/operator-apply.test.ts` (P1-5 B+) |
 | A — Shortcuts.app UI | ☐ pending operator sign-off |
 
 ## References
