@@ -1,4 +1,4 @@
-import { chmod, mkdir, mkdtemp, readdir, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import type { ApplyResult } from "./apply.ts";
@@ -59,6 +59,25 @@ export interface BuildSummary {
   readonly issues: readonly string[];
 }
 
+export type BuildPreview =
+  | { readonly ok: true; readonly summary: BuildSummary }
+  | { readonly ok: false; readonly error: string };
+
+export interface CommandUpsertOptions {
+  readonly dir?: string;
+  readonly write?: boolean;
+  /** Run an isolated strict build of the upserted command before returning. */
+  readonly previewBuild?: boolean;
+  readonly strict?: boolean;
+}
+
+export interface CommandUpsertResult {
+  readonly path: string;
+  readonly preview: string;
+  readonly written: boolean;
+  readonly buildPreview?: BuildPreview;
+}
+
 export class PolycastError extends Error {
   constructor(
     message: string,
@@ -116,12 +135,13 @@ export function polycastTargets(): TargetEntry[] {
   return emitters.map((e) => ({ target: e.target, supports: e.supports }));
 }
 
-export async function polycastBuild(options: PolycastBuildOptions = {}): Promise<BuildSummary> {
-  const dir = options.dir ?? "commands";
+async function buildCommands(
+  commands: readonly CommandDef[],
+  options: PolycastBuildOptions = {},
+): Promise<BuildSummary> {
   const outRoot = resolve(options.out ?? (await mkdtemp(join(tmpdir(), "polycast-build-"))));
   const targets = options.targets ?? emitters.map((e) => e.target);
   const strict = options.strict ?? false;
-  const commands = await loadCommands(dir);
   await writeCommandsJson(commands, join(outRoot, "commands"));
 
   const files: string[] = [];
@@ -166,6 +186,11 @@ export async function polycastBuild(options: PolycastBuildOptions = {}): Promise
   }
 
   return { outRoot, written, skipped, files, issues: [] };
+}
+
+export async function polycastBuild(options: PolycastBuildOptions = {}): Promise<BuildSummary> {
+  const commands = await loadCommands(options.dir ?? "commands");
+  return buildCommands(commands, options);
 }
 
 export async function polycastApply(
@@ -236,18 +261,32 @@ export async function polycastRun(options: PolycastRunOptions): Promise<number> 
   return executeCommand(cmd, { argv: options.argv ?? [], text: options.text });
 }
 
+async function previewBuildForCommand(cmd: CommandDef, strict: boolean): Promise<BuildPreview> {
+  try {
+    const summary = await buildCommands([cmd], { strict });
+    await rm(summary.outRoot, { recursive: true, force: true });
+    return { ok: true, summary };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 export async function polycastCommandUpsert(
   cmd: CommandDef,
-  options: { readonly dir?: string; readonly write?: boolean } = {},
-): Promise<{ readonly path: string; readonly preview: string; readonly written: boolean }> {
+  options: CommandUpsertOptions = {},
+): Promise<CommandUpsertResult> {
   assertValid(cmd);
   const commandsDir = resolve(options.dir ?? "commands");
   const path = join(commandsDir, `${cmd.id}.ts`);
   const preview = commandDefToModule(cmd);
+  const buildPreview = options.previewBuild
+    ? await previewBuildForCommand(cmd, options.strict ?? true)
+    : undefined;
+
   if (options.write) {
     await mkdir(commandsDir, { recursive: true });
     await writeFile(path, preview);
-    return { path, preview, written: true };
+    return { path, preview, written: true, buildPreview };
   }
-  return { path, preview, written: false };
+  return { path, preview, written: false, buildPreview };
 }
