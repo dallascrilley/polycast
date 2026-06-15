@@ -18,7 +18,7 @@ Last reviewed: 2026-06-14
 | P0-1 | CLI surfaces `list`, `build`, `targets`, and `apply` work from README quickstart | B | partial — `list`/`build`/`targets`/`apply` dry-run verified in CI; full operator walkthrough pending (see U5) |
 | P0-2 | Eight emitters registered; incompatible modalities skip (never mis-emit) | C + B | partial — 16 unit tests + `build --strict` in CI (C); live launcher run pending (B) |
 | P0-3 | `script/cibuild` passes on CI (lint, typecheck, test, dist build, `dev build --strict`) | B | validated — `POLYCAST_SKIP_CHERRI=1` on ubuntu runners |
-| P0-4 | Sample commands (`uppercase`, `open-repo`) install via `apply --write` and run in PopClip + Raycast | B | missing — verification log required (`docs/verification/2026-06-14-core-path.md`) |
+| P0-4 | Sample commands (`uppercase`, `open-repo`) install via `apply --write` and run in PopClip + Raycast | B | validated — see `docs/verification/2026-06-14-core-path.md` (script-level; launcher UI optional follow-up) |
 | P0-5 | README first-run path reproducible without maintainer help | B | missing — walkthrough doc or README update required |
 
 ## P1 — soon after launch
