@@ -9,17 +9,9 @@
       "identifier": "link_format",
       "type": "multiple",
       "label": "Link format",
-      "values": [
-        {
-          "value": "markdown",
-          "label": "Markdown link"
-        },
-        {
-          "value": "file_url",
-          "label": "file:// URL only"
-        }
-      ],
-      "default": "markdown"
+      "values": ["markdown", "file_url"],
+      "value labels": ["Markdown link", "file:// URL only"],
+      "default value": "markdown"
     }
   ],
   "actions": [
