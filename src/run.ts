@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeSync } from "node:fs";
 import type { CommandDef } from "./types.ts";
 import { wrappedScript } from "./wrappers.ts";
 
@@ -54,12 +54,37 @@ export function executeCommand(cmd: CommandDef, options: RunOptions): number {
     stdin = text;
   }
 
+  // On a terminal, capture stdout so a body whose output lacks a trailing
+  // newline (`tr`, `printf`, …) cannot leave the shell prompt mid-line. When
+  // stdout is a pipe or file the bytes are inherited untouched, so launcher
+  // shims and scripted callers see exactly what the body wrote.
+  const captureStdout = process.stdout.isTTY === true;
+
   const result = spawnSync("bash", ["-c", scriptBody(cmd), "polycast-run", ...positional], {
     input: stdin,
-    encoding: "utf8",
-    stdio: [stdin !== undefined ? "pipe" : "inherit", "inherit", "inherit"],
+    stdio: [
+      stdin !== undefined ? "pipe" : "inherit",
+      captureStdout ? "pipe" : "inherit",
+      "inherit",
+    ],
   });
 
   if (result.error) throw result.error;
+
+  const out: Uint8Array | null = captureStdout ? result.stdout : null;
+  if (out && out.length > 0) {
+    // writeSync, not process.stdout.write: the CLI exits via process.exit and
+    // an async write to a pipe can be dropped.
+    writeSync(1, out);
+    if (needsTrailingNewline(out)) writeSync(1, "\n");
+  }
+
   return result.status ?? 1;
+}
+
+const LF = 0x0a;
+
+/** True when captured output is non-empty and does not already end in "\n". */
+export function needsTrailingNewline(out: Uint8Array): boolean {
+  return out.length > 0 && out[out.length - 1] !== LF;
 }
