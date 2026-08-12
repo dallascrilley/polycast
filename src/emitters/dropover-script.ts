@@ -1,4 +1,4 @@
-import { POLYCAST_VERSION } from "../constants.ts";
+import { OWNERSHIP_MARKER, POLYCAST_VERSION } from "../constants.ts";
 import { filesRunShim } from "../shim.ts";
 import type { CommandDef, EmittedFile, Emitter, ValidationIssue } from "../types.ts";
 
@@ -16,7 +16,9 @@ export const dropoverScript: Emitter = {
         mode: 0o755,
       },
       {
-        path: `${cmd.id}.polycast-owned`,
+        // Markers are named after the artifact they own (`<file>.polycast-owned`)
+        // so apply's ownership check and prune both resolve them.
+        path: `${cmd.id}.sh${OWNERSHIP_MARKER}`,
         contents: "polycast\n",
       },
     ];
@@ -39,7 +41,12 @@ export const dropoverScript: Emitter = {
       })),
     };
 
-    return [{ path: "manifest.json", contents: `${JSON.stringify(manifest, null, 2)}\n` }];
+    return [
+      { path: "manifest.json", contents: `${JSON.stringify(manifest, null, 2)}\n` },
+      // The manifest is written wholesale by polycast on every build, so it is
+      // polycast-owned: mark it to keep re-apply and prune symmetric.
+      { path: `manifest.json${OWNERSHIP_MARKER}`, contents: "polycast\n" },
+    ];
   },
 
   validate(cmd: CommandDef, files: readonly EmittedFile[]): ValidationIssue[] {

@@ -26,7 +26,7 @@ Options:
   --target    <list>   comma-separated target ids (default: all)
   --strict           fail build on validation warnings/errors
   --write            apply writes to install locations (default: dry-run)
-  --prune            remove polycast-owned artifacts before install
+  --prune            remove polycast-owned artifacts (incl. the JSON body store) before install
   --prune-only       remove polycast-owned artifacts only (skip install)
 
 Environment:

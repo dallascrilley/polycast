@@ -72,7 +72,7 @@ async function pathExists(p: string): Promise<boolean> {
 
 /** True when polycast may overwrite an existing install path. */
 async function isPolycastOwned(dest: string): Promise<boolean> {
-  if (await pathExists(`${dest}.polycast-owned`)) return true;
+  if (await pathExists(`${dest}${OWNERSHIP_MARKER}`)) return true;
   if (await pathExists(join(parentDir(dest), OWNERSHIP_MARKER))) return true;
   const popclipRoot = dest.split(".popclipext")[0];
   if (popclipRoot !== dest) {
@@ -198,7 +198,7 @@ async function applyTarget(target: string, srcDir: string, write: boolean): Prom
       const scriptDest = join(dest, name);
       const fileResult = await installFile(target, join(srcDir, name), scriptDest, write, 0o755);
       results.push(fileResult);
-      const markerDest = join(dest, `${name}.polycast-owned`);
+      const markerDest = join(dest, `${name}${OWNERSHIP_MARKER}`);
       const marker = markerResult(target, fileResult.action, markerDest, write);
       if (marker) {
         await writeMarker(markerDest, fileResult.action, write);
@@ -232,17 +232,23 @@ async function applyTarget(target: string, srcDir: string, write: boolean): Prom
     const dest = dropoverStagingDir();
     const entries = await readdir(srcDir).catch(() => []);
     for (const name of entries) {
-      if (!name.endsWith(".sh") && name !== "manifest.json" && !name.endsWith(".polycast-owned"))
-        continue;
-      results.push(
-        await installFile(
-          target,
-          join(srcDir, name),
-          join(dest, name),
-          write,
-          name.endsWith(".sh") ? 0o755 : undefined,
-        ),
+      // Markers are written per installed artifact below, not copied as files.
+      if (name.endsWith(OWNERSHIP_MARKER)) continue;
+      if (!name.endsWith(".sh") && name !== "manifest.json") continue;
+      const fileResult = await installFile(
+        target,
+        join(srcDir, name),
+        join(dest, name),
+        write,
+        name.endsWith(".sh") ? 0o755 : undefined,
       );
+      results.push(fileResult);
+      const markerDest = join(dest, `${name}${OWNERSHIP_MARKER}`);
+      const marker = markerResult(target, fileResult.action, markerDest, write);
+      if (marker) {
+        await writeMarker(markerDest, fileResult.action, write);
+        results.push(marker);
+      }
     }
     let note = "Import scripts manually in Dropover Settings → Custom Scripts";
     try {
@@ -292,11 +298,11 @@ async function applyTarget(target: string, srcDir: string, write: boolean): Prom
     const dest = agentBinDir();
     const entries = await readdir(srcDir).catch(() => []);
     for (const name of entries) {
-      if (name.endsWith(".polycast-meta.json") || name.endsWith(".polycast-owned")) continue;
+      if (name.endsWith(".polycast-meta.json") || name.endsWith(OWNERSHIP_MARKER)) continue;
       const binDest = join(dest, name);
       const fileResult = await installFile(target, join(srcDir, name), binDest, write, 0o755);
       results.push(fileResult);
-      const markerDest = join(dest, `${name}.polycast-owned`);
+      const markerDest = join(dest, `${name}${OWNERSHIP_MARKER}`);
       const marker = markerResult(target, fileResult.action, markerDest, write);
       if (marker) {
         await writeMarker(markerDest, fileResult.action, write);
@@ -332,8 +338,21 @@ async function applyCommandsJson(outRoot: string, write: boolean): Promise<Apply
       await mkdir(dest, { recursive: true });
       await cp(join(src, name), to, { force: true });
     }
+    // Without a marker the store would be unownable: the next apply --write
+    // would refuse its own files, and prune would leave them behind.
+    const markerDest = `${to}${OWNERSHIP_MARKER}`;
+    const marker = markerResult("commands-store", action, markerDest, write);
+    if (marker) {
+      await writeMarker(markerDest, action, write);
+      results.push(marker);
+    }
   }
   return results;
+}
+
+/** Install root for the JSON command store (bodies shared by every surface). */
+export function commandsStoreInstallDir(): string {
+  return commandsStoreDir();
 }
 
 /** Install root for targets that write to a persistent directory (undefined = UI import only). */
@@ -364,7 +383,7 @@ export async function applyBuilt(options: ApplyOptions): Promise<ApplyResult[]> 
     try {
       await readdir(srcDir);
     } catch {
-      results.push({ target, action: "skip", path: "(no build output)" });
+      results.push({ target, action: "skip", path: "(no build output — nothing to install)" });
       continue;
     }
     results.push(...(await applyTarget(target, srcDir, options.write)));
@@ -377,6 +396,15 @@ export async function applyBuilt(options: ApplyOptions): Promise<ApplyResult[]> 
   return results;
 }
 
+/**
+ * Remove every polycast-written path under `targetDir`.
+ *
+ * Two ownership shapes exist and both must take the artifact with them:
+ * a directory holding a bare `.polycast-owned` marker (PopClip/Dropzone
+ * bundles), and a sidecar `<artifact>.polycast-owned` file next to the
+ * artifact it names (Raycast scripts, agent-cli stubs, Dropover scripts and
+ * their shared manifest.json).
+ */
 export async function pruneOwned(targetDir: string, write: boolean): Promise<string[]> {
   const removed: string[] = [];
   const entries = await readdir(targetDir, { withFileTypes: true }).catch(() => []);
@@ -391,7 +419,19 @@ export async function pruneOwned(targetDir: string, write: boolean): Promise<str
       } catch {
         removed.push(...(await pruneOwned(p, write)));
       }
-    } else if (entry.name.endsWith(".polycast-owned")) {
+    } else if (entry.name === OWNERSHIP_MARKER) {
+      // A bare marker at the top of an install dir owns that dir's contents,
+      // not the dir itself — drop the marker only.
+      if (write) await rm(p, { force: true });
+      removed.push(p);
+    } else if (entry.name.endsWith(OWNERSHIP_MARKER)) {
+      // Sidecar marker: remove the artifact it names first, so an interrupted
+      // prune leaves the marker behind and stays re-runnable.
+      const artifact = p.slice(0, -OWNERSHIP_MARKER.length);
+      if (await pathExists(artifact)) {
+        if (write) await rm(artifact, { recursive: true, force: true });
+        removed.push(artifact);
+      }
       if (write) await rm(p, { force: true });
       removed.push(p);
     }
