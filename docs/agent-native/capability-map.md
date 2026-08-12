@@ -27,4 +27,5 @@ sync `~/.polycast/commands/` on `apply --write`.
 
 ## Implementation
 
-See [docs/plans/2026-06-15-feat-agent-native-mcp-plan.md](../plans/2026-06-15-feat-agent-native-mcp-plan.md).
+Server: `src/mcp/server.ts`. Shared API behind both CLI and MCP:
+`src/polycast-api.ts`. Smoke log: [`../verification/2026-06-15-mcp-smoke.md`](../verification/2026-06-15-mcp-smoke.md).

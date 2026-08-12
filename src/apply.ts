@@ -42,10 +42,11 @@ function commandsStoreDir(): string {
   return expandHome(process.env.POLYCAST_COMMANDS_DIR ?? "~/.polycast/commands");
 }
 
+// Raycast has no fixed script-commands location; the user registers folders in
+// Settings. Default to a polycast-owned dir and let POLYCAST_RAYCAST_DIR point
+// at an existing enabled folder instead.
 function raycastScriptDir(): string {
-  return expandHome(
-    process.env.POLYCAST_RAYCAST_DIR ?? "~/Code/dotfiles/raycast/script-commands/_enabled",
-  );
+  return expandHome(process.env.POLYCAST_RAYCAST_DIR ?? "~/.polycast/raycast");
 }
 
 function dropoverStagingDir(): string {

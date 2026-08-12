@@ -31,7 +31,7 @@ Options:
 
 Environment:
   POLYCAST_SKIP_CHERRI=1     skip Cherri compile step
-  POLYCAST_RAYCAST_DIR       Raycast script install dir
+  POLYCAST_RAYCAST_DIR       Raycast script install dir (default: ~/.polycast/raycast)
   POLYCAST_POPCLIP_EXTENSIONS PopClip extensions dir
   POLYCAST_DROPZONE_ACTIONS  Dropzone Actions folder
   POLYCAST_DROPOVER_SCRIPTS  Dropover staging directory

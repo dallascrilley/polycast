@@ -2,10 +2,13 @@
 
 | Path | Purpose |
 |------|---------|
+| `ARCHITECTURE.md` | Module map, the I/O modality contract, and key decisions. |
+| `DESIGN.md` | The structural insight behind the IR, plus the roadmap. |
+| `specs/` | Per-launcher format research and the destination mapping. |
+| `verification/` | Operator and CI proof for `LAUNCH_CRITERIA.md`. |
 | `decisions/` | Architecture Decision Records (ADRs). One file per decision, numbered. |
-| `solutions/` | Captured solutions to non-obvious problems — write via `ce-compound`, refresh via `ce-compound-refresh`. |
+| `solutions/` | Captured solutions to non-obvious problems. |
 | `lessons.md` | Running log of project learnings. |
-| `todo.md` | Backlog scratchpad (promote durable items to issues). |
 
 ## Conventions
 

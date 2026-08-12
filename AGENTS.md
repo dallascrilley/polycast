@@ -1,7 +1,7 @@
 # AGENTS.md — polycast
 
 Agent-facing contract for this repo. Human docs live in `README.md`; project
-facts live in `PROJECT_CONTEXT.md`.
+facts live in `docs/ARCHITECTURE.md`.
 
 ## Commands (use these, not raw tooling)
 

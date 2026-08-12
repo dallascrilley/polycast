@@ -116,5 +116,5 @@ bun run dev apply --write --target shortcuts-cherri --out ./build \
 ## References
 
 - [Apple Shortcuts spec](../specs/apple-shortcuts.md)
-- [Thin-shim plan](../plans/2026-06-15-feat-shortcuts-cherri-thin-shim-plan.md)
+- [Shortcuts emitter](../../src/emitters/shortcuts-cherri.ts) and [Apple Shortcuts spec](../specs/apple-shortcuts.md)
 - [First-command guide](../guides/first-command.md)

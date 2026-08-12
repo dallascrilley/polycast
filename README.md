@@ -1,37 +1,110 @@
-# polycast
+# polycast — one command definition, cast to every macOS launcher
 
-**One command definition, cast to many macOS launchers.**
+I keep the same small commands in four places. Uppercase the selection, open a
+repo, print the basename of whatever I dragged. Raycast wants a shell script
+with a comment header, PopClip wants a bundle directory, Dropzone wants Ruby,
+Shortcuts wants something else again. I would fix a bug in one and leave the
+other three wrong.
 
-macOS has a sprawl of "do-a-verb" launchers — Raycast script commands, PopClip
-extensions, Dropzone actions, Apple/iOS Shortcuts, plus your own agent CLIs —
-and each one re-implements the same logic in its own format. Edit one, the
-others drift.
+polycast reads one definition and writes the per-launcher artifacts. Each
+definition declares an I/O modality (`text`, `files`, `args`, or `none`), and an
+emitter that cannot represent that modality writes nothing for it instead of
+guessing. That is the rule the whole thing rests on, and it lives in the
+`supports` field on each emitter in [`src/registry.ts`](src/registry.ts).
 
-polycast treats every surface as the same triple — **metadata header + script
-body + I/O contract** — and generates the per-launcher artifacts from a single
-definition. Write a command once; cast it everywhere.
+## What each surface gets
 
-## Repository
+| Surface | Accepts | Generated artifacts |
+|---|---|---|
+| `raycast-script` | `args`, `none` | `<id>.sh` carrying the `@raycast.*` metadata header |
+| `popclip` | `text` | `<id>.popclipext/` holding `Config.json` and `script.sh` |
+| `dropzone` | `files` | `<id>.dzbundle/` holding `action.rb` and `run.sh` |
+| `dropover-script` | `files` | `<id>.sh` plus a shared `manifest.json` |
+| `shortcuts-cherri` | `text`, `args`, `none` | `<id>.cherri` source, compiled when Cherri is installed |
+| `raycast-snippet` | `text`, `none` | shared `snippets.json`, opt in per command via `x.raycast.snippet` |
+| `raycast-quicklink` | `args`, `none` | shared `quicklinks.json`, opt in per command via `x.raycast.quicklink` |
+| `agent-cli` | all four | executable stub plus `<id>.polycast-meta.json` |
 
-[dallascrilley/polycast](https://github.com/dallascrilley/polycast)
+Every emitted artifact is paired with a `.polycast-owned` marker, so `apply
+--prune` removes only files polycast wrote.
+
+## One definition in, eight artifacts out
+
+`commands/uppercase.ts`:
+
+```ts
+import { defineCommand } from "../src/define.ts";
+
+export default defineCommand({
+  id: "uppercase",
+  title: "Uppercase",
+  description: "Convert the selected text to UPPERCASE.",
+  icon: "🔠",
+  modality: "text",
+  author: "polycast",
+  body: {
+    lang: "bash",
+    source: "tr '[:lower:]' '[:upper:]'",
+  },
+});
+```
+
+`bun run dev build --strict`:
+
+```text
+build/
+├── popclip/
+│   └── uppercase.popclipext/
+│       ├── Config.json
+│       ├── script.sh
+│       └── .polycast-owned
+├── shortcuts-cherri/
+│   ├── uppercase.cherri
+│   └── uppercase.polycast-owned
+└── agent-cli/
+    ├── uppercase
+    ├── uppercase.polycast-meta.json
+    └── uppercase.polycast-owned
+```
+
+Three surfaces, eight files. `raycast-script`, `dropzone`, and `dropover-script`
+are skipped on purpose: this command reads a text selection, and none of those
+three can hand it one.
+
+The generated files are shims, not copies of the body. Here is
+`popclip/uppercase.popclipext/script.sh` in full:
+
+```sh
+#!/bin/bash
+set -euo pipefail
+POLYCAST="${POLYCAST_BIN:-polycast}"
+COMMANDS="${POLYCAST_COMMANDS_DIR:-$HOME/.polycast/commands}"
+TEXT="$(cat)"
+exec "$POLYCAST" run --commands "$COMMANDS" uppercase --text "$TEXT"
+```
+
+The body is stored once, as JSON in `~/.polycast/commands/`, which `apply`
+syncs. So changing what a command does is a `build` plus an `apply`, and the
+installed launcher artifacts stay as they are. You only reinstall them when a
+command's metadata or surface list changes.
 
 ## Status
 
-Pre-launch **P0 complete** (2026-06-15). All P0 launch criteria validated including
-PopClip + Raycast Level A — see [`LAUNCH_CRITERIA.md`](LAUNCH_CRITERIA.md).
-P1-5 Shortcuts Level A remains optional follow-up.
+P0 complete as of 2026-06-15. Every P0 criterion is validated, including PopClip
+and Raycast Level A visual proof, in [`LAUNCH_CRITERIA.md`](LAUNCH_CRITERIA.md).
+Level A for Shortcuts is still open and tracked there as P1-5.
 
-Working vertical slice:
+What is not there yet: this is macOS only, Dropover import is staged manually
+rather than programmatically, and the four commands in `commands/` are a sample
+pack rather than a library. The `raycast-snippet` and `raycast-quicklink`
+emitters produce nothing until a command opts in, which is why the sample build
+above writes no `snippets.json`.
 
-- A canonical command IR (`src/types.ts`) with an explicit **I/O modality**
-  (`text | files | args | none`) — the semantic that lets one body render to
-  multiple surfaces and skip the ones it can't represent.
-- A pluggable **emitter registry** (`src/registry.ts`) with eight targets:
-  `raycast-script`, `popclip`, `dropzone`, `dropover-script`, `shortcuts-cherri`,
-  `raycast-snippet`, `raycast-quicklink`, `agent-cli`.
 - CLI: `list`, `build` (`--strict`), `targets`, `apply` (`--write` to install), `run`.
-- **MCP server** (`bun run mcp`): stdio tools mirroring CLI — see [capability map](docs/agent-native/capability-map.md).
-- Platform specs in `docs/specs/`; mapping in `docs/specs/destination-mapping.md`.
+- MCP server (`bun run mcp`): stdio tools mirroring the CLI. See the
+  [capability map](docs/agent-native/capability-map.md).
+- Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Per-launcher
+  format research: `docs/specs/`, mapped in `docs/specs/destination-mapping.md`.
 
 ## Quickstart
 
@@ -46,9 +119,9 @@ bun run mcp                      # start MCP stdio server (Cursor / Claude Deskt
 
 ### MCP (agent-native)
 
-**Cursor:** open this repo — `.cursor/mcp.json` registers the polycast stdio server automatically (reload window after pull).
+**Cursor:** open this repo. `.cursor/mcp.json` registers the polycast stdio server automatically (reload the window after pulling).
 
-Other clients — add to MCP config:
+Other clients, add to your MCP config:
 
 ```json
 {
@@ -94,16 +167,17 @@ Node.js / TypeScript (bun).
 ## Development
 
 - Entrypoints live in `script/` (Scripts to Rule Them All); `just --list` shows them.
-- CI runs `script/cibuild` — run it locally before opening a PR.
+- CI runs `script/cibuild`. Run it locally before opening a PR.
 - `bun test`, `bun run typecheck`, `bun run lint`.
 - `script/test` and CI set `POLYCAST_SKIP_CHERRI=1` so tests skip Cherri compile (structural `.cherri` tests still run). Compile locally: unset the var and run `bun run dev build --target shortcuts-cherri`.
-- See [`AGENTS.md`](AGENTS.md) for the working agreement and
-  [`docs/DESIGN.md`](docs/DESIGN.md) for the architecture and roadmap.
+- See [`AGENTS.md`](AGENTS.md) for the working agreement,
+  [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the module map, and
+  [`docs/DESIGN.md`](docs/DESIGN.md) for the roadmap.
 - Platform specs: [`docs/specs/README.md`](docs/specs/README.md).
 - Research: [`docs/research/2026-06-14-destination-emitters-findings.md`](docs/research/2026-06-14-destination-emitters-findings.md).
 - Verification logs: [`docs/verification/README.md`](docs/verification/README.md).
-- Level A dogfood (launch gate): `./script/dogfood-level-a --install --check-b` — see [`docs/verification/level-a-dogfood.md`](docs/verification/level-a-dogfood.md).
+- Level A dogfood (launch gate): `./script/dogfood-level-a --install --check-b`, documented in [`docs/verification/level-a-dogfood.md`](docs/verification/level-a-dogfood.md).
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE).

@@ -1,8 +1,6 @@
 # Destination emitters — research findings
 
 **Date:** 2026-06-14
-**Plan:** [docs/plans/2026-06-14-feat-destination-emitters-plan.md](../plans/2026-06-14-feat-destination-emitters-plan.md)
-**td epic:** `td-34aff0`
 **Specs index:** [docs/specs/destination-mapping.md](../specs/destination-mapping.md)
 
 Consolidated research from platform spec audit, hub skills (`cherri-language`, `dropover-actions`, `forge`), local Dropover container inspection, and implementation on branch `docs/ci-paths-filter-permission`.

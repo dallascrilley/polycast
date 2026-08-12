@@ -1,9 +1,28 @@
 {
-  "name": "polycast",
+  "name": "@dallascrilley/polycast",
   "version": "0.0.1",
-  "description": "One command definition, cast to many macOS launchers (Raycast, PopClip, Dropzone, Shortcuts, agent tools)",
+  "description": "One command definition, cast to every macOS launcher (Raycast, PopClip, Dropzone, Shortcuts, agent tools)",
   "license": "MIT",
   "type": "module",
+  "keywords": [
+    "macos",
+    "raycast",
+    "popclip",
+    "dropzone",
+    "shortcuts",
+    "launcher",
+    "codegen",
+    "mcp",
+    "typescript"
+  ],
+  "homepage": "https://github.com/dallascrilley/polycast#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dallascrilley/polycast.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dallascrilley/polycast/issues"
+  },
   "bin": {
     "polycast": "./src/cli.ts"
   },
