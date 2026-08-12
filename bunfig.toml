@@ -1,0 +1,6 @@
+# Bun config. The [test] section applies to `bun test` only.
+#
+# test/setup.ts defaults POLYCAST_SKIP_CHERRI=1 so a bare `bun test` never
+# shells out to the real Cherri compiler (slow, and not installed on CI).
+[test]
+preload = ["./test/setup.ts"]

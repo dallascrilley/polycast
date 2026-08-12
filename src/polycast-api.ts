@@ -2,7 +2,7 @@ import { chmod, mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import type { ApplyResult } from "./apply.ts";
-import { applyBuilt, installDirForTarget, pruneOwned } from "./apply.ts";
+import { applyBuilt, commandsStoreInstallDir, installDirForTarget, pruneOwned } from "./apply.ts";
 import { commandDefToModule } from "./command-source.ts";
 import { defaultCommandsDir, loadCommandJson, writeCommandsJson } from "./commands-store.ts";
 import { assertValid } from "./define.ts";
@@ -104,6 +104,31 @@ async function writeEmitted(outRoot: string, target: string, file: EmittedFile):
   await writeFile(dest, file.contents);
   if (file.mode) await chmod(dest, file.mode);
   return `${target}/${file.path}`;
+}
+
+/**
+ * Targets the current command set actually produces build output for.
+ *
+ * Opt-in surfaces (raycast-snippet, raycast-quicklink) and modality-incompatible
+ * surfaces legitimately emit nothing, so a missing build directory for one of
+ * them is a skip, not a broken build. Only a target that *should* have output is
+ * allowed to fail apply --write.
+ */
+async function targetsExpectingOutput(
+  dir: string,
+  targets: readonly string[],
+): Promise<Set<string>> {
+  const commands = await loadCommands(dir);
+  const expected = new Set<string>();
+  for (const cmd of commands) {
+    for (const result of emitCommand(cmd, [...targets])) {
+      if (!result.skipped) expected.add(result.target);
+    }
+  }
+  for (const result of emitCatalogs(commands, [...targets])) {
+    if (!result.skipped) expected.add(result.target);
+  }
+  return expected;
 }
 
 async function validateBuilt(dir: string, targets: readonly string[]): Promise<string[]> {
@@ -217,15 +242,32 @@ export async function polycastApply(
         });
       }
     }
+    // The shared JSON body store is polycast-written too, so an uninstall that
+    // left it behind would not be an uninstall.
+    if (targets.some(targetNeedsCommandsStore)) {
+      for (const p of await pruneOwned(commandsStoreInstallDir(), write)) {
+        results.push({
+          target: "commands-store",
+          action: write ? "prune" : "would prune",
+          path: p,
+        });
+      }
+    }
     if (options.pruneOnly) return { results, refused: 0 };
   }
 
   if (write) {
+    const expected = await targetsExpectingOutput(dir, targets);
     for (const target of targets) {
       try {
         await readdir(join(outRoot, target));
       } catch {
-        throw new PolycastError(`missing build output for ${target}`, "MISSING_BUILD");
+        // Same rule as dry-run: nothing to install for this target is a skip.
+        if (!expected.has(target)) continue;
+        throw new PolycastError(
+          `missing build output for ${target} — run: polycast build --out ${outRoot}`,
+          "MISSING_BUILD",
+        );
       }
     }
     if (targets.some(targetNeedsCommandsStore)) {

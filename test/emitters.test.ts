@@ -102,6 +102,19 @@ describe("dropover-script emitter", () => {
     expect(catalog[0]?.path).toBe("manifest.json");
     expect(catalog[0]?.contents).toContain("basename-files");
   });
+
+  // Regression: the marker was named `<id>.polycast-owned`, which names no
+  // artifact — prune deleted the marker and left the script behind.
+  test("names markers after the artifacts they own", () => {
+    expect(dropoverScript.emit(filesCmd).map((f) => f.path)).toEqual([
+      "basename-files.sh",
+      `basename-files.sh${OWNERSHIP_MARKER}`,
+    ]);
+    expect((dropoverScript.emitCatalog?.([filesCmd]) ?? []).map((f) => f.path)).toEqual([
+      "manifest.json",
+      `manifest.json${OWNERSHIP_MARKER}`,
+    ]);
+  });
 });
 
 describe("dropover import note", () => {
@@ -150,6 +163,47 @@ describe("shortcuts-cherri emitter", () => {
 
   test("skips files commands", () => {
     expect(shortcutsCherri.emit(filesCmd)).toEqual([]);
+  });
+
+  // Regression: `#define name "Uppercase"` made the quotes part of the shortcut
+  // name, so cherri compiled to a file literally called `"Uppercase".shortcut`.
+  test("defines the shortcut name unquoted", () => {
+    const [file] = shortcutsCherri.emit(textCmd);
+    expect(file?.contents.split("\n")[0]).toBe("#define name Uppercase");
+    expect(file?.contents).not.toContain('#define name "');
+  });
+
+  test("collapses a multi-line shortcut name to one define line", () => {
+    const cmd = defineCommand({
+      id: "weird",
+      title: "Weird",
+      description: "weird",
+      modality: "none",
+      x: { shortcuts: { name: "Two  Words\nSecond Line" } },
+      body: { lang: "bash", source: "echo hi" },
+    });
+    const [file] = shortcutsCherri.emit(cmd);
+    expect(file?.contents.split("\n")[0]).toBe("#define name Two Words Second Line");
+  });
+
+  test("validate rejects a quoted #define name", () => {
+    const quoted = [
+      {
+        path: "uppercase.cherri",
+        contents: '#define name "Uppercase"\nrunShellScript run --commands',
+      },
+    ];
+    const issues = shortcutsCherri.validate?.(textCmd, quoted) ?? [];
+    expect(issues.some((i) => i.severity === "error" && i.message.includes("quoted"))).toBe(true);
+  });
+
+  // Markers are resolved by stripping OWNERSHIP_MARKER off the marker name, so
+  // a sidecar must be named after the artifact it owns.
+  test("names its ownership marker after the .cherri file", () => {
+    expect(shortcutsCherri.emit(textCmd).map((f) => f.path)).toEqual([
+      "uppercase.cherri",
+      `uppercase.cherri${OWNERSHIP_MARKER}`,
+    ]);
   });
 });
 

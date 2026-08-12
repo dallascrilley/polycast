@@ -9,14 +9,16 @@
 # Usage: script/polycast list | build | apply | run …
 set -euo pipefail
 
+# `cd` echoes the resolved directory when CDPATH is set, which would be captured
+# alongside pwd. Clear CDPATH and silence cd's stdout in every substitution.
 SELF="${BASH_SOURCE[0]}"
 while [ -L "$SELF" ]; do
-  SELF_DIR="$(cd -P "$(dirname "$SELF")" && pwd)"
+  SELF_DIR="$(CDPATH= cd -P -- "$(dirname "$SELF")" >/dev/null 2>&1 && pwd)"
   SELF="$(readlink "$SELF")"
   [[ "$SELF" != /* ]] && SELF="$SELF_DIR/$SELF"
 done
-SCRIPT_DIR="$(cd -P "$(dirname "$SELF")" && pwd)"
-ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+SCRIPT_DIR="$(CDPATH= cd -P -- "$(dirname "$SELF")" >/dev/null 2>&1 && pwd)"
+ROOT="$(CDPATH= cd -- "$SCRIPT_DIR/.." >/dev/null 2>&1 && pwd)"
 
 if ! command -v bun >/dev/null 2>&1; then
   printf 'error: bun not on PATH — install from https://bun.sh\n' >&2

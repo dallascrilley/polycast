@@ -10,8 +10,10 @@
 # only in script/lib/profile.sh.
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-cd "$ROOT"
+# `cd` prints the resolved directory when CDPATH is set, which would end up
+# inside ROOT. Silence cd's stdout so only pwd is captured.
+ROOT="$(CDPATH= cd -- "$(dirname "${BASH_SOURCE[0]}")/../.." >/dev/null 2>&1 && pwd)"
+CDPATH= cd -- "$ROOT"
 
 log()  { printf '\033[1;34m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33mwarn:\033[0m %s\n' "$*" >&2; }

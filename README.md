@@ -20,15 +20,30 @@ guessing. That is the rule the whole thing rests on, and it lives in the
 | `popclip` | `text` | `<id>.popclipext/` holding `Config.json` and `script.sh` |
 | `dropzone` | `files` | `<id>.dzbundle/` holding `action.rb` and `run.sh` |
 | `dropover-script` | `files` | `<id>.sh` plus a shared `manifest.json` |
-| `shortcuts-cherri` | `text`, `args`, `none` | `<id>.cherri` source, compiled when Cherri is installed |
+| `shortcuts-cherri` | `text`, `args`, `none` | `<id>.cherri` source, compiled to `<id>.shortcut` when Cherri is installed |
 | `raycast-snippet` | `text`, `none` | shared `snippets.json`, opt in per command via `x.raycast.snippet` |
 | `raycast-quicklink` | `args`, `none` | shared `quicklinks.json`, opt in per command via `x.raycast.quicklink` |
 | `agent-cli` | all four | executable stub plus `<id>.polycast-meta.json` |
 
-Every emitted artifact is paired with a `.polycast-owned` marker, so `apply
---prune` removes only files polycast wrote.
+Every installed artifact is paired with a `.polycast-owned` marker — a
+`<artifact>.polycast-owned` sidecar, or one `.polycast-owned` inside a bundle
+directory — so `apply --prune` removes the artifacts polycast wrote and nothing
+else. Compiled `.shortcut` files are the exception in practice: they are
+imported into the Shortcuts app rather than installed to a directory polycast
+owns, so prune can remove the build artifact but never the imported shortcut.
 
-## One definition in, eight artifacts out
+## Requirements
+
+- **macOS.** The launchers, the install paths, and `open`-based import are all macOS.
+- **[bun](https://bun.sh).** Required: it is the runtime, package manager, and
+  test runner. `script/setup` fails fast without it.
+- **[Cherri](https://github.com/electrikmilk/cherri).** Optional, and only for
+  `shortcuts-cherri`: without it the target still emits `<id>.cherri`, and the
+  compile step to `<id>.shortcut` is skipped with a notice. Every other target
+  needs nothing beyond bun. Set `POLYCAST_SKIP_CHERRI=1` to skip the compile
+  even when Cherri is installed.
+
+## One definition in, one build tree out
 
 `commands/uppercase.ts`:
 
@@ -49,27 +64,41 @@ export default defineCommand({
 });
 ```
 
-`bun run dev build --strict`:
+`bun run dev build --dir commands --strict`, with `uppercase.ts` as the only
+file in `commands/` (`--dir <path>` points the build at a different definitions
+directory; the repo's own `commands/` holds four samples, so building it
+produces more than this):
 
 ```text
 build/
+├── commands/
+│   └── uppercase.json
 ├── popclip/
 │   └── uppercase.popclipext/
+│       ├── .polycast-owned
 │       ├── Config.json
-│       ├── script.sh
-│       └── .polycast-owned
+│       └── script.sh
 ├── shortcuts-cherri/
 │   ├── uppercase.cherri
-│   └── uppercase.polycast-owned
+│   ├── uppercase.cherri.polycast-owned
+│   ├── uppercase.shortcut
+│   └── uppercase.shortcut.polycast-owned
 └── agent-cli/
     ├── uppercase
     ├── uppercase.polycast-meta.json
     └── uppercase.polycast-owned
 ```
 
-Three surfaces, eight files. `raycast-script`, `dropzone`, and `dropover-script`
-are skipped on purpose: this command reads a text selection, and none of those
-three can hand it one.
+Three surfaces, eleven files — nine without Cherri installed, which drops
+`uppercase.shortcut` and its marker. `commands/uppercase.json` is the body
+store, not a launcher artifact: `apply` syncs it to `~/.polycast/commands/` and
+every generated shim reads the body from there.
+
+`raycast-script`, `dropzone`, and `dropover-script` are skipped on purpose: this
+command reads a text selection, and none of those three can hand it one.
+`raycast-snippet` and `raycast-quicklink` are skipped too — they are opt-in per
+command (`x.raycast.snippet` / `x.raycast.quicklink`) and this one does not opt
+in, so they emit no directory at all and `apply` reports them as skipped.
 
 The generated files are shims, not copies of the body. Here is
 `popclip/uppercase.popclipext/script.sh` in full:
@@ -169,7 +198,7 @@ Node.js / TypeScript (bun).
 - Entrypoints live in `script/` (Scripts to Rule Them All); `just --list` shows them.
 - CI runs `script/cibuild`. Run it locally before opening a PR.
 - `bun test`, `bun run typecheck`, `bun run lint`.
-- `script/test` and CI set `POLYCAST_SKIP_CHERRI=1` so tests skip Cherri compile (structural `.cherri` tests still run). Compile locally: unset the var and run `bun run dev build --target shortcuts-cherri`.
+- Tests never shell out to Cherri: `bunfig.toml` preloads `test/setup.ts`, which defaults `POLYCAST_SKIP_CHERRI=1` for `bun test`, `script/test`, and CI alike (structural `.cherri` tests still run). Compile locally with `POLYCAST_SKIP_CHERRI=0 bun run dev build --target shortcuts-cherri`.
 - See [`AGENTS.md`](AGENTS.md) for the working agreement,
   [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the module map, and
   [`docs/DESIGN.md`](docs/DESIGN.md) for the roadmap.
