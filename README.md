@@ -261,9 +261,7 @@ Node.js / TypeScript (bun).
 - CI runs `script/cibuild`. Run it locally before opening a PR.
 - `bun test`, `bun run typecheck`, `bun run lint`.
 - Tests never shell out to Cherri: `bunfig.toml` preloads `test/setup.ts`, which defaults `POLYCAST_SKIP_CHERRI=1` for `bun test`, `script/test`, and CI alike (structural `.cherri` tests still run). Compile locally with `POLYCAST_SKIP_CHERRI=0 bun run dev build --target shortcuts-cherri`.
-- See [`AGENTS.md`](AGENTS.md) for the working agreement,
-  [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the module map, and
-  [`docs/DESIGN.md`](docs/DESIGN.md) for the roadmap.
+- See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the module map and [`docs/DESIGN.md`](docs/DESIGN.md) for the roadmap.
 - Platform specs: [`docs/specs/README.md`](docs/specs/README.md).
 - Research: [`docs/research/2026-06-14-destination-emitters-findings.md`](docs/research/2026-06-14-destination-emitters-findings.md).
 - Verification logs: [`docs/verification/README.md`](docs/verification/README.md).
