@@ -169,12 +169,16 @@ async function buildCommands(
   const outRoot = resolve(options.out ?? (await mkdtemp(join(tmpdir(), "polycast-build-"))));
   const targets = options.targets ?? emitters.map((e) => e.target);
   const strict = options.strict ?? false;
-  await writeCommandsJson(commands, join(outRoot, "commands"));
-
   const files: string[] = [];
   let written = 0;
   let skipped = 0;
   const issues: string[] = [];
+
+  // The JSON body store is build output like anything else, so it counts.
+  for (const name of await writeCommandsJson(commands, join(outRoot, "commands"))) {
+    files.push(`commands/${name}`);
+    written++;
+  }
 
   for (const cmd of commands) {
     for (const result of emitCommand(cmd, targets)) {
@@ -195,7 +199,13 @@ async function buildCommands(
         written++;
       }
       if (result.target === "shortcuts-cherri") {
-        await compileCherriArtifacts(join(outRoot, result.target), result.files);
+        // Compiled .shortcut files and their markers are written here, after
+        // the emitter ran, so they have to be counted here too.
+        const compiled = await compileCherriArtifacts(join(outRoot, result.target), result.files);
+        for (const path of compiled) {
+          files.push(`${result.target}/${path}`);
+          written++;
+        }
       }
     }
   }

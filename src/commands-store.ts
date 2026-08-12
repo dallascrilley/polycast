@@ -13,15 +13,25 @@ export function defaultCommandsDir(outRoot: string): string {
   return join(resolve(outRoot), "commands");
 }
 
+/**
+ * Write the JSON body store.
+ *
+ * Returns each file name written, relative to `dir`, so callers can report
+ * these in a build summary. They are real build output, not a side effect.
+ */
 export async function writeCommandsJson(
   commands: readonly CommandDef[],
   dir: string,
-): Promise<void> {
+): Promise<string[]> {
   const root = resolve(dir);
   await mkdir(root, { recursive: true });
+  const written: string[] = [];
   for (const cmd of commands) {
-    await writeFile(join(root, `${cmd.id}.json`), `${JSON.stringify(cmd, null, 2)}\n`);
+    const name = `${cmd.id}.json`;
+    await writeFile(join(root, name), `${JSON.stringify(cmd, null, 2)}\n`);
+    written.push(name);
   }
+  return written;
 }
 
 export async function loadCommandJson(id: string, dir: string): Promise<CommandDef> {

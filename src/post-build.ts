@@ -13,24 +13,31 @@ function cherriAvailable(): boolean {
   }
 }
 
-/** Compile .cherri files to .shortcut when cherri is available. */
+/**
+ * Compile .cherri files to .shortcut when cherri is available.
+ *
+ * Returns every path this wrote, relative to `targetDir`, so the build summary
+ * can count the compiled `.shortcut` files and their ownership markers. They
+ * are build output the emitter itself never sees.
+ */
 export async function compileCherriArtifacts(
   targetDir: string,
   files: readonly EmittedFile[],
-): Promise<void> {
+): Promise<string[]> {
   if (process.env.POLYCAST_SKIP_CHERRI === "1") {
     console.log("skip  cherri compile (POLYCAST_SKIP_CHERRI=1)");
-    return;
+    return [];
   }
 
   const cherriFiles = files.filter((f) => f.path.endsWith(".cherri"));
-  if (cherriFiles.length === 0) return;
+  if (cherriFiles.length === 0) return [];
 
   if (!cherriAvailable()) {
     console.log("skip  cherri compile (cherri not on PATH)");
-    return;
+    return [];
   }
 
+  const written: string[] = [];
   for (const file of cherriFiles) {
     const src = join(targetDir, file.path);
     const cwd = join(targetDir, file.path.includes("/") ? file.path.replace(/\/[^/]+$/, "") : "");
@@ -63,5 +70,10 @@ export async function compileCherriArtifacts(
       }
     }
     await writeFile(join(workDir, `${outName}${OWNERSHIP_MARKER}`), "polycast\n");
+    // Report paths the same way emitted files are reported: relative to the
+    // target directory, so a nested .cherri source keeps its subdirectory.
+    const prefix = file.path.includes("/") ? `${file.path.replace(/\/[^/]+$/, "")}/` : "";
+    written.push(`${prefix}${outName}`, `${prefix}${outName}${OWNERSHIP_MARKER}`);
   }
+  return written;
 }
