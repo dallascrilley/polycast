@@ -43,6 +43,17 @@ owns, so prune can remove the build artifact but never the imported shortcut.
   needs nothing beyond bun. Set `POLYCAST_SKIP_CHERRI=1` to skip the compile
   even when Cherri is installed.
 
+With Cherri installed, a default build prints one compile warning:
+
+```text
+Warning: Value for action argument 'inputType' is the same as the default value.
+```
+
+It comes from the `open-repo` sample command, whose generated `prompt(...)` call
+passes the `inputType` Cherri would have used anyway. The compile succeeds and
+the `.shortcut` is correct, so a clean build is a build with that one warning in
+it and nothing else.
+
 ## One definition in, one build tree out
 
 `commands/uppercase.ts`:
@@ -129,7 +140,8 @@ pack rather than a library. The `raycast-snippet` and `raycast-quicklink`
 emitters produce nothing until a command opts in, which is why the sample build
 above writes no `snippets.json`.
 
-- CLI: `list`, `build` (`--strict`), `targets`, `apply` (`--write` to install), `run`.
+- CLI: `list`, `build` (`--strict`), `targets`, `apply` (`--write` to install,
+  `--prune` / `--prune-only` to uninstall), `run`.
 - MCP server (`bun run mcp`): stdio tools mirroring the CLI. See the
   [capability map](docs/agent-native/capability-map.md).
 - Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Per-launcher
@@ -188,6 +200,56 @@ Verify: `polycast list` or `script/polycast list`.
 Commands live in `commands/*.ts`, each default-exporting a `CommandDef` via
 `defineCommand(...)`. Sample pack: [`commands/README.md`](commands/README.md).
 Walkthrough: [`docs/guides/first-command.md`](docs/guides/first-command.md).
+
+## Where apply writes
+
+`apply` is a dry run by default and only prints what it would do. `apply
+--write` installs into the real launcher directories below, so a `--write` run
+changes live launcher configuration on the machine it runs on. Every one of
+those paths has an environment override, and I point them at a scratch
+directory whenever I want to exercise the install path without touching my own
+setup.
+
+| Target | Override | Default |
+|---|---|---|
+| `raycast-script` | `POLYCAST_RAYCAST_DIR` | `~/.polycast/raycast` |
+| `popclip` | `POLYCAST_POPCLIP_EXTENSIONS` | `~/Library/Application Support/PopClip/Extensions` |
+| `dropzone` | `POLYCAST_DROPZONE_ACTIONS` | `~/Library/Application Support/Dropzone 5/Actions` |
+| `dropover-script` | `POLYCAST_DROPOVER_SCRIPTS` | `~/Library/Containers/me.damir.dropover-mac/Data/Documents/.polycast-scripts` |
+| `agent-cli` | `POLYCAST_AGENT_BIN` | `~/.agents/tools` |
+| JSON body store | `POLYCAST_COMMANDS_DIR` | `~/.polycast/commands` |
+
+```sh
+POLYCAST_POPCLIP_EXTENSIONS=/tmp/pc-sandbox/pc \
+POLYCAST_AGENT_BIN=/tmp/pc-sandbox/bin \
+POLYCAST_COMMANDS_DIR=/tmp/pc-sandbox/cmds \
+  bun run dev apply --target popclip,agent-cli --write
+```
+
+`shortcuts-cherri` is the one target with no such override. `apply --write`
+hands each compiled `.shortcut` to the Shortcuts app with `open`, which imports
+it into the live Shortcuts library, and there is no directory to redirect that
+at. This is why `POLYCAST_SKIP_CHERRI=1` exists: with the compile skipped there
+is no `.shortcut` for apply to import, which is what CI and the test suite rely
+on.
+
+### Uninstalling
+
+`apply --prune` removes the artifacts polycast installed and then installs the
+current build. `apply --prune-only` removes them and stops. Both follow the same
+dry-run rule as apply, so add `--write` to actually delete anything:
+
+```sh
+bun run dev apply --prune-only            # list what would be removed
+bun run dev apply --prune-only --write    # remove it
+```
+
+Prune walks the `.polycast-owned` markers described above, so it removes only
+the files polycast wrote, plus the JSON body store. Anything else in those
+directories is left alone: a hand-written PopClip extension sitting next to a
+generated one survives the prune. The exception is a `.shortcut` already
+imported into the Shortcuts app. Prune can delete the build artifact, but
+removing the imported shortcut is a manual step in the app.
 
 ## Stack
 

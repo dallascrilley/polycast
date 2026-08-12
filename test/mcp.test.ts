@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { commandDefToModule } from "../src/command-source.ts";
@@ -40,6 +40,21 @@ describe("polycast-api", () => {
       expect(summary.written).toBeGreaterThan(0);
       expect(summary.files.length).toBe(summary.written);
       expect(summary.outRoot).toContain("polycast-build-");
+    } finally {
+      await rm(summary.outRoot, { recursive: true, force: true });
+    }
+  });
+
+  test("polycastBuild counts every file it writes, body store included", async () => {
+    const summary = await polycastBuild({ dir: "commands" });
+    try {
+      const entries = await readdir(summary.outRoot, { recursive: true, withFileTypes: true });
+      const onDisk = entries.filter((e) => e.isFile()).length;
+      // The summary is what the CLI prints, so it has to match the build tree.
+      expect(summary.written).toBe(onDisk);
+      expect(summary.files.length).toBe(summary.written);
+      // The JSON body store used to be written without being counted.
+      expect(summary.files).toContain("commands/uppercase.json");
     } finally {
       await rm(summary.outRoot, { recursive: true, force: true });
     }
