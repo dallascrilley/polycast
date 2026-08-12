@@ -1,9 +1,15 @@
+import { OWNERSHIP_MARKER } from "../constants.ts";
 import { shortcutsArgsShim, shortcutsNoneShim, shortcutsTextShim } from "../shim.ts";
 import type { CommandArg, CommandDef, EmittedFile, Emitter, ValidationIssue } from "../types.ts";
 import { escapeCherriString } from "../wrappers.ts";
 
 function cherriPromptType(arg: CommandArg): "Text" | "Number" {
   return arg.type === "password" ? "Text" : "Text";
+}
+
+/** A `#define` value is the rest of the line, unquoted: collapse to one line. */
+function cherriDefineValue(raw: string): string {
+  return raw.replace(/\s+/g, " ").trim();
 }
 
 function argsSupported(cmd: CommandDef): boolean {
@@ -51,8 +57,11 @@ export const shortcutsCherri: Emitter = {
     if (!this.supports.includes(cmd.modality)) return [];
     if (!argsSupported(cmd)) return [];
 
-    const name = cmd.x?.shortcuts?.name ?? cmd.title;
-    const lines: string[] = [`#define name "${name.replace(/"/g, '\\"')}"`];
+    // Cherri `#define name` takes the rest of the line verbatim: quoting it
+    // makes the quotes part of the shortcut name *and* of the compiled
+    // `<name>.shortcut` filename. Pass the raw name, collapsed to one line.
+    const name = cherriDefineValue(cmd.x?.shortcuts?.name ?? cmd.title);
+    const lines: string[] = [`#define name ${name}`];
 
     if (cmd.x?.shortcuts?.color) lines.push(`#define color ${cmd.x.shortcuts.color}`);
     if (cmd.x?.shortcuts?.glyph) lines.push(`#define glyph ${cmd.x.shortcuts.glyph}`);
@@ -73,7 +82,7 @@ export const shortcutsCherri: Emitter = {
 
     return [
       { path: `${cmd.id}.cherri`, contents: lines.join("\n") },
-      { path: `${cmd.id}.polycast-owned`, contents: "polycast\n" },
+      { path: `${cmd.id}.cherri${OWNERSHIP_MARKER}`, contents: "polycast\n" },
     ];
   },
 
@@ -87,6 +96,14 @@ export const shortcutsCherri: Emitter = {
       issues.push({
         target: this.target,
         message: "cherri missing runShellScript",
+        severity: "error",
+      });
+    }
+    const nameLine = cherri.contents.split("\n").find((l) => l.startsWith("#define name "));
+    if (nameLine && /^#define name\s+["']/.test(nameLine)) {
+      issues.push({
+        target: this.target,
+        message: "quoted #define name — quotes land in the shortcut name and compiled filename",
         severity: "error",
       });
     }
