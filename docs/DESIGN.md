@@ -1,7 +1,6 @@
 # polycast — Design
 
-Derived from the ideation artifact
-`~/.dotfiles/docs/ideation/2026-06-14-unified-launcher-command-generator.md`.
+Architecture and module map: [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ## The structural insight
 
@@ -62,7 +61,7 @@ commands/*.ts ──load──> CommandDef[] ──registry──> emitters[] �
 ## Roadmap
 
 1. ~~**Agent-native registry** (#6)~~ — shipped (MCP stdio server, PR #9).
-2. **Dropover programmatic import** — **closed (opaque)**; staging + manifest until API documented ([research](../research/2026-06-15-dropover-import-findings.md)).
+2. **Dropover programmatic import** — **closed (opaque)**; staging + manifest until API documented ([research](research/2026-06-15-dropover-import-findings.md)).
 3. ~~**Extend thin-shim dispatcher** to Raycast/PopClip/Dropzone emitters.~~
 4. **Operator verification** — P1-2 in `LAUNCH_CRITERIA.md` (Dropzone + agent-cli `apply --write` on a real Mac).
 

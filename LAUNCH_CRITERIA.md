@@ -38,6 +38,6 @@ Last reviewed: 2026-06-15
 
 ## References
 
-- Core value path: `docs/whats-next/2026-06-14.md`
+- Architecture: `docs/ARCHITECTURE.md`
 - Platform mapping: `docs/specs/destination-mapping.md`
-- Launch readiness plan: `docs/plans/2026-06-14-feat-launch-readiness-plan.md`
+- Verification logs: `docs/verification/README.md`

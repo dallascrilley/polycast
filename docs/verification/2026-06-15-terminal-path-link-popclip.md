@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-15
 **Feature:** `extensions/terminal-path-link.popclipext`
-**Plan:** [2026-06-15-feat-terminal-path-link-popclip-plan.md](../plans/2026-06-15-feat-terminal-path-link-popclip-plan.md)
+**Extension:** [`extensions/terminal-path-link.popclipext`](../../extensions/terminal-path-link.popclipext/README.md)
 **Proof level:** B (shell contract) + A (PopClip UI in supported terminal)
 
 Standalone PopClip extension — not wired through polycast `apply`. Resolves a
@@ -43,10 +43,11 @@ TERMINAL_PATH_LINK_CWD="$PWD" POPCLIP_TEXT=docs/agent-native/capability-map.md \
   extensions/terminal-path-link.popclipext/resolve-link.sh
 ```
 
-**Example output (2026-06-15):**
+**Example output (2026-06-15)** — the absolute path is `$PWD` at run time, shown
+here as `<repo>`:
 
 ```text
-[docs/agent-native/capability-map.md](file:///Users/dallascrilley/Code/polycast/docs/agent-native/capability-map.md)
+[docs/agent-native/capability-map.md](file:///<repo>/docs/agent-native/capability-map.md)
 ```
 
 Unsupported host (e.g. Cursor frontmost):

@@ -117,7 +117,7 @@ Override destinations with env vars (see mapping doc):
 | Variable | Default role |
 |----------|--------------|
 | `POLYCAST_POPCLIP_EXTENSIONS` | PopClip extensions folder |
-| `POLYCAST_RAYCAST_DIR` | Raycast script commands dir |
+| `POLYCAST_RAYCAST_DIR` | Raycast script commands dir (`~/.polycast/raycast`; register it in Raycast → Settings → Extensions → Scripts) |
 | `POLYCAST_DROPZONE_ACTIONS` | Dropzone actions folder |
 | `POLYCAST_AGENT_BIN` | Agent CLI binaries (`~/.agents/tools/`) |
 
