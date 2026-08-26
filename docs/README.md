@@ -5,6 +5,7 @@
 | `ARCHITECTURE.md` | Module map, the I/O modality contract, and key decisions. |
 | `DESIGN.md` | The structural insight behind the IR, plus the roadmap. |
 | `specs/` | Per-launcher format research and the destination mapping. |
+| `guides/runner.md` | RunnerDef authoring and the build-only Orca boundary. |
 | `verification/` | Operator and CI proof for `LAUNCH_CRITERIA.md`. |
 | `decisions/` | Architecture Decision Records (ADRs). One file per decision, numbered. |
 | `solutions/` | Captured solutions to non-obvious problems. |

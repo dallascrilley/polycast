@@ -1,6 +1,6 @@
 {
   "name": "@dallascrilley/polycast",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "One command definition, cast to every macOS launcher (Raycast, PopClip, Dropzone, Shortcuts, agent tools)",
   "license": "MIT",
   "type": "module",
@@ -33,7 +33,9 @@
     "lint": "biome check .",
     "format": "biome format --write .",
     "typecheck": "tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test",
+    "check:version": "bun run script/check-version",
+    "package-smoke": "bun run script/package-smoke"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.0",

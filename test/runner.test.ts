@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { POLYCAST_VERSION } from "../src/constants.ts";
 import { polycastRunnerBuild, polycastRunnerList } from "../src/runner-api.ts";
 import { defineRunner } from "../src/runners/define.ts";
 import {
@@ -17,7 +18,7 @@ const sample = defineRunner({
   publisher: "example",
   title: "Review prompts",
   description: "Generic prompts for reviewing a worktree.",
-  version: "0.1.0",
+  version: POLYCAST_VERSION,
   engine: ">=1.4.188",
   commands: [
     {
@@ -103,7 +104,7 @@ describe("Orca plugin runner emission", () => {
       id: "review-prompts",
       publisher: "example",
       name: "Review prompts",
-      version: "0.1.0",
+      version: POLYCAST_VERSION,
       description: "Generic prompts for reviewing a worktree.",
       engines: { orca: ">=1.4.188" },
       pluginApi: 1,

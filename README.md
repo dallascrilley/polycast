@@ -145,6 +145,8 @@ above writes no `snippets.json`.
   `--prune` / `--prune-only` to uninstall), `run`.
 - MCP server (`bun run mcp`): stdio tools mirroring the CLI. See the
   [capability map](docs/agent-native/capability-map.md).
+- Orca runners: `runner list` and build-only `runner build` emit validated
+  plugin bundles. See the [RunnerDef and Orca guide](docs/guides/runner.md).
 - Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Per-launcher
   format research: `docs/specs/`, mapped in `docs/specs/destination-mapping.md`.
 
@@ -156,6 +158,8 @@ bun run dev list                 # show commands + which surfaces each supports
 bun run dev build                # emit artifacts into ./build/<target>/
 bun run dev build --target popclip
 bun run dev targets              # list registered emitters
+bun run dev runner list          # list RunnerDef files
+bun run dev runner build         # emit Orca plugin bundles into ./build/
 bun run mcp                      # start MCP stdio server (Cursor / Claude Desktop)
 ```
 
@@ -259,6 +263,8 @@ Node.js / TypeScript (bun).
 
 - Entrypoints live in `script/` (Scripts to Rule Them All); `just --list` shows them.
 - CI runs `script/cibuild`. Run it locally before opening a PR.
+- `script/cibuild` also checks package/runtime/MCP version consistency and
+  smoke-tests the packed npm artifact without publishing it.
 - `bun test`, `bun run typecheck`, `bun run lint`.
 - Tests never shell out to Cherri: `bunfig.toml` preloads `test/setup.ts`, which defaults `POLYCAST_SKIP_CHERRI=1` for `bun test`, `script/test`, and CI alike (structural `.cherri` tests still run). Compile locally with `POLYCAST_SKIP_CHERRI=0 bun run dev build --target shortcuts-cherri`.
 - See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the module map and [`docs/DESIGN.md`](docs/DESIGN.md) for the roadmap.
