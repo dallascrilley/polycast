@@ -47,6 +47,15 @@ const languageDispatchCommands = [
   }),
 ];
 
+const echoArgs = defineCommand({
+  id: "echo-args",
+  title: "Echo Arguments",
+  description: "echo arguments",
+  modality: "args",
+  args: [{ name: "value", optional: true }],
+  body: { lang: "bash", source: 'printf "<%s>\\n" "$@"' },
+});
+
 describe("commands JSON store", () => {
   test("round-trips command defs for polycast run", async () => {
     const dir = await mkdtemp(join(tmpdir(), "polycast-cmdstore-"));
@@ -68,6 +77,71 @@ describe("commands JSON store", () => {
 });
 
 describe("polycast run integration", () => {
+  test("forwards arguments after -- literally", async () => {
+    const { spawnSync } = await import("node:child_process");
+    const out = await mkdtemp(join(tmpdir(), "polycast-run-separator-"));
+    const commandsDir = join(out, "commands");
+    try {
+      await writeCommandsJson([echoArgs], commandsDir);
+      const result = spawnSync(
+        "bun",
+        [
+          "run",
+          "src/cli.ts",
+          "run",
+          "echo-args",
+          "--commands",
+          commandsDir,
+          "--",
+          "--target",
+          "--strict",
+        ],
+        { cwd: process.cwd(), encoding: "utf8" },
+      );
+      expect(result.status).toBe(0);
+      expect(result.stdout).toBe("<--target>\n<--strict>\n");
+      expect(result.stderr).toBe("");
+    } finally {
+      await rm(out, { recursive: true, force: true });
+    }
+  });
+
+  test("keeps run globals before -- while using the default command store", async () => {
+    const { spawnSync } = await import("node:child_process");
+    const out = await mkdtemp(join(tmpdir(), "polycast-run-separator-out-"));
+    try {
+      await writeCommandsJson([echoArgs], join(out, "commands"));
+      const result = spawnSync(
+        "bun",
+        ["run", "src/cli.ts", "run", "echo-args", "--out", out, "--", "--target", "--strict"],
+        { cwd: process.cwd(), encoding: "utf8" },
+      );
+      expect(result.status).toBe(0);
+      expect(result.stdout).toBe("<--target>\n<--strict>\n");
+      expect(result.stderr).toBe("");
+    } finally {
+      await rm(out, { recursive: true, force: true });
+    }
+  });
+
+  test("keeps parsing globals after -- for non-run subcommands", async () => {
+    const { spawnSync } = await import("node:child_process");
+    const out = await mkdtemp(join(tmpdir(), "polycast-build-separator-"));
+    try {
+      const result = spawnSync(
+        "bun",
+        ["run", "src/cli.ts", "build", "--out", out, "--", "--target", "agent-cli"],
+        { cwd: process.cwd(), encoding: "utf8" },
+      );
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain("emit  agent-cli/basename-files");
+      expect(result.stdout).not.toContain("emit popclip/");
+      expect(result.stderr).toBe("");
+    } finally {
+      await rm(out, { recursive: true, force: true });
+    }
+  });
+
   test("run executes JSON body; stub unchanged after body edit", async () => {
     const { spawnSync } = await import("node:child_process");
     const out = await mkdtemp(join(tmpdir(), "polycast-run-int-"));
