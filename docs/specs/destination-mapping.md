@@ -1,6 +1,6 @@
 # Destination mapping (IR → platform)
 
-**Date:** 2026-06-14
+**Last reviewed:** 2026-08-26
 **IR:** [`src/types.ts`](../../src/types.ts) `CommandDef` + `Modality` + `x.*`
 
 ## Core field mapping
@@ -27,6 +27,7 @@
 
 ```
 build/
+  commands/<id>.json              # shared JSON body store
   raycast-script/<id>.sh
   popclip/<id>.popclipext/
   dropzone/<id>.dzbundle/
@@ -40,13 +41,17 @@ build/
   agent-cli/<id>.polycast-meta.json
 ```
 
-Each installed artifact includes `.polycast-owned` marker on `apply`.
+Persistent installs receive ownership markers on `apply`. File artifacts use a
+sidecar named `<artifact>.polycast-owned`. PopClip and Dropzone bundles use one
+`.polycast-owned` file inside the bundle directory. The JSON body store uses a
+sidecar for each `commands/<id>.json` file. Shortcuts and Raycast catalog files
+are imported or handled manually, so they are not persistent directory installs.
 
 ## Apply install map
 
 | Target | Default install path | Reload |
 |--------|---------------------|--------|
-| raycast-script | `POLYCAST_RAYCAST_DIR` or `./build/raycast-script` (document only) | Raycast rescans script dirs |
+| raycast-script | `POLYCAST_RAYCAST_DIR` or `~/.polycast/raycast` | Register the directory in Raycast, then let Raycast rescan it |
 | popclip | `~/Library/Application Support/PopClip/Extensions/` | double-click or copy bundle |
 | dropzone | `POLYCAST_DROPZONE_ACTIONS` (DZ4/DZ5 paths) | Dropzone rescans Actions |
 | dropover-script | container `Documents/.polycast-scripts/` + manifest | manual Settings import |
@@ -55,10 +60,28 @@ Each installed artifact includes `.polycast-owned` marker on `apply`.
 
 ## Cherri post-build
 
-After writing `.cherri` files, `polycast build` runs `cherri <path>` when:
+After writing `.cherri` files, `polycast build` runs Cherri only when both
+conditions hold:
 
-- `cherri` on PATH
-- `POLYCAST_SKIP_CHERRI` unset
+- `POLYCAST_SKIP_CHERRI` is not exactly `1`. Unset and other values do not skip
+  the compile.
+- `cherri` is on PATH.
+
+The compiler writes `<id>.shortcut` beside the `.cherri` source. `apply
+--write` opens each compiled file for import in Shortcuts.app. `apply --prune`
+does not remove the imported shortcut or the compiled file under `build/`.
+
+## Shared body store and pruning
+
+Dispatcher targets read their body from
+`POLYCAST_COMMANDS_DIR`, which defaults to `~/.polycast/commands` on apply.
+`apply --write` copies `build/commands/<id>.json` there, so editing the body
+requires a new build and apply but does not require a new launcher-specific
+wrapper.
+
+`apply --prune-only` previews removal of marked files. Add `--write` to remove
+them. Pruning scans persistent install roots and the shared JSON body store. It
+leaves foreign files, imported Shortcuts, and build output alone.
 
 ## Dropover manifest schema
 
@@ -83,4 +106,4 @@ After writing `.cherri` files, `polycast build` runs `cherri <path>` when:
 - **forge:** single-tool lifecycle (`forge new`, `wrap`, `install --target raycast`, `promote`)
 - **Integration:** agent-cli output is forge-wrap compatible; do not duplicate forge Raycast install for polycast-managed commands
 
-See also [`docs/DESIGN.md`](../DESIGN.md).
+See also [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md).

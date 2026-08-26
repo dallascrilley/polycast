@@ -5,7 +5,7 @@ to a launcher. Assumes you have run `script/setup` (or `just setup`).
 
 ## Sample pack
 
-Three built-in commands cover every modality polycast ships today:
+Four built-in commands cover every modality polycast ships today:
 
 | Command | Modality | Surfaces | File |
 |---------|----------|----------|------|
@@ -20,8 +20,9 @@ List what your checkout supports:
 bun run dev list
 ```
 
-Each row shows modality and compatible emitters. If a surface is missing, the
-modality or hints do not match — see [`docs/specs/destination-mapping.md`](../specs/destination-mapping.md).
+Each row shows the modality and compatible emitters. If a surface is missing,
+the modality or hints do not match. See the
+[`destination mapping`](../specs/destination-mapping.md).
 
 ## 1. Choose modality
 
@@ -71,12 +72,14 @@ For Raycast-only hints (silent mode, package name):
 ```sh
 bun run dev build                      # all targets → ./build/<target>/
 bun run dev build --target popclip     # one emitter
-bun run dev build --strict             # fail if any command skips a target
+bun run dev build --strict             # fail on emitter validation issues
 ```
 
-Inspect `./build/` — each emitter writes its native format (`.popclipext`,
-`.sh`, `.dzbundle`, etc.). Shortcuts emit `.cherri`; compiled `.shortcut` appears
-when `cherri` is on PATH (CI sets `POLYCAST_SKIP_CHERRI=1`).
+Inspect `./build/`. Each emitter writes its native format (`.popclipext`, `.sh`,
+`.dzbundle`, and others). The build also writes
+`./build/commands/<id>.json`, which installed dispatcher shims read at runtime.
+Shortcuts emit `.cherri`. A compiled `.shortcut` appears when `cherri` is on
+PATH unless `POLYCAST_SKIP_CHERRI=1`.
 
 ## 4. Run without installing
 
@@ -109,8 +112,10 @@ bun run dev apply --write --target popclip,agent-cli
 `export POLYCAST_BIN=/absolute/path/to/polycast` when Shortcuts or other sandboxes
 cannot see your shell PATH. See README *Install on PATH*.
 
-**Shortcuts:** first `apply --write` after thin-shim upgrade opens `.shortcut` for
-one-time re-import; edit `~/.polycast/commands/<id>.json` afterward without recompile.
+**Shortcuts:** `apply --write` opens each compiled `.shortcut` for import. After
+the thin shim is imported, body edits take effect from
+`~/.polycast/commands/<id>.json`; rebuild and apply when the shortcut metadata
+or wrapper changes.
 
 Override destinations with env vars (see mapping doc):
 
@@ -121,8 +126,9 @@ Override destinations with env vars (see mapping doc):
 | `POLYCAST_DROPZONE_ACTIONS` | Dropzone actions folder |
 | `POLYCAST_AGENT_BIN` | Agent CLI binaries (`~/.agents/tools/`) |
 
-Installed artifacts get a `.polycast-owned` marker. Re-apply updates in place;
-`polycast prune` removes only polycast-owned files.
+Installed artifacts get a `.polycast-owned` marker. Re-apply updates in place.
+Use `apply --prune-only` to preview removal of polycast-owned files, or add
+`--write` to remove them.
 
 **Isolated test** (no dotfiles mutation):
 
@@ -143,7 +149,9 @@ Cursor loads `.cursor/mcp.json` in this repo. Tools mirror CLI:
 
 - `polycast_list` — catalog
 - `polycast_build` / `polycast_apply` — dry-run by default; `write: true` to install
-- `polycast_command_upsert` — add or update a command JSON (validated against schema)
+- `polycast_command_upsert` — preview or write a `commands/<id>.ts` module from a
+  `CommandDef` JSON object; `previewBuild` checks the generated command in an
+  isolated build
 
 See [`docs/agent-native/capability-map.md`](../agent-native/capability-map.md).
 
@@ -163,5 +171,5 @@ Use forge when you are promoting one wrapped script through a single surface.
 - Platform details: [`docs/specs/README.md`](../specs/README.md)
 - Dropover staging + manual import: [`docs/verification/2026-06-15-dropover-ui.md`](../verification/2026-06-15-dropover-ui.md)
 - Shortcuts import + thin-shim: [`docs/verification/2026-06-15-shortcuts-ui.md`](../verification/2026-06-15-shortcuts-ui.md)
-- Architecture: [`docs/DESIGN.md`](../DESIGN.md)
+- Architecture: [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md)
 - Operator apply proof: [`docs/verification/2026-06-15-operator-apply.md`](../verification/2026-06-15-operator-apply.md)
