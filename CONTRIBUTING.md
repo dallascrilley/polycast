@@ -15,8 +15,9 @@ script/cibuild    # exactly what CI runs
 ```
 
 `script/cibuild` is the single correctness gate: lint, typecheck, test, dist
-build, and `dev build --strict`. If it passes locally it should pass in CI. Run
-it before opening a pull request.
+build, strict command build, runner build, version consistency, and package
+smoke. If it passes locally it should pass in CI. Run it before opening a pull
+request.
 
 ## Adding an emitter
 

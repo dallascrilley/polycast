@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { readFile } from "node:fs/promises";
+import { POLYCAST_VERSION } from "../src/constants.ts";
 import { type RunnerDef, runnerDefJsonSchema, runnerDefSchema } from "../src/runners/schema.ts";
 
 const validRunner = {
@@ -8,7 +9,7 @@ const validRunner = {
   publisher: "example",
   title: "Review prompts",
   description: "Generic prompts for reviewing a worktree.",
-  version: "0.1.0",
+  version: POLYCAST_VERSION,
   engine: ">=1.4.188",
   commands: [
     {

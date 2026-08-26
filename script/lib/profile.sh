@@ -26,6 +26,8 @@ run_cibuild() {
   bun run build
   POLYCAST_SKIP_CHERRI=1 bun run dev build --strict
   bun run dev runner build
+  bun run check:version
+  bun run package-smoke
 }
 
 run_console() { node; }

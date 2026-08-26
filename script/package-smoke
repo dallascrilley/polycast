@@ -1,0 +1,85 @@
+#!/usr/bin/env bun
+import { mkdir, mkdtemp, readFile, rm, symlink } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { resolve } from "node:path";
+import { spawnSync } from "node:child_process";
+import packageMetadata from "../package.json" with { type: "json" };
+
+const root = resolve(import.meta.dir, "..");
+const temporaryRoot = await mkdtemp(resolve(tmpdir(), "polycast-package-smoke-"));
+const archiveRoot = resolve(temporaryRoot);
+
+function fail(message: string): never {
+  console.error(`package smoke failed: ${message}`);
+  process.exit(1);
+}
+
+function run(command: string, args: readonly string[], cwd = root) {
+  const result = spawnSync(command, [...args], { cwd, encoding: "utf8" });
+  if (result.error) fail(`${command} could not start: ${result.error.message}`);
+  if (result.status !== 0) {
+    fail(`${command} ${args.join(" ")} exited ${result.status ?? "without a status"}: ${result.stderr}`);
+  }
+  return result;
+}
+
+try {
+  const packed = run("npm", ["pack", "--json", "--pack-destination", archiveRoot]);
+  const metadata = JSON.parse(packed.stdout) as Array<{
+    readonly filename: string;
+    readonly id: string;
+    readonly name: string;
+    readonly version: string;
+    readonly files: readonly { readonly path: string }[];
+  }>;
+  const packageRecord = metadata[0];
+  if (!packageRecord) fail("npm pack returned no package record");
+  if (packageRecord.name !== packageMetadata.name) {
+    fail(`packed name ${packageRecord.name} differs from ${packageMetadata.name}`);
+  }
+  if (packageRecord.version !== packageMetadata.version) {
+    fail(`packed version ${packageRecord.version} differs from ${packageMetadata.version}`);
+  }
+
+  const paths = new Set(packageRecord.files.map((file) => file.path));
+  for (const required of [
+    "package.json",
+    "README.md",
+    "CHANGELOG.md",
+    "src/cli.ts",
+    "src/mcp/server.ts",
+    "src/runners/schema.ts",
+    "schemas/runner-def.schema.json",
+  ]) {
+    if (!paths.has(required)) fail(`packed artifact is missing ${required}`);
+  }
+
+  const archive = resolve(archiveRoot, packageRecord.filename);
+  const extracted = resolve(archiveRoot, "extracted");
+  await mkdir(extracted);
+  run("tar", ["-xzf", archive, "-C", extracted]);
+  const packageRoot = resolve(extracted, "package");
+  await symlink(resolve(root, "node_modules"), resolve(packageRoot, "node_modules"), "dir");
+
+  const help = run("bun", [resolve(packageRoot, "src/cli.ts"), "--help"], packageRoot);
+  if (!help.stdout.includes("runner build")) fail("packed CLI help omits runner build");
+
+  const runners = run("bun", [resolve(packageRoot, "src/cli.ts"), "runner", "list"], packageRoot);
+  if (!runners.stdout.includes("polycast.worktree-review")) {
+    fail("packed CLI cannot load the committed RunnerDef");
+  }
+  if (!runners.stdout.includes("orca-plugin")) {
+    fail("packed CLI runner list omits the Orca target");
+  }
+
+  const packedPackage = JSON.parse(await readFile(resolve(packageRoot, "package.json"), "utf8")) as {
+    readonly version: string;
+  };
+  if (packedPackage.version !== packageMetadata.version) {
+    fail("extracted package.json version differs from the package manifest");
+  }
+
+  console.log(`package smoke passed: ${packageRecord.id}; packed CLI help and runner list succeeded`);
+} finally {
+  await rm(temporaryRoot, { recursive: true, force: true });
+}

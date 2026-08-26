@@ -2,6 +2,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import { POLYCAST_VERSION } from "../constants.ts";
 import {
   polycastApply,
   polycastBuild,
@@ -17,11 +18,13 @@ import { jsonContent, parseCommandDefJson, toolError } from "./response.ts";
 const dirSchema = z.string().optional();
 const targetsSchema = z.array(z.string()).optional();
 
+export const POLYCAST_MCP_SERVER_INFO = {
+  name: "polycast",
+  version: POLYCAST_VERSION,
+} as const;
+
 export function createPolycastMcpServer(): McpServer {
-  const server = new McpServer(
-    { name: "polycast", version: "0.0.1" },
-    { capabilities: { tools: {} } },
-  );
+  const server = new McpServer(POLYCAST_MCP_SERVER_INFO, { capabilities: { tools: {} } });
 
   server.registerTool(
     "polycast_list",

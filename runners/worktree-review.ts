@@ -1,3 +1,4 @@
+import { POLYCAST_VERSION } from "../src/constants.ts";
 import { defineRunner } from "../src/runners/define.ts";
 
 export default defineRunner({
@@ -6,7 +7,7 @@ export default defineRunner({
   publisher: "polycast",
   title: "Worktree review",
   description: "Send a generic review prompt to the current worktree's only terminal.",
-  version: "0.1.0",
+  version: POLYCAST_VERSION,
   engine: ">=1.4.188",
   commands: [
     {

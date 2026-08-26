@@ -34,10 +34,14 @@ Edit command bodies in `commands/*.ts`, run `build`, re-apply JSON (or copy to `
   "id": "uppercase",
   "title": "Uppercase",
   "modality": "text",
-  "polycastVersion": "0.0.1",
+  "polycastVersion": "<package version>",
   "dispatcher": "polycast run"
 }
 ```
+
+`polycastVersion` is read from `package.json` at runtime. The placeholder in
+this example keeps the specification from copying a release number that can
+drift.
 
 ## I/O contract (via polycast run)
 
