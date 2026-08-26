@@ -52,7 +52,7 @@ interface Flags {
   readonly pruneOnly: boolean;
 }
 
-function parseFlags(argv: string[]): Flags {
+function parseFlags(argv: string[], stopAtSeparator = false): Flags {
   const positional: string[] = [];
   let dir = "commands";
   let out = "build";
@@ -65,6 +65,10 @@ function parseFlags(argv: string[]): Flags {
 
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
+    if (stopAtSeparator && a === "--") {
+      positional.push(...argv.slice(i + 1));
+      break;
+    }
     if (a === "--dir") dir = argv[++i] ?? dir;
     else if (a === "--out") out = argv[++i] ?? out;
     else if (a === "--commands") commands = argv[++i] ?? commands;
@@ -171,7 +175,7 @@ async function cmdRun(
 
 async function main(): Promise<void> {
   const [sub, ...rest] = process.argv.slice(2);
-  const flags = parseFlags(rest);
+  const flags = parseFlags(rest, sub === "run");
 
   switch (sub) {
     case "list":
