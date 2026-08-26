@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { spawnSync } from "node:child_process";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -13,6 +14,38 @@ const uppercase = defineCommand({
   modality: "text",
   body: { lang: "bash", source: "tr '[:lower:]' '[:upper:]'" },
 });
+
+const languageDispatchCommands = [
+  defineCommand({
+    id: "bash-dispatch",
+    title: "Bash dispatch",
+    description: "bash dispatch",
+    modality: "text",
+    body: { lang: "bash", source: "printf 'bash:%s' \"$(cat)\"" },
+  }),
+  defineCommand({
+    id: "node-dispatch",
+    title: "Node dispatch",
+    description: "node dispatch",
+    modality: "text",
+    body: {
+      lang: "node",
+      source:
+        'let input = ""; process.stdin.setEncoding("utf8"); process.stdin.on("data", (chunk) => input += chunk); process.stdin.on("end", () => process.stdout.write(`node:${input}`));',
+    },
+  }),
+  defineCommand({
+    id: "applescript-dispatch",
+    title: "AppleScript dispatch",
+    description: "AppleScript dispatch",
+    modality: "args",
+    args: [{ name: "value" }],
+    body: {
+      lang: "applescript",
+      source: ["on run argv", 'return "apple:" & item 1 of argv', "end run"].join("\n"),
+    },
+  }),
+];
 
 describe("commands JSON store", () => {
   test("round-trips command defs for polycast run", async () => {
@@ -114,3 +147,34 @@ describe("polycast run integration", () => {
     }
   });
 });
+
+describe.skipIf(process.platform !== "darwin")("language dispatch", () => {
+  test("runs Bash, Node, and AppleScript bodies with their declared interpreter", async () => {
+    const out = await mkdtemp(join(tmpdir(), "polycast-run-languages-"));
+    const commandsDir = join(out, "commands");
+    try {
+      await writeCommandsJson(languageDispatchCommands, commandsDir);
+
+      const bash = spawnRun(commandsDir, "bash-dispatch", ["--text", "input"]);
+      expect(bash.status).toBe(0);
+      expect(bash.stdout).toBe("bash:input");
+
+      const node = spawnRun(commandsDir, "node-dispatch", ["--text", "input"]);
+      expect(node.status).toBe(0);
+      expect(node.stdout).toBe("node:input");
+
+      const applescript = spawnRun(commandsDir, "applescript-dispatch", ["--", "-input"]);
+      expect(applescript.status).toBe(0);
+      expect(applescript.stdout).toBe("apple:-input\n");
+    } finally {
+      await rm(out, { recursive: true, force: true });
+    }
+  });
+});
+
+function spawnRun(commandsDir: string, id: string, args: readonly string[]) {
+  return spawnSync("bun", ["run", "src/cli.ts", "run", id, "--commands", commandsDir, ...args], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+  });
+}

@@ -1,5 +1,7 @@
 import { spawnSync } from "node:child_process";
-import { readFileSync, writeSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync, writeSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { CommandDef } from "./types.ts";
 import { wrappedScript } from "./wrappers.ts";
 
@@ -18,8 +20,64 @@ function usageLines(cmd: CommandDef): string[] {
   return lines;
 }
 
-function scriptBody(cmd: CommandDef): string {
+function bashScriptBody(cmd: CommandDef): string {
   return wrappedScript(cmd).replace(/^#![^\n]*\n/, "");
+}
+
+function spawnWithStdio(
+  command: string,
+  args: readonly string[],
+  stdin: string | undefined,
+  captureStdout: boolean,
+) {
+  return spawnSync(command, args, {
+    input: stdin,
+    stdio: [
+      stdin !== undefined ? "pipe" : "inherit",
+      captureStdout ? "pipe" : "inherit",
+      "inherit",
+    ],
+  });
+}
+
+function spawnInterpreter(
+  cmd: CommandDef,
+  positional: readonly string[],
+  stdin: string | undefined,
+  captureStdout: boolean,
+) {
+  switch (cmd.body.lang) {
+    case "bash":
+      return spawnWithStdio(
+        "bash",
+        ["-c", bashScriptBody(cmd), "polycast-run", ...positional],
+        stdin,
+        captureStdout,
+      );
+    case "node":
+      return spawnWithStdio(
+        "node",
+        ["-e", cmd.body.source.trimEnd(), "--", ...positional],
+        stdin,
+        captureStdout,
+      );
+    case "applescript": {
+      // osascript has no end-of-options marker. A temporary program file lets
+      // an argv value beginning with `-` remain an AppleScript argument.
+      const tempDir = mkdtempSync(join(tmpdir(), "polycast-osascript-"));
+      const scriptPath = join(tempDir, "body.applescript");
+      try {
+        writeFileSync(scriptPath, cmd.body.source.trimEnd());
+        return spawnWithStdio("osascript", [scriptPath, ...positional], stdin, captureStdout);
+      } finally {
+        rmSync(tempDir, { recursive: true, force: true });
+      }
+    }
+    default: {
+      const exhaustive: never = cmd.body.lang;
+      return exhaustive;
+    }
+  }
 }
 
 export function printCommandUsage(cmd: CommandDef): void {
@@ -60,14 +118,7 @@ export function executeCommand(cmd: CommandDef, options: RunOptions): number {
   // shims and scripted callers see exactly what the body wrote.
   const captureStdout = process.stdout.isTTY === true;
 
-  const result = spawnSync("bash", ["-c", scriptBody(cmd), "polycast-run", ...positional], {
-    input: stdin,
-    stdio: [
-      stdin !== undefined ? "pipe" : "inherit",
-      captureStdout ? "pipe" : "inherit",
-      "inherit",
-    ],
-  });
+  const result = spawnInterpreter(cmd, positional, stdin, captureStdout);
 
   if (result.error) throw result.error;
 
