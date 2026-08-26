@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { access, chmod, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { access, chmod, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { applyBuilt } from "../src/apply.ts";
@@ -473,6 +473,50 @@ describe("operator apply verification (P1-5 B+)", () => {
         if (val === undefined) delete process.env[envKey];
         else process.env[envKey] = val;
       }
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("shortcuts import safety", () => {
+  test("compiled shortcuts are not opened without separate operator consent", async () => {
+    const root = await mkdtemp(join(tmpdir(), "polycast-shortcuts-safety-"));
+    const shortcutsDir = join(root, "shortcuts-cherri");
+    const shortcutPath = join(shortcutsDir, "uppercase.shortcut");
+    await mkdir(shortcutsDir, { recursive: true });
+    await writeFile(shortcutPath, "compiled shortcut\n");
+
+    const opened: string[] = [];
+    const opener = async (path: string): Promise<void> => {
+      opened.push(path);
+    };
+
+    try {
+      const safe = await applyBuilt({
+        outRoot: root,
+        write: true,
+        targets: ["shortcuts-cherri"],
+      });
+      expect(opened).toEqual([]);
+      expect(safe).toContainEqual({
+        target: "shortcuts-cherri",
+        action: "skip import",
+        path: shortcutPath,
+      });
+
+      const approved = await applyBuilt({
+        outRoot: root,
+        write: true,
+        targets: ["shortcuts-cherri"],
+        shortcutImport: { kind: "operator-approved", opener },
+      });
+      expect(opened).toEqual([shortcutPath]);
+      expect(approved).toContainEqual({
+        target: "shortcuts-cherri",
+        action: "open for import",
+        path: shortcutPath,
+      });
+    } finally {
       await rm(root, { recursive: true, force: true });
     }
   });

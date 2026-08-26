@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import { join, resolve } from "node:path";
+import { operatorApprovedShortcutImport } from "./apply.ts";
 import {
   PolycastError,
   polycastApply,
@@ -20,7 +21,7 @@ Usage:
   polycast runner list [--dir <runners>]
   polycast runner build [--dir <runners>] [--out <dir>]
   polycast run <id> [--commands <dir>] [--] [args...]
-  polycast apply [--out <dir>] [--target <a,b>] [--write] [--prune] [--prune-only]
+  polycast apply [--out <dir>] [--target <a,b>] [--write] [--import-shortcuts] [--prune] [--prune-only]
 
 Options:
   --dir       <path>   command definitions directory (default: ./commands)
@@ -29,6 +30,7 @@ Options:
   --target    <list>   comma-separated target ids (default: all)
   --strict           fail build on validation warnings/errors
   --write            apply writes to install locations (default: dry-run)
+  --import-shortcuts import compiled .shortcut files in Shortcuts.app (requires --write; explicit operator consent)
   --prune            remove polycast-owned artifacts (incl. the JSON body store) before install
   --prune-only       remove polycast-owned artifacts only (skip install)
 
@@ -51,6 +53,7 @@ interface Flags {
   readonly target?: string[];
   readonly strict: boolean;
   readonly write: boolean;
+  readonly importShortcuts: boolean;
   readonly prune: boolean;
   readonly pruneOnly: boolean;
 }
@@ -68,6 +71,7 @@ function parseFlags(argv: string[], options: ParseFlagOptions = {}): Flags {
   let target: string[] | undefined;
   let strict = false;
   let write = false;
+  let importShortcuts = false;
   let prune = false;
   let pruneOnly = false;
 
@@ -83,13 +87,25 @@ function parseFlags(argv: string[], options: ParseFlagOptions = {}): Flags {
     else if (a === "--target") target = (argv[++i] ?? "").split(",").filter(Boolean);
     else if (a === "--strict") strict = true;
     else if (a === "--write") write = true;
+    else if (a === "--import-shortcuts") importShortcuts = true;
     else if (a === "--prune") prune = true;
     else if (a === "--prune-only") {
       prune = true;
       pruneOnly = true;
     } else if (a) positional.push(a);
   }
-  return { _: positional, dir, out, commands, target, strict, write, prune, pruneOnly };
+  return {
+    _: positional,
+    dir,
+    out,
+    commands,
+    target,
+    strict,
+    write,
+    importShortcuts,
+    prune,
+    pruneOnly,
+  };
 }
 
 async function cmdRunner(argv: string[]): Promise<void> {
@@ -162,6 +178,11 @@ async function cmdBuild(flags: Flags): Promise<void> {
 
 async function cmdApply(flags: Flags): Promise<void> {
   try {
+    if (flags.importShortcuts && !flags.write) {
+      fail(
+        new PolycastError("--import-shortcuts requires --write", "SHORTCUT_IMPORT_REQUIRES_WRITE"),
+      );
+    }
     const { results, refused } = await polycastApply({
       dir: flags.dir,
       out: flags.out,
@@ -169,6 +190,7 @@ async function cmdApply(flags: Flags): Promise<void> {
       write: flags.write,
       prune: flags.prune,
       pruneOnly: flags.pruneOnly,
+      shortcutImport: flags.importShortcuts ? operatorApprovedShortcutImport() : { kind: "none" },
     });
     for (const r of results) {
       console.log(`${r.action.padEnd(18)} ${r.target}  ${r.path}`);

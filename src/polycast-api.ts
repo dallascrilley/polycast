@@ -1,7 +1,7 @@
 import { chmod, mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import type { ApplyResult } from "./apply.ts";
+import type { ApplyResult, ShortcutImportConsent } from "./apply.ts";
 import { applyBuilt, commandsStoreInstallDir, installDirForTarget, pruneOwned } from "./apply.ts";
 import { commandDefToModule } from "./command-source.ts";
 import { defaultCommandsDir, loadCommandJson, writeCommandsJson } from "./commands-store.ts";
@@ -29,6 +29,7 @@ export interface PolycastApplyOptions {
   readonly write?: boolean;
   readonly prune?: boolean;
   readonly pruneOnly?: boolean;
+  readonly shortcutImport?: ShortcutImportConsent;
 }
 
 export interface PolycastRunOptions {
@@ -298,6 +299,7 @@ export async function polycastApply(
       outRoot,
       write,
       targets,
+      shortcutImport: options.shortcutImport,
     })),
   );
 

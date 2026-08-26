@@ -55,7 +55,7 @@ are imported or handled manually, so they are not persistent directory installs.
 | popclip | `~/Library/Application Support/PopClip/Extensions/` | double-click or copy bundle |
 | dropzone | `POLYCAST_DROPZONE_ACTIONS` (DZ4/DZ5 paths) | Dropzone rescans Actions |
 | dropover-script | container `Documents/.polycast-scripts/` + manifest | manual Settings import |
-| shortcuts-cherri | `open` `.shortcut` | Shortcuts.app import dialog |
+| shortcuts-cherri | explicit `--import-shortcuts` import | Shortcuts.app import dialog |
 | agent-cli | `POLYCAST_AGENT_BIN` default `~/.agents/tools/` | PATH |
 
 ## Cherri post-build
@@ -68,8 +68,10 @@ conditions hold:
 - `cherri` is on PATH.
 
 The compiler writes `<id>.shortcut` beside the `.cherri` source. `apply
---write` opens each compiled file for import in Shortcuts.app. `apply --prune`
-does not remove the imported shortcut or the compiled file under `build/`.
+--write` never opens Shortcuts.app by itself. Add `--import-shortcuts` when an
+operator explicitly approves handing each compiled file to Shortcuts.app.
+`apply --prune` does not remove the imported shortcut or the compiled file under
+`build/`.
 
 ## Shared body store and pruning
 

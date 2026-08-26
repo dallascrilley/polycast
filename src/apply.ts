@@ -6,10 +6,22 @@ import { OWNERSHIP_MARKER } from "./constants.ts";
 import { formatDropoverImportNote, parseDropoverManifest } from "./dropover-manifest.ts";
 import { targetNeedsCommandsStore } from "./shim.ts";
 
+export type ShortcutOpener = (path: string) => Promise<void>;
+
+/**
+ * Importing a compiled Shortcut is the only apply operation that opens a UI.
+ * Keep operator consent separate from the write switch so normal writes can
+ * never import into the live Shortcuts library by accident.
+ */
+export type ShortcutImportConsent =
+  | { readonly kind: "none" }
+  | { readonly kind: "operator-approved"; readonly opener: ShortcutOpener };
+
 export interface ApplyOptions {
   readonly outRoot: string;
   readonly write: boolean;
   readonly targets?: readonly string[];
+  readonly shortcutImport?: ShortcutImportConsent;
 }
 
 export interface ApplyResult {
@@ -59,6 +71,35 @@ function dropoverStagingDir(): string {
 function parentDir(p: string): string {
   const i = p.lastIndexOf("/");
   return i >= 0 ? p.slice(0, i) : p;
+}
+
+function openShortcutForImport(path: string): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    spawn("open", [path], { stdio: "inherit" })
+      .on("error", reject)
+      .on("close", (code) => {
+        if (code === 0) resolve();
+        else reject(new Error(`open exited ${code} for ${path}`));
+      });
+  });
+}
+
+/** Build the explicit CLI-only consent state for importing Shortcuts.app files. */
+export function operatorApprovedShortcutImport(): ShortcutImportConsent {
+  return { kind: "operator-approved", opener: openShortcutForImport };
+}
+
+function shortcutImportAction(consent: ShortcutImportConsent, write: boolean): string {
+  switch (consent.kind) {
+    case "none":
+      return write ? "skip import" : "would skip import";
+    case "operator-approved":
+      return write ? "open for import" : "would open for import";
+    default: {
+      const _exhaustive: never = consent;
+      return _exhaustive;
+    }
+  }
 }
 
 async function pathExists(p: string): Promise<boolean> {
@@ -187,7 +228,12 @@ async function applyBundleTree(
   return copyTree(srcBundle, destBundle, write, target);
 }
 
-async function applyTarget(target: string, srcDir: string, write: boolean): Promise<ApplyResult[]> {
+async function applyTarget(
+  target: string,
+  srcDir: string,
+  write: boolean,
+  shortcutImport: ShortcutImportConsent,
+): Promise<ApplyResult[]> {
   const results: ApplyResult[] = [];
 
   if (target === "raycast-script") {
@@ -272,24 +318,20 @@ async function applyTarget(target: string, srcDir: string, write: boolean): Prom
       const path = join(srcDir, name);
       results.push({
         target,
-        action: write ? "open for import" : "would open for import",
+        action: shortcutImportAction(shortcutImport, write),
         path,
       });
-      if (write) {
-        await new Promise<void>((resolve, reject) => {
-          spawn("open", [path], { stdio: "inherit" })
-            .on("error", reject)
-            .on("close", (code) => {
-              if (code === 0) resolve();
-              else reject(new Error(`open exited ${code} for ${path}`));
-            });
-        });
+      if (write && shortcutImport.kind === "operator-approved") {
+        await shortcutImport.opener(path);
       }
     }
     results.push({
       target,
       action: "note",
-      path: "Re-import .shortcut once after thin-shim upgrade; body edits then live in ~/.polycast/commands/",
+      path:
+        shortcutImport.kind === "operator-approved"
+          ? "Re-import .shortcut once after thin-shim upgrade; body edits then live in ~/.polycast/commands/"
+          : "Shortcut import skipped by default; pass --write --import-shortcuts for explicit operator-approved import. Re-import .shortcut once after thin-shim upgrade; body edits live in ~/.polycast/commands/",
     });
     return results;
   }
@@ -376,6 +418,7 @@ export function installDirForTarget(target: string): string | undefined {
 export async function applyBuilt(options: ApplyOptions): Promise<ApplyResult[]> {
   const outRoot = resolve(options.outRoot);
   const selected = options.targets ?? [];
+  const shortcutImport: ShortcutImportConsent = options.shortcutImport ?? { kind: "none" };
   const results: ApplyResult[] = [];
 
   for (const target of selected) {
@@ -386,7 +429,7 @@ export async function applyBuilt(options: ApplyOptions): Promise<ApplyResult[]> 
       results.push({ target, action: "skip", path: "(no build output — nothing to install)" });
       continue;
     }
-    results.push(...(await applyTarget(target, srcDir, options.write)));
+    results.push(...(await applyTarget(target, srcDir, options.write, shortcutImport)));
   }
 
   if (selected.some(targetNeedsCommandsStore)) {

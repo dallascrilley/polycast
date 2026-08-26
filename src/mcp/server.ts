@@ -76,7 +76,7 @@ export function createPolycastMcpServer(): McpServer {
     "polycast_apply",
     {
       description:
-        "Install built artifacts to launcher locations. write defaults to false (dry-run). Requires build output at out (default ./build).",
+        "Install built artifacts to launcher locations. write defaults to false (dry-run). Requires build output at out (default ./build). Compiled Shortcuts are never imported by this tool; use the CLI's explicit --import-shortcuts flag with --write for that UI action.",
       inputSchema: {
         dir: dirSchema,
         out: z.string().optional(),

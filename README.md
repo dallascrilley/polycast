@@ -28,8 +28,9 @@ guessing. That is the rule the whole thing rests on, and it lives in the
 Every persistent install is paired with a `.polycast-owned` marker — a
 `<artifact>.polycast-owned` sidecar, or one `.polycast-owned` inside a bundle
 directory — so `apply --prune` removes the artifacts polycast wrote and nothing
-else. Compiled `.shortcut` files are imported into the Shortcuts app rather
-than installed to a directory polycast owns. Prune does not remove imported
+else. Compiled `.shortcut` files are not imported by ordinary builds or
+`apply --write`. Use the separate `--import-shortcuts` flag when an operator
+intends to import them into Shortcuts.app. Prune does not remove imported
 Shortcuts or compiled files under `build/`; manage those in Shortcuts.app or
 remove stale build files yourself.
 
@@ -142,8 +143,10 @@ emitters produce nothing until a command opts in, which is why the sample build
 above writes no `snippets.json`.
 
 - CLI: `list`, `build` (`--strict`), `targets`, `apply` (`--write` to install,
-  `--prune` / `--prune-only` to uninstall), `run`.
-- MCP server (`bun run mcp`): stdio tools mirroring the CLI. See the
+  `--import-shortcuts` for explicit Shortcuts.app import, `--prune` /
+  `--prune-only` to uninstall), `run`.
+- MCP server (`bun run mcp`): stdio tools mirroring the non-UI CLI operations.
+  Compiled Shortcuts are never imported through MCP. See the
   [capability map](docs/agent-native/capability-map.md).
 - Orca runners: `runner list` and build-only `runner build` emit validated
   plugin bundles. See the [RunnerDef and Orca guide](docs/guides/runner.md).
@@ -231,12 +234,19 @@ POLYCAST_COMMANDS_DIR=/tmp/pc-sandbox/cmds \
   bun run dev apply --target popclip,agent-cli --write
 ```
 
-`shortcuts-cherri` is the one target with no such override. `apply --write`
-hands each compiled `.shortcut` to the Shortcuts app with `open`, which imports
-it into the live Shortcuts library, and there is no directory to redirect that
-at. This is why `POLYCAST_SKIP_CHERRI=1` exists: with the compile skipped there
-is no `.shortcut` for apply to import, which is what CI and the test suite rely
-on.
+`shortcuts-cherri` is the one target with no such override. A normal
+`apply --write` leaves compiled `.shortcut` files in the build tree and syncs
+the JSON body store without opening Shortcuts.app. To import them, run the
+following command deliberately on the operator's Mac:
+
+```sh
+bun run dev apply --write --import-shortcuts --target shortcuts-cherri
+```
+
+`--import-shortcuts` is required in addition to `--write`; it is never enabled
+by builds, tests, or the dogfood installer by default. `POLYCAST_SKIP_CHERRI=1`
+still skips compilation when Cherri is installed, while the explicit consent
+gate protects apply even when `.shortcut` files already exist.
 
 ### Uninstalling
 
@@ -266,7 +276,7 @@ Node.js / TypeScript (bun).
 - `script/cibuild` also checks package/runtime/MCP version consistency and
   smoke-tests the packed npm artifact without publishing it.
 - `bun test`, `bun run typecheck`, `bun run lint`.
-- Tests never shell out to Cherri: `bunfig.toml` preloads `test/setup.ts`, which defaults `POLYCAST_SKIP_CHERRI=1` for `bun test`, `script/test`, and CI alike (structural `.cherri` tests still run). Compile locally with `POLYCAST_SKIP_CHERRI=0 bun run dev build --target shortcuts-cherri`.
+- Tests never shell out to Cherri: `bunfig.toml` preloads `test/setup.ts`, which defaults `POLYCAST_SKIP_CHERRI=1` for `bun test`, `script/test`, and CI alike (structural `.cherri` tests still run). Compiled `.shortcut` files are also never imported by automated paths. Compile locally with `POLYCAST_SKIP_CHERRI=0 bun run dev build --target shortcuts-cherri`, then use `apply --write --import-shortcuts` only for manual Shortcuts.app verification.
 - See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the module map and [`docs/DESIGN.md`](docs/DESIGN.md) for the roadmap.
 - Platform specs: [`docs/specs/README.md`](docs/specs/README.md).
 - Research: [`docs/research/2026-06-14-destination-emitters-findings.md`](docs/research/2026-06-14-destination-emitters-findings.md).
