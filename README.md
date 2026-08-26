@@ -25,12 +25,13 @@ guessing. That is the rule the whole thing rests on, and it lives in the
 | `raycast-quicklink` | `args`, `none` | shared `quicklinks.json`, opt in per command via `x.raycast.quicklink` |
 | `agent-cli` | all four | executable stub plus `<id>.polycast-meta.json` |
 
-Every installed artifact is paired with a `.polycast-owned` marker — a
+Every persistent install is paired with a `.polycast-owned` marker — a
 `<artifact>.polycast-owned` sidecar, or one `.polycast-owned` inside a bundle
 directory — so `apply --prune` removes the artifacts polycast wrote and nothing
-else. Compiled `.shortcut` files are the exception in practice: they are
-imported into the Shortcuts app rather than installed to a directory polycast
-owns, so prune can remove the build artifact but never the imported shortcut.
+else. Compiled `.shortcut` files are imported into the Shortcuts app rather
+than installed to a directory polycast owns. Prune does not remove imported
+Shortcuts or compiled files under `build/`; manage those in Shortcuts.app or
+remove stale build files yourself.
 
 ## Requirements
 
@@ -247,9 +248,8 @@ bun run dev apply --prune-only --write    # remove it
 Prune walks the `.polycast-owned` markers described above, so it removes only
 the files polycast wrote, plus the JSON body store. Anything else in those
 directories is left alone: a hand-written PopClip extension sitting next to a
-generated one survives the prune. The exception is a `.shortcut` already
-imported into the Shortcuts app. Prune can delete the build artifact, but
-removing the imported shortcut is a manual step in the app.
+generated one survives the prune. Imported Shortcuts and compiled files under
+`build/` are outside that scan.
 
 ## Stack
 
