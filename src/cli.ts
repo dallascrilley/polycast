@@ -9,6 +9,7 @@ import {
   polycastRun,
   polycastTargets,
 } from "./polycast-api.ts";
+import { polycastRunnerBuild, polycastRunnerList } from "./runner-api.ts";
 
 const HELP = `polycast — one command definition, cast to many launchers
 
@@ -16,6 +17,8 @@ Usage:
   polycast list [--dir <commands>]
   polycast build [--dir <commands>] [--out <dir>] [--target <a,b>] [--strict]
   polycast targets
+  polycast runner list [--dir <runners>]
+  polycast runner build [--dir <runners>] [--out <dir>]
   polycast run <id> [--commands <dir>] [--] [args...]
   polycast apply [--out <dir>] [--target <a,b>] [--write] [--prune] [--prune-only]
 
@@ -52,9 +55,9 @@ interface Flags {
   readonly pruneOnly: boolean;
 }
 
-function parseFlags(argv: string[]): Flags {
+function parseFlags(argv: string[], defaultDir = "commands"): Flags {
   const positional: string[] = [];
-  let dir = "commands";
+  let dir = defaultDir;
   let out = "build";
   let commands: string | undefined;
   let target: string[] | undefined;
@@ -78,6 +81,37 @@ function parseFlags(argv: string[]): Flags {
     } else if (a) positional.push(a);
   }
   return { _: positional, dir, out, commands, target, strict, write, prune, pruneOnly };
+}
+
+async function cmdRunner(argv: string[]): Promise<void> {
+  const [sub, ...rest] = argv;
+  const flags = parseFlags(rest, "runners");
+  const dir = flags.dir;
+
+  if (sub === "list") {
+    const entries = await polycastRunnerList(dir);
+    if (entries.length === 0) {
+      console.log(`no runners found in ${resolve(dir)}`);
+      return;
+    }
+    for (const runner of entries) {
+      console.log(`${runner.id}  [${runner.target}]  -> ${runner.commands.join(", ")}`);
+      console.log(`    ${runner.title}`);
+    }
+    return;
+  }
+
+  if (sub === "build") {
+    const summary = await polycastRunnerBuild({ dir, out: flags.out });
+    for (const file of summary.files) {
+      console.log(`emit  ${file}`);
+    }
+    console.log(`\n${summary.written} file(s) written to ${summary.outRoot}.`);
+    return;
+  }
+
+  console.error("usage: polycast runner <list|build> [--dir <runners>] [--out <dir>]");
+  process.exit(1);
 }
 
 function fail(err: unknown): never {
@@ -184,6 +218,8 @@ async function main(): Promise<void> {
       return cmdRun(flags._[0], flags, flags._.slice(1));
     case "targets":
       return cmdTargets();
+    case "runner":
+      return cmdRunner(rest);
     case undefined:
     case "help":
     case "--help":
