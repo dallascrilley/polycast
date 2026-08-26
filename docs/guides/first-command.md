@@ -112,8 +112,15 @@ bun run dev apply --write --target popclip,agent-cli
 `export POLYCAST_BIN=/absolute/path/to/polycast` when Shortcuts or other sandboxes
 cannot see your shell PATH. See README *Install on PATH*.
 
-**Shortcuts:** `apply --write` opens each compiled `.shortcut` for import. After
-the thin shim is imported, body edits take effect from
+**Shortcuts:** `apply --write` syncs the JSON body store but does not open
+Shortcuts.app. Add `--import-shortcuts` when you explicitly intend to import
+compiled `.shortcut` files:
+
+```sh
+bun run dev apply --write --import-shortcuts --target shortcuts-cherri
+```
+
+After the thin shim is imported, body edits take effect from
 `~/.polycast/commands/<id>.json`; rebuild and apply when the shortcut metadata
 or wrapper changes.
 

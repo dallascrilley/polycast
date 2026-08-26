@@ -19,6 +19,13 @@ For Shortcuts `.shortcut` import (needs [Cherri](https://cherrilang.org/) on PAT
 ./script/dogfood-level-a --install --with-cherri
 ```
 
+The default install builds `.shortcut` files but does not open Shortcuts.app.
+When you are ready for the manual import step, opt in explicitly:
+
+```sh
+./script/dogfood-level-a --install --with-cherri --import-shortcuts
+```
+
 Default install uses isolated dirs under `/tmp/polycast-dogfood` (override with
 `POLYCAST_DOGFOOD_DIR`).
 
@@ -52,7 +59,7 @@ Install PopClip from [popclip.app](https://www.popclip.app/) or Setapp
 
 ### Shortcuts (P1-5) — pending
 
-1. Import `uppercase.shortcut` and `open-repo.shortcut` (via apply `open` or Cherri).
+1. Run the dogfood command above, which imports `uppercase.shortcut` and `open-repo.shortcut` with explicit operator consent, or import them directly with Cherri.
 2. Run Uppercase with text `hello` → `HELLO`.
 3. Run Open Code Repo with a folder name.
 4. Edit `~/.polycast/commands/uppercase.json` body; re-run without re-import.

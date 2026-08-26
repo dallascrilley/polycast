@@ -9,19 +9,23 @@
 #   script/dogfood-level-a --install    # mkdir, build, apply (isolated dirs)
 #   script/dogfood-level-a --check-b    # Level B spot checks (after --install)
 #   script/dogfood-level-a --install --check-b --open
+#   script/dogfood-level-a --install --with-cherri --import-shortcuts
 #
 set -euo pipefail
 . "$(dirname "$0")/lib/common.sh"
 
 usage() {
   cat <<EOF
-Usage: script/dogfood-level-a [--install] [--check-b] [--with-cherri]
+Usage: script/dogfood-level-a [--install] [--check-b] [--with-cherri] [--import-shortcuts]
 
 Prepare isolated polycast install for Level A dogfood (PopClip, Raycast, Shortcuts).
 
   --install       build + apply popclip, raycast-script, shortcuts-cherri
   --check-b       run Level B spot checks (PopClip script + Raycast script)
-  --with-cherri   allow Cherri compile during build (Shortcuts .shortcut import)
+  --with-cherri   allow Cherri compile during build (Shortcuts .shortcut output)
+  --import-shortcuts
+                  explicitly import compiled .shortcut files into Shortcuts.app
+                  (requires --with-cherri; never enabled by --install alone)
   --open          after --install, open PopClip extension bundle for import
   --help          this message
 
@@ -37,12 +41,14 @@ EOF
 DO_INSTALL=0
 DO_CHECK_B=0
 WITH_CHERRI=0
+IMPORT_SHORTCUTS=0
 DO_OPEN=0
 for arg in "$@"; do
   case "$arg" in
     --install) DO_INSTALL=1 ;;
     --check-b) DO_CHECK_B=1 ;;
     --with-cherri) WITH_CHERRI=1 ;;
+    --import-shortcuts) IMPORT_SHORTCUTS=1 ;;
     --open) DO_OPEN=1 ;;
     --help | -h) usage; exit 0 ;;
     *) die "unknown arg: $arg (try --help)" ;;
@@ -51,6 +57,10 @@ done
 
 if [ "$(uname -s)" != "Darwin" ]; then
   warn "Level A dogfood expects macOS launchers; continuing for env/check-b only."
+fi
+
+if [ "$IMPORT_SHORTCUTS" -eq 1 ] && [ "$WITH_CHERRI" -eq 0 ]; then
+  die "--import-shortcuts requires --with-cherri"
 fi
 
 BASE="${POLYCAST_DOGFOOD_DIR:-/tmp/polycast-dogfood}"
@@ -107,7 +117,7 @@ print_checklist() {
   After --install:
     - PopClip: open Extensions → install from $POLYCAST_POPCLIP_EXTENSIONS/uppercase.popclipext
     - Raycast: Settings → Extensions → Scripts → add folder $POLYCAST_RAYCAST_DIR
-    - Shortcuts: import .shortcut from $BUILD_OUT/shortcuts-cherri (needs --with-cherri + cherri)
+    - Shortcuts: run with --with-cherri to build .shortcut files; add --import-shortcuts only for the manual Shortcuts.app import
 
 EOF
   local popclip
@@ -130,7 +140,11 @@ do_install() {
   log "install: isolated build + apply under $BASE"
   mkdir -p "$POLYCAST_RAYCAST_DIR" "$POLYCAST_POPCLIP_EXTENSIONS" "$POLYCAST_COMMANDS_DIR" "$BUILD_OUT"
   bun run dev build --out "$BUILD_OUT" --strict --target popclip,raycast-script,shortcuts-cherri
-  bun run dev apply --write --out "$BUILD_OUT" --target popclip,raycast-script,shortcuts-cherri
+  if [ "$IMPORT_SHORTCUTS" -eq 1 ]; then
+    bun run dev apply --write --import-shortcuts --out "$BUILD_OUT" --target popclip,raycast-script,shortcuts-cherri
+  else
+    bun run dev apply --write --out "$BUILD_OUT" --target popclip,raycast-script,shortcuts-cherri
+  fi
   log "install complete — stubs under popclip/ and raycast/; JSON store at $POLYCAST_COMMANDS_DIR"
 }
 

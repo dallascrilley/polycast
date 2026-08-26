@@ -17,7 +17,7 @@ After thin-shim upgrade, **re-import once**; body edits live in `~/.polycast/com
 | `test/shim.test.ts` | Cherri shell stubs delegate to `polycast run` |
 | `test/run.test.ts` | Text shim + JSON store edit without stub change |
 | `test/emitters.test.ts` | `.cherri` output has dispatcher, not inline body |
-| `test/operator-apply.test.ts` | (Dropzone/agent-cli pattern; shortcuts apply opens `.shortcut`) |
+| `test/operator-apply.test.ts` | apply skips `.shortcut` import by default and covers the injected explicit route |
 | `test/operator-apply.test.ts` P1-5 B+ | apply syncs commands store; text shim + JSON edit |
 
 ```sh
@@ -44,14 +44,20 @@ export POLYCAST_BIN="$(pwd)/script/polycast"
 ## Build + apply
 
 ```sh
-./script/dogfood-level-a --install --with-cherri   # isolated dirs + Shortcuts .shortcut when cherri on PATH
+./script/dogfood-level-a --install --with-cherri   # isolated dirs + Shortcuts .shortcut output
+# Add --import-shortcuts only when you intend to open Shortcuts.app:
+./script/dogfood-level-a --install --with-cherri --import-shortcuts
 # or manually:
 cd /path/to/polycast
 export POLYCAST_COMMANDS_DIR=~/.polycast/commands   # or isolated temp dir
 
 bun run dev build --target shortcuts-cherri
 bun run dev apply --write --target shortcuts-cherri
-# opens .shortcut files — confirm import in Shortcuts.app
+# does not open Shortcuts.app; compiled files remain under build/
+
+# Explicit operator-approved import:
+bun run dev apply --write --import-shortcuts --target shortcuts-cherri
+# opens each compiled .shortcut file; confirm import in Shortcuts.app
 ```
 
 Apply also syncs `commands/*.json` to `POLYCAST_COMMANDS_DIR`.
@@ -66,8 +72,9 @@ Simulate the compiled shell stub (same as CI):
 export POLYCAST_BIN="$(pwd)/script/polycast"
 export POLYCAST_COMMANDS_DIR=/tmp/polycast-sc/commands
 mkdir -p "$POLYCAST_COMMANDS_DIR"
-bun run dev apply --write --target shortcuts-cherri --out ./build \
-  POLYCAST_COMMANDS_DIR="$POLYCAST_COMMANDS_DIR" 2>/dev/null || true
+POLYCAST_COMMANDS_DIR="$POLYCAST_COMMANDS_DIR" \
+  bun run dev apply --write --target shortcuts-cherri --out ./build
+# no Shortcuts.app import occurs without --import-shortcuts
 # Or copy from ~/.polycast/commands after apply
 
 # Run text shim logic directly (see test/run.test.ts)
@@ -82,7 +89,7 @@ bun run dev apply --write --target shortcuts-cherri --out ./build \
 
 ### Text — Uppercase
 
-1. Import `build/shortcuts-cherri/uppercase.shortcut` (via apply `open` or `cherri uppercase.cherri --open`).
+1. Run `bun run dev apply --write --import-shortcuts --target shortcuts-cherri` to explicitly import the compiled files, or use `cherri uppercase.cherri --open` directly.
 2. Share sheet or run from Shortcuts with input text `hello`.
 3. Output should be `HELLO`.
 

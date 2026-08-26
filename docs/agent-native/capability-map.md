@@ -17,7 +17,7 @@ camelCase field names such as `previewBuild` and `commandsDir`.
 | List commands and surfaces | `polycast list [--dir]` | `polycast_list` | `dir` is `commands`; returns structured command entries. |
 | List emitter targets | `polycast targets` | `polycast_targets` | Returns each target and its supported modalities. |
 | Build artifacts | `polycast build [--strict]` | `polycast_build` | CLI output defaults to `./build`; MCP output defaults to a temporary directory unless `out` is set. |
-| Install to launchers | `polycast apply [--write]` | `polycast_apply` | Dry-run by default; `write: true` installs from `out`, which defaults to `./build`. |
+| Install to launchers | `polycast apply [--write]` | `polycast_apply` | Dry-run by default; `write: true` installs from `out`, which defaults to `./build`. Compiled Shortcuts are never imported by the MCP tool; the CLI requires `--import-shortcuts` in addition to `--write`. |
 | Prune owned installs | `polycast apply --prune-only [--write]` | `polycast_prune` | Dry-run by default; `write: true` removes marked files from persistent install roots. |
 | Run a command | `polycast run <id>` | `polycast_run` | Loads `<commandsDir>/<id>.json`; returns `{ id, exitCode }`. |
 | Author a command module | edit `commands/<id>.ts` | `polycast_command_upsert` | Returns generated TypeScript; writes only with `write: true`. |
@@ -72,7 +72,8 @@ upsert does not build or install a written command unless you also call
   output.
 - `polycast_apply` checks the build output and refuses to overwrite an existing
   path without a `.polycast-owned` marker. It skips incompatible or opt-in
-  targets that produced no output.
+  targets that produced no output. It never imports compiled Shortcuts; the
+  CLI's separate `--import-shortcuts` flag is required for that UI action.
 - `polycast_prune` removes only marked files in persistent install roots and the
   shared JSON body store. It does not remove imported Shortcuts or files in the
   build output directory.

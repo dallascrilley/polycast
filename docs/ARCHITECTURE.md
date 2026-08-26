@@ -72,9 +72,10 @@ the support declarations and `docs/specs/modality-matrix.md` for the matrix.
 - `apply` installs into launcher runtime directories. It is dry-run by default;
   `--write` mutates. Ownership markers (`.polycast-owned`) gate safe pruning.
   See `src/apply.ts` and `docs/specs/destination-mapping.md`.
-- `shortcuts-cherri` opens compiled `.shortcut` files for import instead of
-  copying them to a persistent install directory. `apply --prune` does not
-  remove imported Shortcuts or stale files under `build/shortcuts-cherri/`.
+- `shortcuts-cherri` keeps compiled `.shortcut` files in the build tree. A
+  normal `apply --write` never opens a UI; `--import-shortcuts` is a separate
+  operator-consent flag for importing them. `apply --prune` does not remove
+  imported Shortcuts or stale files under `build/shortcuts-cherri/`.
 - PopClip uses native `stdin: text` in `Config.json`, so bodies read stdin.
 - macOS-only by design, since these are macOS launchers.
 - No external services and no secrets. Local codegen only.

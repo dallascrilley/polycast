@@ -125,6 +125,22 @@ describe("apply --write on a fresh build (D2)", () => {
   });
 });
 
+describe("Shortcuts import consent (CV3)", () => {
+  test("requires --write in addition to --import-shortcuts", () => {
+    const result = spawnSync(
+      "bun",
+      ["run", CLI, "apply", "--import-shortcuts", "--target", "shortcuts-cherri"],
+      {
+        cwd: process.cwd(),
+        encoding: "utf8",
+        env: { ...process.env, POLYCAST_SKIP_CHERRI: "1" },
+      },
+    );
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("--import-shortcuts requires --write");
+  });
+});
+
 describe("apply --prune (D3)", () => {
   test("leaves no polycast-written file behind, and keeps foreign files", async () => {
     // Build output lives outside the install sandbox so the sandbox holds
