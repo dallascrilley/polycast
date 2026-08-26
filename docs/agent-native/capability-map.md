@@ -29,12 +29,14 @@ for the full path table.
 
 ## Author a command through MCP
 
-`polycast_command_upsert` accepts a `CommandDef` JSON object and validates it
-against [`schemas/command-def.schema.json`](../../schemas/command-def.schema.json),
-which is Draft 2020-12. The required command fields are `id`, `title`,
-`description`, `modality`, and `body`. The `id` must be kebab-case. The body
-`lang` is `bash`, `node`, or `applescript`, and `body.source` must be non-empty.
-An `args` array is required when `modality` is `args`.
+`polycast_command_upsert` accepts a `CommandDef` JSON object. The committed
+[`schemas/command-def.schema.json`](../../schemas/command-def.schema.json) JSON
+Schema is Draft 2020-12. It enforces the required properties, field types,
+enum values, and kebab-case `id`. It requires `body.source` to be a string, but
+it does not require that string to be non-empty or require `args` when
+`modality` is `args`. The runtime Zod parser adds those refinements:
+`body.source` must be non-empty, and `modality: "args"` must include at least
+one `args` entry.
 
 Use this input to preview a command and its strict build without changing the
 repository:

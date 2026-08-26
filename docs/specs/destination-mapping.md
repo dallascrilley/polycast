@@ -60,10 +60,12 @@ are imported or handled manually, so they are not persistent directory installs.
 
 ## Cherri post-build
 
-After writing `.cherri` files, `polycast build` runs Cherri when:
+After writing `.cherri` files, `polycast build` runs Cherri only when both
+conditions hold:
 
-- `cherri` on PATH
-- `POLYCAST_SKIP_CHERRI` unset
+- `POLYCAST_SKIP_CHERRI` is not exactly `1`. Unset and other values do not skip
+  the compile.
+- `cherri` is on PATH.
 
 The compiler writes `<id>.shortcut` beside the `.cherri` source. `apply
 --write` opens each compiled file for import in Shortcuts.app. `apply --prune`
