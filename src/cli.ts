@@ -10,7 +10,12 @@ import {
   polycastRun,
   polycastTargets,
 } from "./polycast-api.ts";
-import { polycastRunnerBuild, polycastRunnerList } from "./runner-api.ts";
+import {
+  polycastRunnerBuild,
+  polycastRunnerList,
+  polycastRunnerTargets,
+  type RunnerWarning,
+} from "./runner-api.ts";
 
 const HELP = `polycast — one command definition, cast to many launchers
 
@@ -19,7 +24,8 @@ Usage:
   polycast build [--dir <commands>] [--out <dir>] [--target <a,b>] [--strict]
   polycast targets
   polycast runner list [--dir <runners>]
-  polycast runner build [--dir <runners>] [--out <dir>]
+  polycast runner targets
+  polycast runner build [--dir <runners>] [--out <dir>] [--target <a,b>]
   polycast run <id> [--commands <dir>] [--] [args...]
   polycast apply [--out <dir>] [--target <a,b>] [--write] [--import-shortcuts] [--prune] [--prune-only]
 
@@ -120,23 +126,58 @@ async function cmdRunner(argv: string[]): Promise<void> {
       return;
     }
     for (const runner of entries) {
-      console.log(`${runner.id}  [${runner.target}]  -> ${runner.commands.join(", ")}`);
+      const targets = runner.targets
+        .map((target) =>
+          target.status === "supported"
+            ? `${target.target}:supported`
+            : `${target.target}:skipped (${target.reason})`,
+        )
+        .join(", ");
+      console.log(`${runner.id}  [${targets}]  -> ${runner.commands.join(", ")}`);
       console.log(`    ${runner.title}`);
     }
+    printRunnerWarnings(entries.flatMap((entry) => entry.warnings));
+    return;
+  }
+
+  if (sub === "targets") {
+    for (const entry of polycastRunnerTargets()) console.log(entry.target);
     return;
   }
 
   if (sub === "build") {
-    const summary = await polycastRunnerBuild({ dir, out: flags.out });
+    const summary = await polycastRunnerBuild({
+      dir,
+      out: flags.out,
+      targets: flags.target,
+    });
     for (const file of summary.files) {
       console.log(`emit  ${file}`);
     }
+    for (const result of summary.results) {
+      if (result.status === "skipped") {
+        console.log(`skip  ${result.runner} -> ${result.target}: ${result.reason}`);
+      }
+    }
+    printRunnerWarnings(summary.warnings);
     console.log(`\n${summary.written} file(s) written to ${summary.outRoot}.`);
     return;
   }
 
-  console.error("usage: polycast runner <list|build> [--dir <runners>] [--out <dir>]");
+  console.error(
+    "usage: polycast runner <list|targets|build> [--dir <runners>] [--out <dir>] [--target <a,b>]",
+  );
   process.exit(1);
+}
+
+function printRunnerWarnings(warnings: readonly RunnerWarning[]): void {
+  const printed = new Set<string>();
+  for (const warning of warnings) {
+    const key = `${warning.source}\0${warning.message}`;
+    if (printed.has(key)) continue;
+    printed.add(key);
+    console.error(`warning: ${warning.source}: ${warning.message}`);
+  }
 }
 
 function fail(err: unknown): never {

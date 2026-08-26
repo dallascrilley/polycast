@@ -1,9 +1,46 @@
 import { describe, expect, test } from "bun:test";
 import { readFile } from "node:fs/promises";
 import { POLYCAST_VERSION } from "../src/constants.ts";
-import { type RunnerDef, runnerDefJsonSchema, runnerDefSchema } from "../src/runners/schema.ts";
+import {
+  LEGACY_RUNNER_WARNING,
+  parseRunnerDefWithWarnings,
+  type RunnerDef,
+  type RunnerDefInput,
+  runnerDefJsonSchema,
+  runnerDefSchema,
+  type TerminalPromptRunnerCommand,
+} from "../src/runners/schema.ts";
 
 const validRunner = {
+  kind: "runner",
+  id: "review-prompts",
+  publisher: "example",
+  title: "Review prompts",
+  description: "Generic prompts for reviewing a worktree.",
+  version: POLYCAST_VERSION,
+  commands: [
+    {
+      kind: "prompt",
+      id: "review-worktree",
+      title: "Review worktree",
+      context: "worktree",
+      prompt: "Review the current worktree.",
+      mode: "run",
+    },
+  ],
+  x: { "orca-plugin": { engine: ">=1.4.188" } },
+} satisfies RunnerDef;
+
+const compatibleLegacyCommand = {
+  kind: "terminal-prompt",
+  id: "review-worktree",
+  title: "Review worktree",
+  context: "worktree",
+  prompt: "Review the current worktree.",
+  enter: "submit",
+} satisfies TerminalPromptRunnerCommand;
+
+const legacyRunner = {
   kind: "orca-plugin",
   id: "review-prompts",
   publisher: "example",
@@ -11,26 +48,28 @@ const validRunner = {
   description: "Generic prompts for reviewing a worktree.",
   version: POLYCAST_VERSION,
   engine: ">=1.4.188",
-  commands: [
-    {
-      kind: "terminal-prompt",
-      id: "review-worktree",
-      title: "Review worktree",
-      context: "worktree",
-      prompt: "Review the current worktree.",
-      enter: "submit",
-    },
-  ],
-} satisfies RunnerDef;
+  commands: [compatibleLegacyCommand],
+} satisfies RunnerDefInput;
 
 describe("runner-def schema", () => {
-  test("committed JSON schema matches zod export", async () => {
+  test("committed JSON schema matches the canonical zod export", async () => {
     const committed = JSON.parse(await readFile("schemas/runner-def.schema.json", "utf8"));
     expect(committed).toEqual(runnerDefJsonSchema);
   });
 
-  test("accepts the terminal-prompt Orca runner contract", () => {
+  test("accepts the canonical target-neutral runner contract", () => {
     expect(runnerDefSchema.parse(validRunner)).toEqual(validRunner);
+  });
+
+  test("normalizes the legacy Orca contract with a deprecation warning", () => {
+    expect(parseRunnerDefWithWarnings(legacyRunner)).toEqual({
+      runner: validRunner,
+      warnings: [LEGACY_RUNNER_WARNING],
+    });
+  });
+
+  test("keeps the legacy terminal prompt command type available through 0.2", () => {
+    expect(compatibleLegacyCommand.kind).toBe("terminal-prompt");
   });
 
   test.each([
@@ -42,21 +81,22 @@ describe("runner-def schema", () => {
         commands: [{ ...validRunner.commands[0], action: "terminal.new" }],
       },
     ],
-    ["unsafe plugin id", { ...validRunner, id: "../review-prompts" }],
+    ["unsafe runner id", { ...validRunner, id: "../review-prompts" }],
     ["reserved publisher id", { ...validRunner, publisher: "constructor" }],
     [
       "unsafe command id",
       { ...validRunner, commands: [{ ...validRunner.commands[0], id: "review/worktree" }] },
     ],
-    ["invalid engine range", { ...validRunner, engine: "^1.4.188" }],
+    ["invalid engine range", { ...validRunner, x: { "orca-plugin": { engine: "^1.4.188" } } }],
+    ["unknown target hint", { ...validRunner, x: { codex: { profile: "default" } } }],
     ["empty prompt", { ...validRunner, commands: [{ ...validRunner.commands[0], prompt: "  " }] }],
     [
       "global context",
       { ...validRunner, commands: [{ ...validRunner.commands[0], context: "global" }] },
     ],
     [
-      "boolean enter mode",
-      { ...validRunner, commands: [{ ...validRunner.commands[0], enter: true }] },
+      "legacy mode name",
+      { ...validRunner, commands: [{ ...validRunner.commands[0], mode: "submit" }] },
     ],
     [
       "duplicate command id",

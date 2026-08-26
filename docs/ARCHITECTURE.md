@@ -22,6 +22,12 @@ MCP server over the same API. It does not run a long-lived production service.
 | `src/mcp/command-upsert-tool.ts` | Description and schema pointer for `polycast_command_upsert`. |
 | `src/schema/command-def.ts` | Runtime Zod parser and generated JSON Schema for command input. |
 | `commands/*.ts` | The command definitions themselves — data, not engine. |
+| `src/runners/schema.ts` | Canonical target-neutral `RunnerDef` parser and the legacy Orca normalizer. |
+| `src/runners/registry.ts` | Typed runner target registry, compatibility checks, and emission routing. |
+| `src/runners/orca-plugin.ts` | Orca manifest and worker adapter. |
+| `src/runners/codex-cli.ts` | Build-only Codex CLI wrapper, prompt, and metadata adapter. |
+| `src/runner-api.ts` | Runner-wide preflight, unique-path validation, file writes, and mode application. |
+| `runners/*.ts` | Portable runner definitions, kept separate from `CommandDef`. |
 
 ## Command lifecycle
 
@@ -56,6 +62,21 @@ it cannot represent, so `build` skips a surface rather than mis-emitting for it.
 This is the decision that makes one definition safe to cast everywhere: the
 generator never guesses at a mapping it cannot honor. See `src/registry.ts` for
 the support declarations and `docs/specs/modality-matrix.md` for the matrix.
+
+## Runner compiler lifecycle
+
+1. `loadRunners` imports each `RunnerDef`, normalizes the deprecated Orca shape,
+   and retains source-level deprecation warnings.
+2. The runner registry checks every definition against every selected target.
+   Orca requires an engine hint. Codex CLI rejects a runner if any command uses
+   `mode: "stage"`.
+3. An implicit build records incompatible targets as skipped. An explicit bad
+   selection fails the whole build.
+4. Polycast renders all compatible files and rejects unsafe or duplicate paths
+   before creating a directory. It then writes files and applies executable
+   modes, including when an existing file had mode `0644`.
+5. Generated runner artifacts remain build-only. Polycast does not install
+   them, launch hosts, or modify Orca or Codex configuration.
 
 ## Key decisions
 

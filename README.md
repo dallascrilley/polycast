@@ -148,8 +148,9 @@ above writes no `snippets.json`.
 - MCP server (`bun run mcp`): stdio tools mirroring the non-UI CLI operations.
   Compiled Shortcuts are never imported through MCP. See the
   [capability map](docs/agent-native/capability-map.md).
-- Orca runners: `runner list` and build-only `runner build` emit validated
-  plugin bundles. See the [RunnerDef and Orca guide](docs/guides/runner.md).
+- Portable runners: `runner list`, `runner targets`, and build-only `runner
+  build` compile one `RunnerDef` to compatible Orca and Codex CLI artifacts.
+  See the [runner compiler guide](docs/guides/runner.md).
 - Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Per-launcher
   format research: `docs/specs/`, mapped in `docs/specs/destination-mapping.md`.
 
@@ -162,7 +163,8 @@ bun run dev build                # emit artifacts into ./build/<target>/
 bun run dev build --target popclip
 bun run dev targets              # list registered emitters
 bun run dev runner list          # list RunnerDef files
-bun run dev runner build         # emit Orca plugin bundles into ./build/
+bun run dev runner targets       # list runner compiler targets
+bun run dev runner build         # emit all compatible runner targets into ./build/
 bun run mcp                      # start MCP stdio server (Cursor / Claude Desktop)
 ```
 
