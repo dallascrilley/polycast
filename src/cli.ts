@@ -55,9 +55,14 @@ interface Flags {
   readonly pruneOnly: boolean;
 }
 
-function parseFlags(argv: string[], defaultDir = "commands"): Flags {
+interface ParseFlagOptions {
+  readonly defaultDir?: string;
+  readonly stopAtSeparator?: boolean;
+}
+
+function parseFlags(argv: string[], options: ParseFlagOptions = {}): Flags {
   const positional: string[] = [];
-  let dir = defaultDir;
+  let dir = options.defaultDir ?? "commands";
   let out = "build";
   let commands: string | undefined;
   let target: string[] | undefined;
@@ -68,6 +73,10 @@ function parseFlags(argv: string[], defaultDir = "commands"): Flags {
 
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
+    if (options.stopAtSeparator && a === "--") {
+      positional.push(...argv.slice(i + 1));
+      break;
+    }
     if (a === "--dir") dir = argv[++i] ?? dir;
     else if (a === "--out") out = argv[++i] ?? out;
     else if (a === "--commands") commands = argv[++i] ?? commands;
@@ -85,7 +94,7 @@ function parseFlags(argv: string[], defaultDir = "commands"): Flags {
 
 async function cmdRunner(argv: string[]): Promise<void> {
   const [sub, ...rest] = argv;
-  const flags = parseFlags(rest, "runners");
+  const flags = parseFlags(rest, { defaultDir: "runners" });
   const dir = flags.dir;
 
   if (sub === "list") {
@@ -205,7 +214,7 @@ async function cmdRun(
 
 async function main(): Promise<void> {
   const [sub, ...rest] = process.argv.slice(2);
-  const flags = parseFlags(rest);
+  const flags = parseFlags(rest, { stopAtSeparator: sub === "run" });
 
   switch (sub) {
     case "list":
