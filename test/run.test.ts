@@ -35,6 +35,18 @@ const languageDispatchCommands = [
     },
   }),
   defineCommand({
+    id: "node-args-dispatch",
+    title: "Node args dispatch",
+    description: "node args dispatch",
+    modality: "args",
+    args: [{ name: "first" }, { name: "second" }],
+    body: {
+      lang: "node",
+      source:
+        "process.stdout.write(JSON.stringify({ script: process.argv[1], first: process.argv[2], second: process.argv[3] }));",
+    },
+  }),
+  defineCommand({
     id: "applescript-dispatch",
     title: "AppleScript dispatch",
     description: "AppleScript dispatch",
@@ -236,6 +248,10 @@ describe.skipIf(process.platform !== "darwin")("language dispatch", () => {
       const node = spawnRun(commandsDir, "node-dispatch", ["--text", "input"]);
       expect(node.status).toBe(0);
       expect(node.stdout).toBe("node:input");
+
+      const nodeArgs = spawnRun(commandsDir, "node-args-dispatch", ["--", "first", "-second"]);
+      expect(nodeArgs.status).toBe(0);
+      expect(nodeArgs.stdout).toBe('{"script":"polycast-run","first":"first","second":"-second"}');
 
       const applescript = spawnRun(commandsDir, "applescript-dispatch", ["--", "-input"]);
       expect(applescript.status).toBe(0);

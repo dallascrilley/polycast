@@ -57,7 +57,7 @@ function spawnInterpreter(
     case "node":
       return spawnWithStdio(
         "node",
-        ["-e", cmd.body.source.trimEnd(), "--", ...positional],
+        ["-e", cmd.body.source.trimEnd(), "polycast-run", ...positional],
         stdin,
         captureStdout,
       );
