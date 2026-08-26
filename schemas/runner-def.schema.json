@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "const": "orca-plugin"
+        },
+        "id": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "publisher": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 4096
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:-(?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
+        },
+        "engine": {
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^>=\\d+\\.\\d+\\.\\d+$"
+        },
+        "commands": {
+          "minItems": 1,
+          "maxItems": 256,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "terminal-prompt"
+              },
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "pattern": "^[A-Za-z0-9]+(?:[._-][A-Za-z0-9]+)*$"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "context": {
+                "type": "string",
+                "const": "worktree"
+              },
+              "prompt": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "enter": {
+                "type": "string",
+                "enum": ["insert", "submit"]
+              }
+            },
+            "required": ["kind", "id", "title", "context", "prompt", "enter"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["kind", "id", "publisher", "title", "version", "engine", "commands"],
+      "additionalProperties": false
+    }
+  ]
+}

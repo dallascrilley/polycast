@@ -1,0 +1,46 @@
+#!/usr/bin/env bun
+import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
+import { resolve } from "node:path";
+
+const DEFAULT_PARSER =
+  "/Applications/Orca.app/Contents/Resources/app.asar.unpacked/out/shared/plugins/plugin-manifest.js";
+
+function usage(): never {
+  console.error("usage: script/check-orca-plugin-manifest <orca-plugin.json> [...]");
+  process.exit(1);
+}
+
+const manifestPaths = process.argv.slice(2);
+if (manifestPaths.length === 0) usage();
+
+const parserPath = process.env.ORCA_PLUGIN_MANIFEST_PARSER ?? DEFAULT_PARSER;
+const require = createRequire(import.meta.url);
+const parser: unknown = require(parserPath);
+if (
+  typeof parser !== "object" ||
+  parser === null ||
+  !("parsePluginManifest" in parser) ||
+  typeof parser.parsePluginManifest !== "function"
+) {
+  throw new Error(`Orca parser does not export parsePluginManifest: ${parserPath}`);
+}
+
+for (const manifestPath of manifestPaths) {
+  const absolute = resolve(manifestPath);
+  const raw: unknown = JSON.parse(await readFile(absolute, "utf8"));
+  const result: unknown = parser.parsePluginManifest(raw);
+  if (
+    typeof result !== "object" ||
+    result === null ||
+    !("ok" in result) ||
+    result.ok !== true
+  ) {
+    const detail =
+      typeof result === "object" && result !== null && "error" in result
+        ? String(result.error)
+        : "unknown parser failure";
+    throw new Error(`${absolute}: ${detail}`);
+  }
+  console.log(`valid  ${absolute}`);
+}

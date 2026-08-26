@@ -9,6 +9,14 @@ describe("script/polycast wrapper", () => {
     expect(r.status).toBe(0);
     expect(r.stdout).toContain("uppercase");
   });
+
+  test("runner list subcommand uses the separate runners directory", () => {
+    const wrapper = join(process.cwd(), "script/polycast");
+    const r = spawnSync(wrapper, ["runner", "list"], { encoding: "utf8" });
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain("polycast.worktree-review");
+    expect(r.stdout).toContain("orca-plugin");
+  });
 });
 
 describe("script/dogfood-level-a", () => {

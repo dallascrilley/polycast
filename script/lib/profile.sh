@@ -25,6 +25,7 @@ run_cibuild() {
   bun test
   bun run build
   POLYCAST_SKIP_CHERRI=1 bun run dev build --strict
+  bun run dev runner build
 }
 
 run_console() { node; }

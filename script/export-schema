@@ -2,8 +2,22 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { commandDefJsonSchema } from "../src/schema/command-def.ts";
+import { runnerDefJsonSchema } from "../src/runners/schema.ts";
 
-const out = resolve("schemas/command-def.schema.json");
-mkdirSync(dirname(out), { recursive: true });
-writeFileSync(out, `${JSON.stringify(commandDefJsonSchema, null, 2)}\n`);
-console.log(`wrote ${out}`);
+const outputs: string[] = [];
+for (const [relativePath, schema] of [
+  ["schemas/command-def.schema.json", commandDefJsonSchema],
+  ["schemas/runner-def.schema.json", runnerDefJsonSchema],
+] as const) {
+  const out = resolve(relativePath);
+  mkdirSync(dirname(out), { recursive: true });
+  writeFileSync(out, `${JSON.stringify(schema, null, 2)}\n`);
+  outputs.push(out);
+  console.log(`wrote ${out}`);
+}
+
+const formatted = Bun.spawnSync(["bunx", "biome", "format", "--write", ...outputs]);
+if (formatted.exitCode !== 0) {
+  process.stderr.write(formatted.stderr);
+  process.exit(formatted.exitCode);
+}
