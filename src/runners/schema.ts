@@ -112,6 +112,8 @@ export type RunnerDef = z.infer<typeof runnerDefSchema>;
 export type RunnerPromptCommand = RunnerDef["commands"][number];
 /** @deprecated Accepted only through the 0.2 release line. */
 export type LegacyRunnerDef = z.infer<typeof legacyRunnerDefSchema>;
+/** @deprecated Use RunnerPromptCommand for canonical runner definitions. */
+export type TerminalPromptRunnerCommand = LegacyRunnerDef["commands"][number];
 export type RunnerDefInput = RunnerDef | LegacyRunnerDef;
 
 export interface ParsedRunnerDef {

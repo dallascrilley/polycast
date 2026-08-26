@@ -57,7 +57,7 @@ Item 1 ties for the highest numeric score and has the strongest strategic fit. T
 - Implementation Blueprint:
   - Target Files / Symbols: `src/runners/schema.ts: runnerDefSchema`, `src/runner-api.ts: polycastRunnerBuild`, `src/runners/orca-plugin.ts: emitOrcaPluginBundle`, `src/cli.ts: cmdRunner`, `schemas/runner-def.schema.json`, new `src/runners/registry.ts`, new runner emitter modules
   - Action: Define runner intent and command kinds independently from output targets. Add a typed runner emitter interface and registry, move Orca packaging behind it, and add a headless agent-CLI emitter as the second proof target. Preserve `CommandDef` as the shell-command IR.
-  - Verification Probe: `bun test test/runner.test.ts test/runner-schema.test.ts && POLYCAST_SKIP_CHERRI=1 bun run dev runner build --target orca-plugin,agent-cli --out build/runner-proof`
+  - Verification Probe: `bun test test/runner.test.ts test/runner-schema.test.ts && POLYCAST_SKIP_CHERRI=1 bun run dev runner build --target orca-plugin,codex-cli --out build/runner-proof`
 
 ### 2. Publish and install from transactional state manifests
 
@@ -165,7 +165,7 @@ Item 1 ties for the highest numeric score and has the strongest strategic fit. T
       "scope": "Large",
       "target_files": ["src/runners/schema.ts", "src/runner-api.ts", "src/runners/orca-plugin.ts", "src/cli.ts", "schemas/runner-def.schema.json"],
       "action": "Split runner intent from host emission and add a typed runner target registry with Orca and headless agent-CLI emitters.",
-      "verification": "bun test test/runner.test.ts test/runner-schema.test.ts && POLYCAST_SKIP_CHERRI=1 bun run dev runner build --target orca-plugin,agent-cli --out build/runner-proof"
+      "verification": "bun test test/runner.test.ts test/runner-schema.test.ts && POLYCAST_SKIP_CHERRI=1 bun run dev runner build --target orca-plugin,codex-cli --out build/runner-proof"
     },
     {
       "rank": 2,

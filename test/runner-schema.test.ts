@@ -8,6 +8,7 @@ import {
   type RunnerDefInput,
   runnerDefJsonSchema,
   runnerDefSchema,
+  type TerminalPromptRunnerCommand,
 } from "../src/runners/schema.ts";
 
 const validRunner = {
@@ -30,6 +31,15 @@ const validRunner = {
   x: { "orca-plugin": { engine: ">=1.4.188" } },
 } satisfies RunnerDef;
 
+const compatibleLegacyCommand = {
+  kind: "terminal-prompt",
+  id: "review-worktree",
+  title: "Review worktree",
+  context: "worktree",
+  prompt: "Review the current worktree.",
+  enter: "submit",
+} satisfies TerminalPromptRunnerCommand;
+
 const legacyRunner = {
   kind: "orca-plugin",
   id: "review-prompts",
@@ -38,16 +48,7 @@ const legacyRunner = {
   description: "Generic prompts for reviewing a worktree.",
   version: POLYCAST_VERSION,
   engine: ">=1.4.188",
-  commands: [
-    {
-      kind: "terminal-prompt",
-      id: "review-worktree",
-      title: "Review worktree",
-      context: "worktree",
-      prompt: "Review the current worktree.",
-      enter: "submit",
-    },
-  ],
+  commands: [compatibleLegacyCommand],
 } satisfies RunnerDefInput;
 
 describe("runner-def schema", () => {
@@ -65,6 +66,10 @@ describe("runner-def schema", () => {
       runner: validRunner,
       warnings: [LEGACY_RUNNER_WARNING],
     });
+  });
+
+  test("keeps the legacy terminal prompt command type available through 0.2", () => {
+    expect(compatibleLegacyCommand.kind).toBe("terminal-prompt");
   });
 
   test.each([
