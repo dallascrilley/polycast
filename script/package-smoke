@@ -48,7 +48,11 @@ try {
     "CHANGELOG.md",
     "src/cli.ts",
     "src/mcp/server.ts",
+    "src/runner-api.ts",
+    "src/runners/codex-cli.ts",
+    "src/runners/registry.ts",
     "src/runners/schema.ts",
+    "src/runners/types.ts",
     "schemas/runner-def.schema.json",
   ]) {
     if (!paths.has(required)) fail(`packed artifact is missing ${required}`);
@@ -70,6 +74,9 @@ try {
   }
   if (!runners.stdout.includes("orca-plugin")) {
     fail("packed CLI runner list omits the Orca target");
+  }
+  if (!runners.stdout.includes("codex-cli")) {
+    fail("packed CLI runner list omits the Codex CLI target");
   }
 
   const packedPackage = JSON.parse(await readFile(resolve(packageRoot, "package.json"), "utf8")) as {

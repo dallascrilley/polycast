@@ -20,9 +20,9 @@ The change does not merge `RunnerDef` into `CommandDef`. It does not install run
 - R2. A prompt command declares `context: "worktree"` and `mode: "run" | "stage"`. Targets translate that intent or refuse it.
 - R3. Orca-only engine metadata lives under `x["orca-plugin"]`. The Orca emitter preserves today's manifest and worker behavior.
 - R4. The loader accepts the legacy `kind: "orca-plugin"` shape through the 0.2 release line and normalizes it before emitters see it.
-- R5. A typed registry owns runner target discovery, compatibility checks, and emission for `orca-plugin` and `codex-cli`.
+- R5. A typed registry owns runner target discovery, compatibility checks, and emission for `orca-plugin` and `codex-cli`. Emitted files carry optional modes, and the writer applies them on both new and existing paths.
 - R6. A Codex wrapper invokes `codex exec --cd <git-root> -` with the prompt on stdin. Generated wrappers add no approval, sandbox, model, profile, or configuration override.
-- R7. An implicit all-target build reports an incompatible target as skipped. An explicitly requested incompatible or unknown target fails before any output is written.
+- R7. An implicit all-target build reports an incompatible target as skipped. An explicitly requested incompatible, unknown, duplicate, or empty target selection fails before any output is written. Build-wide emitted paths must also be unique before the first filesystem write.
 - R8. `runner list`, `runner targets`, and `runner build --target` expose the same registry-backed target facts.
 - R9. Focused behavioral tests and `script/cibuild` pass without launching a real Orca host, Codex agent, or other external application.
 
@@ -68,6 +68,12 @@ Add `src/runners/registry.ts` with an immutable `runnerEmitters` tuple. Derive `
 For each definition and requested target, preflight produces either `supported` or `skipped` with one concrete reason. If the caller supplied `targets`, any unknown or skipped target rejects the whole build before `mkdir` or `writeFile`. Without `targets`, Polycast emits supported targets and returns skipped targets in the summary.
 
 `RunnerListEntry` returns target compatibility records instead of one hard-coded target. `RunnerBuildSummary` retains `outRoot`, `written`, and `files` and adds one result per target with its status, files, and optional skip reason.
+
+Preflight also checks emitted path uniqueness across the whole build. This
+rejects command IDs such as `runner.json`, or the combination `foo` and
+`foo.prompt.txt`, when their Codex output paths collide. File mode is part of
+the emitter contract, and the writer runs `chmod` after every executable write
+so replacing a `0644` file restores `0755`.
 
 ### Make Codex CLI a concrete adapter
 
@@ -181,11 +187,11 @@ If a unit fails, leave the last passing commit intact and repair the same branch
 
 ## Progress
 
-- [ ] U1. Normalize the runner contract.
-- [ ] U2. Introduce the runner emitter registry.
-- [ ] U3. Emit and execute Codex CLI runners.
-- [ ] U4. Route the API and CLI through the registry.
-- [ ] U5. Update documentation and run the full proof.
+- [x] U1. Normalize the runner contract.
+- [x] U2. Introduce the runner emitter registry.
+- [x] U3. Emit and execute Codex CLI runners.
+- [x] U4. Route the API and CLI through the registry.
+- [x] U5. Update documentation and run the full proof.
 
 ## Decision log
 
@@ -193,7 +199,11 @@ If a unit fails, leave the last passing commit intact and repair the same branch
 - 2026-08-26: Use `codex-cli` as the first headless target. Add other agent CLIs as separate emitters.
 - 2026-08-26: Treat `stage` as unsupported for Codex CLI instead of changing its meaning.
 - 2026-08-26: Keep compatibility parsing at the authoring boundary so emitters operate on one canonical type.
+- 2026-08-26: Retain legacy provenance through `defineRunner` and `loadRunners` so the CLI can warn once for each legacy source after normalization.
+- 2026-08-26: Reject duplicate and empty explicit target selections instead of silently changing operator intent.
+- 2026-08-26: Treat emitted path uniqueness and executable mode application as build-wide preflight and writer contracts.
 
 ## Revision history
 
 - 2026-08-26: Created the implementation plan from the ranked ideation artifact and linked WKS-323.
+- 2026-08-26: Completed U1 through U5 with focused runtime tests, an explicit dual-target proof, and `script/cibuild`.

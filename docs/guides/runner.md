@@ -1,7 +1,7 @@
-# Build an Orca runner
+# Build portable runners
 
-Polycast accepts a `RunnerDef` module and emits an Orca plugin bundle. The
-public contract is defined by the committed
+Polycast accepts a target-neutral `RunnerDef` module and compiles it for every
+compatible runner target. The public contract is the committed
 [`runner-def.schema.json`](../../schemas/runner-def.schema.json).
 
 ## Define a runner
@@ -13,55 +13,89 @@ import { POLYCAST_VERSION } from "../src/constants.ts";
 import { defineRunner } from "../src/runners/define.ts";
 
 export default defineRunner({
-  kind: "orca-plugin",
+  kind: "runner",
   id: "worktree-review",
   publisher: "polycast",
   title: "Worktree review",
-  description: "Send a review prompt to the current worktree's only terminal.",
+  description: "Review the current Git worktree.",
   version: POLYCAST_VERSION,
-  engine: ">=1.4.188",
   commands: [
     {
-      kind: "terminal-prompt",
+      kind: "prompt",
       id: "review-worktree",
       title: "Review worktree",
       context: "worktree",
       prompt: "Review the current worktree and summarize its changes.",
-      enter: "submit",
+      mode: "run",
     },
   ],
+  x: { "orca-plugin": { engine: ">=1.4.188" } },
 });
 ```
 
-`id` and `publisher` form the plugin identity. `version` is the version in the
-generated manifest; the committed sample follows the package's authoritative
-version. Each command is a worktree-scoped terminal prompt. `enter: "submit"`
-presses Enter after insertion; `"insert"` leaves the prompt in the terminal.
+`publisher` and `id` form the qualified runner ID. Commands declare portable
+prompt intent. `mode: "run"` executes the prompt. `mode: "stage"` prepares it
+for operator review when a target supports staging.
 
-## Build only
+Target-specific metadata stays under `x`. The Orca target requires
+`x["orca-plugin"].engine`. A runner without that hint is incompatible with
+Orca. Codex CLI accepts only `run` commands because its headless execution path
+cannot stage text for an operator.
 
-List definitions and emit bundles locally:
+The loader still accepts the deprecated `kind: "orca-plugin"` contract through
+the 0.2 release line. It maps terminal prompt `submit` and `insert` values to
+`run` and `stage`, then warns once for each legacy source. New definitions must
+use the canonical shape above. Regenerate the committed schema after changing
+the canonical contract:
+
+```sh
+script/export-schema
+```
+
+## Inspect and build targets
 
 ```sh
 bun run dev runner list
-bun run dev runner build --dir runners --out build
+bun run dev runner targets
+bun run dev runner build --target orca-plugin,codex-cli --out build
 ```
 
-The build validates every definition before writing. The current output for the
-sample is:
+`runner list` reports compatibility for every registered target. An implicit
+build emits compatible targets and reports incompatible targets as skipped. An
+explicit unknown, duplicate, empty, or incompatible target selection fails
+before Polycast creates the output directory or writes a file.
+
+The committed runner emits these files:
 
 ```text
 build/orca-plugin/polycast.worktree-review/orca-plugin.json
 build/orca-plugin/polycast.worktree-review/main.mjs
+build/codex-cli/polycast.worktree-review/review-worktree
+build/codex-cli/polycast.worktree-review/review-worktree.prompt.txt
+build/codex-cli/polycast.worktree-review/runner.json
 ```
 
-The `runner build` command is deliberately build-only. It writes the selected
-local output directory and does not install or enable a plugin in Orca, change
-Orca application state, or request/grant capabilities.
+The Orca output preserves the plugin manifest and worker behavior. Orca maps
+`run` to terminal submission and `stage` to insertion without Enter.
 
-The generated manifest currently declares `workspace:read` and `terminal:send`.
-Installing the local bundle in Orca and approving those capabilities remain
-operator-controlled steps in the Orca UI. Polycast does not automate that
-installation or consent boundary. `script/check-orca-plugin-manifest` can
-optionally validate a built manifest with an already-installed Orca parser; it
-does not install Orca or activate the plugin.
+The Codex executable accepts zero or one worktree path. It resolves the Git
+root, reads its sibling prompt file, and invokes:
+
+```sh
+codex exec --cd <git-root> -
+```
+
+The prompt is sent on stdin. The wrapper does not add approval, sandbox, model,
+profile, or configuration flags, so it uses the operator's normal Codex
+configuration.
+
+## Build-only boundary
+
+Runner builds write only to the selected local output directory. They do not
+install or enable an Orca plugin, change Orca or Codex configuration, launch an
+agent, or request capabilities. Installing the Orca bundle and approving its
+`workspace:read` and `terminal:send` capabilities remain operator actions in
+Orca. Polycast does not install the Codex wrappers.
+
+`script/check-orca-plugin-manifest` can validate a built manifest with an
+already-installed Orca parser. It does not install Orca or activate the plugin.
