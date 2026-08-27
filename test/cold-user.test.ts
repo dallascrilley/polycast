@@ -7,7 +7,7 @@
  */
 import { describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { mkdtemp, readdir, rm, stat, writeFile } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { needsTrailingNewline } from "../src/run.ts";
@@ -142,6 +142,40 @@ describe("Shortcuts import consent (CV3)", () => {
 });
 
 describe("apply --prune (D3)", () => {
+  test("prune-only never changes the selected build output", async () => {
+    const buildRoot = await mkdtemp(join(tmpdir(), "polycast-cold-prune-output-"));
+    const root = await mkdtemp(join(tmpdir(), "polycast-cold-prune-installs-"));
+    const env = sandboxEnv(root);
+    try {
+      expect(
+        spawnSync("bun", ["run", CLI, "build", "--out", buildRoot, "--strict"], {
+          cwd: process.cwd(),
+          encoding: "utf8",
+          env,
+        }).status,
+      ).toBe(0);
+
+      const sentinel = join(buildRoot, "prune-only-sentinel");
+      const sentinelContents = "build output must survive\n";
+      await writeFile(sentinel, sentinelContents);
+      const before = await filesUnder(buildRoot);
+
+      for (const writeFlag of [[], ["--write"]]) {
+        const prune = spawnSync(
+          "bun",
+          ["run", CLI, "apply", "--out", buildRoot, "--prune-only", ...writeFlag],
+          { cwd: process.cwd(), encoding: "utf8", env },
+        );
+        expect(prune.status).toBe(0);
+        expect(await filesUnder(buildRoot)).toEqual(before);
+        expect(await readFile(sentinel, "utf8")).toBe(sentinelContents);
+      }
+    } finally {
+      await rm(root, { recursive: true, force: true });
+      await rm(buildRoot, { recursive: true, force: true });
+    }
+  });
+
   test("leaves no polycast-written file behind, and keeps foreign files", async () => {
     // Build output lives outside the install sandbox so the sandbox holds
     // nothing but what apply installed.
