@@ -66,7 +66,8 @@ export const shortcutsCherri: Emitter = {
     if (cmd.x?.shortcuts?.color) lines.push(`#define color ${cmd.x.shortcuts.color}`);
     if (cmd.x?.shortcuts?.glyph) lines.push(`#define glyph ${cmd.x.shortcuts.glyph}`);
     if (cmd.x?.shortcuts?.from) lines.push(`#define from ${cmd.x.shortcuts.from}`);
-    if (cmd.modality === "text") lines.push("#define inputs text");
+    const inputs = cmd.x?.shortcuts?.inputs ?? (cmd.modality === "text" ? ["text"] : []);
+    if (inputs.length > 0) lines.push(`#define inputs ${inputs.join(", ")}`);
 
     lines.push("#include 'actions/mac'");
 

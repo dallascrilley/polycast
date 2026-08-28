@@ -140,6 +140,17 @@ describe("shortcuts-cherri emitter", () => {
     expect(file?.contents).not.toContain("tr '[:lower:]'");
   });
 
+  test("emits explicit Shortcut share-sheet input classes", () => {
+    const cmd = defineCommand({
+      ...textCmd,
+      id: "open-shared-url",
+      x: { shortcuts: { from: "sharesheet", inputs: ["url", "webpage", "text"] } },
+    });
+    const [file] = shortcutsCherri.emit(cmd);
+    expect(file?.contents).toContain("#define from sharesheet");
+    expect(file?.contents).toContain("#define inputs url, webpage, text");
+  });
+
   test("emits args commands with prompt and polycast run stub", () => {
     const files = shortcutsCherri.emit(argsCmd);
     const cherri = files.find((f) => f.path.endsWith(".cherri"));

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { assertValid } from "../define.ts";
-import type { CommandDef } from "../types.ts";
+import { type CommandDef, SHORTCUTS_INPUTS } from "../types.ts";
 
 const KEBAB_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -24,6 +24,8 @@ const commandBodySchema = z.object({
   lang: z.enum(["bash", "node", "applescript"]),
   source: z.string(),
 });
+
+const shortcutsInputSchema = z.enum(SHORTCUTS_INPUTS);
 
 const crossTargetHintsSchema = z
   .object({
@@ -75,6 +77,7 @@ const crossTargetHintsSchema = z
         glyph: z.string().optional(),
         color: z.string().optional(),
         from: z.string().optional(),
+        inputs: z.array(shortcutsInputSchema).min(1).optional(),
       })
       .optional(),
   })
