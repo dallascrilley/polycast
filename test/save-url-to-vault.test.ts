@@ -111,7 +111,7 @@ describe("save-url-to-vault command", () => {
         .emit(saveUrlToVault)
         .find((file) => file.path === "save-url-to-vault.cherri");
       expect(cherri?.contents).toContain("#define from sharesheet");
-      expect(cherri?.contents).toContain("#define inputs text");
+      expect(cherri?.contents).toContain("#define inputs url, webpage, text");
     } finally {
       await rm(root, { recursive: true, force: true });
     }

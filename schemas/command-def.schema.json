@@ -195,6 +195,36 @@
             },
             "from": {
               "type": "string"
+            },
+            "inputs": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "installedapp",
+                  "app",
+                  "article",
+                  "contact",
+                  "date",
+                  "email",
+                  "folder",
+                  "file",
+                  "image",
+                  "itunes",
+                  "location",
+                  "maplink",
+                  "media",
+                  "pdf",
+                  "phonenumber",
+                  "richtext",
+                  "webpage",
+                  "text",
+                  "dictionary",
+                  "number",
+                  "url"
+                ]
+              }
             }
           },
           "additionalProperties": false

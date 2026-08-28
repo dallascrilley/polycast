@@ -12,6 +12,7 @@ export default defineCommand({
     shortcuts: {
       name: "Save URL to Vault",
       from: "sharesheet",
+      inputs: ["url", "webpage", "text"],
     },
   },
   body: {

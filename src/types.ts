@@ -34,6 +34,33 @@ export interface CommandArg {
 
 export type BodyLang = "bash" | "node" | "applescript";
 
+/** Content item classes accepted by a Shortcut from macOS share surfaces. */
+export const SHORTCUTS_INPUTS = [
+  "installedapp",
+  "app",
+  "article",
+  "contact",
+  "date",
+  "email",
+  "folder",
+  "file",
+  "image",
+  "itunes",
+  "location",
+  "maplink",
+  "media",
+  "pdf",
+  "phonenumber",
+  "richtext",
+  "webpage",
+  "text",
+  "dictionary",
+  "number",
+  "url",
+] as const;
+
+export type ShortcutsInput = (typeof SHORTCUTS_INPUTS)[number];
+
 export interface CommandBody {
   readonly lang: BodyLang;
   /**
@@ -76,6 +103,7 @@ export interface CrossTargetHints {
     readonly glyph?: string;
     readonly color?: string;
     readonly from?: string;
+    readonly inputs?: readonly ShortcutsInput[];
   };
 }
 
