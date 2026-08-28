@@ -152,9 +152,19 @@ describe("save-url-to-vault command", () => {
       );
       await Promise.all([chmod(sshPath, 0o755), chmod(curlPath, 0o755), chmod(pandocPath, 0o755)]);
 
-      const run = () =>
+      const run = (inputUrl = url) =>
         Bun.spawn(
-          ["bun", "run", cli, "run", saveUrlToVault.id, "--commands", commandsDir, "--text", url],
+          [
+            "bun",
+            "run",
+            cli,
+            "run",
+            saveUrlToVault.id,
+            "--commands",
+            commandsDir,
+            "--text",
+            inputUrl,
+          ],
           {
             cwd: join(import.meta.dir, ".."),
             env: {
@@ -193,6 +203,12 @@ describe("save-url-to-vault command", () => {
         expect(contents).toContain("# Example Domain");
         expect(contents).toContain("Fixture body.");
       }
+
+      await writeFile(fixtureHtml, "<html><body><p>Untitled fixture.</p></body></html>");
+      const untitled = run("https://example.net/path?proof=1#fragment");
+      expect(await untitled.exited).toBe(0);
+      expect(await new Response(untitled.stderr).text()).toBe("");
+      expect((await readdir(inbox)).some((note) => note.endsWith("-example-net.md"))).toBe(true);
     } finally {
       await rm(root, { recursive: true, force: true });
     }

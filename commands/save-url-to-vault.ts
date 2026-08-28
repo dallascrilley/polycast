@@ -94,7 +94,7 @@ PYTHON
 )"
 
 if [ -z "$title" ]; then
-  title="$(printf '%s' "$url" | sed -E 's#^https?://##; s#[/?#].*$##')"
+  title="$(printf '%s' "$url" | sed -E 's|^https?://||; s|[/?#].*$||')"
 fi
 if [ -z "$title" ]; then
   title="Web page"
