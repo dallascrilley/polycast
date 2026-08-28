@@ -42,7 +42,7 @@ exec ssh \\
   bash -s -- "$url_base64" <<'POLYCAST_REMOTE'
 set -euo pipefail
 
-url="$(printf '%s' "$1" | base64 -D)"
+url="$(printf '%s' "$1" | base64 --decode)"
 destination="$HOME/vault/inbox/auto"
 mkdir -p "$destination"
 

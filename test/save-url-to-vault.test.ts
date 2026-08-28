@@ -100,7 +100,7 @@ describe("save-url-to-vault command", () => {
       );
 
       const remoteProgram = await readFile(stdinPath, "utf8");
-      expect(remoteProgram).toContain('url="$(printf \'%s\' "$1" | base64 -D)"');
+      expect(remoteProgram).toContain('url="$(printf \'%s\' "$1" | base64 --decode)"');
       expect(remoteProgram).toContain('destination="$HOME/vault/inbox/auto"');
       expect(remoteProgram).toContain("curl \\");
       expect(remoteProgram).toContain("--max-filesize 10485760");
