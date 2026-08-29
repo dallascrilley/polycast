@@ -72,7 +72,9 @@ describe("file-to-inbox capability", () => {
       });
       expect(dot.entries[0]?.destination).toBe(join(inbox, ".env-2"));
       expect(await readFile(join(inbox, ".env-2"), "utf8")).toBe("secret=1");
-      expect(readFinderTagPlist(join(inbox, "notes-2.txt"))).toContain("Review");
+      if (process.platform === "darwin") {
+        expect(readFinderTagPlist(join(inbox, "notes-2.txt"))).toContain("Review");
+      }
       expect(receipt.receiptPath).toBeTruthy();
       const stored = JSON.parse(await readFile(receipt.receiptPath ?? "", "utf8"));
       expect(stored.entries[0].sha256).toBe(receipt.entries[0]?.sha256);

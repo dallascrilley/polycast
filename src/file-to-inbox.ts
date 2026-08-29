@@ -138,6 +138,7 @@ function escapeXml(value: string): string {
 }
 
 export function applyFinderTag(path: string, tag: string): void {
+  if (process.platform !== "darwin") return;
   const xml = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">',
