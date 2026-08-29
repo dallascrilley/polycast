@@ -34,7 +34,10 @@ commands/*.ts ──load──> CommandDef[] ──registry──> emitters[] �
 ```
 
 - **`CommandDef`** (`src/types.ts`) — the IR. `modality` is the load-bearing
-  field; `x.<target>` holds surface-specific hints with no agnostic home.
+  field; `body` is a script (`lang` + `source`) or `lang: "exec"`; `x.<target>`
+  holds surface-specific hints with no agnostic home. File-organization policy
+  stays in the headless executable, not in launcher shims
+  ([ADR 0001](decisions/0001-exec-body-file-to-inbox.md)).
 - **`Emitter`** — `{ target, supports[], emit, emitCatalog?, validate? }`.
   `supports` is the modality compatibility list; `emit` returns `[]` to skip.
   Catalog emitters aggregate static Raycast JSON; optional `validate` runs on

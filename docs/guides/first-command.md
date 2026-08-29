@@ -5,14 +5,15 @@ to a launcher. Assumes you have run `script/setup` (or `just setup`).
 
 ## Sample pack
 
-Four built-in commands cover every modality polycast ships today:
+Sample commands cover every modality polycast ships today:
 
 | Command | Modality | Surfaces | File |
 |---------|----------|----------|------|
 | **Uppercase** | `text` | PopClip, Shortcuts, agent-cli | [`commands/uppercase.ts`](../../commands/uppercase.ts) |
 | **Copy to Clipboard** | `text` | PopClip, Shortcuts, agent-cli | [`commands/copy-to-clipboard.ts`](../../commands/copy-to-clipboard.ts) |
 | **Open Code Repo** | `args` | Raycast script, Shortcuts, agent-cli | [`commands/open-repo.ts`](../../commands/open-repo.ts) |
-| **Basename Files** | `files` | Dropzone, Dropover, agent-cli | [`commands/basename-files.ts`](../../commands/basename-files.ts) |
+| **Basename Files** | `files` | Dropzone, Dropover, Shortcuts, agent-cli | [`commands/basename-files.ts`](../../commands/basename-files.ts) |
+| **File to Inbox** | `files` | Dropzone, Dropover, Shortcuts, agent-cli | [`commands/file-to-inbox.ts`](../../commands/file-to-inbox.ts) |
 
 List what your checkout supports:
 

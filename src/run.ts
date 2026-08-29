@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync, writeSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { CommandDef } from "./types.ts";
+import type { CommandDef, ExecBody } from "./types.ts";
 import { wrappedScript } from "./wrappers.ts";
 
 export interface RunOptions {
@@ -40,12 +40,34 @@ function spawnWithStdio(
   });
 }
 
+function spawnExec(
+  body: ExecBody,
+  positional: readonly string[],
+  stdin: string | undefined,
+  captureStdout: boolean,
+) {
+  const extra = body.args ?? [];
+  const executable = body.executable;
+  if (executable.endsWith(".ts") || executable.endsWith(".js") || executable.endsWith(".mjs")) {
+    return spawnWithStdio(
+      process.execPath,
+      [executable, ...extra, ...positional],
+      stdin,
+      captureStdout,
+    );
+  }
+  return spawnWithStdio(executable, [...extra, ...positional], stdin, captureStdout);
+}
+
 function spawnInterpreter(
   cmd: CommandDef,
   positional: readonly string[],
   stdin: string | undefined,
   captureStdout: boolean,
 ) {
+  if (cmd.body.lang === "exec") {
+    return spawnExec(cmd.body, positional, stdin, captureStdout);
+  }
   switch (cmd.body.lang) {
     case "bash":
       return spawnWithStdio(
@@ -74,7 +96,7 @@ function spawnInterpreter(
       }
     }
     default: {
-      const exhaustive: never = cmd.body.lang;
+      const exhaustive: never = cmd.body;
       return exhaustive;
     }
   }
@@ -86,10 +108,12 @@ export function printCommandUsage(cmd: CommandDef): void {
 
 /** Run a command body with modality-appropriate stdin/argv wiring. */
 export function executeCommand(cmd: CommandDef, options: RunOptions): number {
-  const helpIdx = options.argv.findIndex((a) => a === "-h" || a === "--help");
-  if (helpIdx >= 0) {
-    printCommandUsage(cmd);
-    return 0;
+  if (cmd.body.lang !== "exec") {
+    const helpIdx = options.argv.findIndex((a) => a === "-h" || a === "--help");
+    if (helpIdx >= 0) {
+      printCommandUsage(cmd);
+      return 0;
+    }
   }
 
   const positional = options.argv.filter((a) => a !== "--");

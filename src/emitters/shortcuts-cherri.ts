@@ -1,5 +1,10 @@
 import { OWNERSHIP_MARKER } from "../constants.ts";
-import { shortcutsArgsShim, shortcutsNoneShim, shortcutsTextShim } from "../shim.ts";
+import {
+  shortcutsArgsShim,
+  shortcutsFilesShim,
+  shortcutsNoneShim,
+  shortcutsTextShim,
+} from "../shim.ts";
 import type { CommandArg, CommandDef, EmittedFile, Emitter, ValidationIssue } from "../types.ts";
 import { escapeCherriString } from "../wrappers.ts";
 
@@ -38,20 +43,38 @@ function emitArgsCherri(cmd: CommandDef): string[] {
   return lines;
 }
 
+function defaultInputs(cmd: CommandDef): readonly string[] {
+  if (cmd.x?.shortcuts?.inputs) return cmd.x.shortcuts.inputs;
+  if (cmd.modality === "text") return ["text"];
+  if (cmd.modality === "files") return ["file"];
+  return [];
+}
+
 function shellShimFor(cmd: CommandDef): string {
   switch (cmd.modality) {
     case "text":
       return shortcutsTextShim(cmd);
     case "none":
       return shortcutsNoneShim(cmd);
-    default:
+    case "files":
+      return shortcutsFilesShim(cmd);
+    case "args":
       return shortcutsArgsShim(cmd);
   }
 }
 
+function runShellScriptLine(cmd: CommandDef): string {
+  const script = escapeCherriString(shellShimFor(cmd));
+  if (cmd.modality === "files") {
+    return `runShellScript('${script}', ShortcutInput, '/bin/bash', 'as arguments')`;
+  }
+  const inputArg = cmd.modality === "text" ? "ShortcutInput" : "nil";
+  return `runShellScript('${script}', ${inputArg}, '/bin/bash')`;
+}
+
 export const shortcutsCherri: Emitter = {
   target: "shortcuts-cherri",
-  supports: ["text", "none", "args"],
+  supports: ["text", "none", "args", "files"],
 
   emit(cmd: CommandDef): EmittedFile[] {
     if (!this.supports.includes(cmd.modality)) return [];
@@ -66,7 +89,7 @@ export const shortcutsCherri: Emitter = {
     if (cmd.x?.shortcuts?.color) lines.push(`#define color ${cmd.x.shortcuts.color}`);
     if (cmd.x?.shortcuts?.glyph) lines.push(`#define glyph ${cmd.x.shortcuts.glyph}`);
     if (cmd.x?.shortcuts?.from) lines.push(`#define from ${cmd.x.shortcuts.from}`);
-    const inputs = cmd.x?.shortcuts?.inputs ?? (cmd.modality === "text" ? ["text"] : []);
+    const inputs = defaultInputs(cmd);
     if (inputs.length > 0) lines.push(`#define inputs ${inputs.join(", ")}`);
 
     lines.push("#include 'actions/mac'");
@@ -74,11 +97,7 @@ export const shortcutsCherri: Emitter = {
     if (cmd.modality === "args") {
       lines.push(...emitArgsCherri(cmd));
     } else {
-      const inputArg = cmd.modality === "text" ? "ShortcutInput" : "nil";
-      lines.push(
-        `runShellScript('${escapeCherriString(shellShimFor(cmd))}', ${inputArg}, '/bin/bash')`,
-        "",
-      );
+      lines.push(runShellScriptLine(cmd), "");
     }
 
     return [
@@ -114,6 +133,22 @@ export const shortcutsCherri: Emitter = {
         message: "cherri missing polycast run dispatcher",
         severity: "error",
       });
+    }
+    if (cmd.modality === "files") {
+      if (!cherri.contents.includes("'as arguments'")) {
+        issues.push({
+          target: this.target,
+          message: "files cherri must pass ShortcutInput as arguments, not stdin",
+          severity: "error",
+        });
+      }
+      if (cherri.contents.includes(" --text ")) {
+        issues.push({
+          target: this.target,
+          message: "files cherri must not coerce paths through --text",
+          severity: "error",
+        });
+      }
     }
     if (cmd.modality === "args") {
       if (!cmd.args?.length) {

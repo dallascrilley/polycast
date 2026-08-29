@@ -32,7 +32,32 @@ export interface CommandArg {
   readonly data?: readonly { readonly title: string; readonly value: string }[];
 }
 
-export type BodyLang = "bash" | "node" | "applescript";
+export type ScriptLang = "bash" | "node" | "applescript";
+export type BodyLang = ScriptLang | "exec";
+
+export interface ScriptBody {
+  readonly lang: ScriptLang;
+  /**
+   * The body is a pure `input -> stdout` function. It reads its input per the
+   * command's modality (stdin for text, "$@" paths for files, argv for args)
+   * and writes results to stdout. Emitters inject the per-surface wrapper that
+   * adapts the launcher's native input into this contract.
+   */
+  readonly source: string;
+}
+
+/**
+ * Invoke a headless executable instead of inlining the implementation in the
+ * command definition. Launchers still emit `polycast run` shims; `run` spawns
+ * this executable with the same modality argv/stdin contract as a script body.
+ */
+export interface ExecBody {
+  readonly lang: "exec";
+  readonly executable: string;
+  readonly args?: readonly string[];
+}
+
+export type CommandBody = ScriptBody | ExecBody;
 
 /** Content item classes accepted by a Shortcut from macOS share surfaces. */
 export const SHORTCUTS_INPUTS = [
@@ -60,17 +85,6 @@ export const SHORTCUTS_INPUTS = [
 ] as const;
 
 export type ShortcutsInput = (typeof SHORTCUTS_INPUTS)[number];
-
-export interface CommandBody {
-  readonly lang: BodyLang;
-  /**
-   * The body is a pure `input -> stdout` function. It reads its input per the
-   * command's modality (stdin for text, "$@" paths for files, argv for args)
-   * and writes results to stdout. Emitters inject the per-surface wrapper that
-   * adapts the launcher's native input into this contract.
-   */
-  readonly source: string;
-}
 
 /** Target-specific hints that have no home in the language-agnostic core. */
 export interface CrossTargetHints {

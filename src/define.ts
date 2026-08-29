@@ -26,7 +26,11 @@ export function assertValid(cmd: CommandDef): void {
   if (cmd.modality === "args" && (!cmd.args || cmd.args.length === 0)) {
     throw new Error(`command "${cmd.id}" has modality "args" but no args`);
   }
-  if (!cmd.body.source.trim()) {
+  if (cmd.body.lang === "exec") {
+    if (!cmd.body.executable.trim()) {
+      throw new Error(`command "${cmd.id}" has an empty executable`);
+    }
+  } else if (!cmd.body.source.trim()) {
     throw new Error(`command "${cmd.id}" has an empty body`);
   }
 }

@@ -9,7 +9,8 @@ MCP server over the same API. It does not run a long-lived production service.
 
 | Path | Role |
 |------|------|
-| `src/types.ts` | The IR: `CommandDef` (metadata + body + `Modality`) and the `Emitter` interface. |
+| `src/types.ts` | The IR: `CommandDef` (metadata + script or exec body + `Modality`) and the `Emitter` interface. |
+| `src/file-to-inbox.ts` | Headless file-to-Inbox implementation: copy, collisions, Review tag, receipts. |
 | `src/define.ts` | `defineCommand()` authoring helper plus structural validation. |
 | `src/load.ts` | Loads `commands/*.ts` modules (default-exported `CommandDef`). |
 | `src/commands-store.ts` | Writes `build/commands/<id>.json` and loads the JSON body store used by `run`. |
@@ -54,8 +55,11 @@ selection to stdin because the generated `Config.json` sets `stdin: text`.
 Dropzone passes dragged file paths (`"$@"`). Raycast passes typed arguments.
 Shortcuts passes a share-sheet input.
 
-The body is authored once as a pure `input → stdout` function, and each emitter
-injects the wrapper that adapts its surface's native input into that contract.
+The body is authored once as a pure `input → stdout` function, or as `lang:
+"exec"` pointing at a headless program. Each emitter injects the wrapper that
+adapts its surface's native input into that contract. File-organization policy
+lives in the executable, not in launcher shims. See
+[`docs/decisions/0001-exec-body-file-to-inbox.md`](decisions/0001-exec-body-file-to-inbox.md).
 An emitter declares which modalities it `supports` and returns `[]` for anything
 it cannot represent, so `build` skips a surface rather than mis-emitting for it.
 

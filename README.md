@@ -20,7 +20,7 @@ guessing. That is the rule the whole thing rests on, and it lives in the
 | `popclip` | `text` | `<id>.popclipext/` holding `Config.json` and `script.sh` |
 | `dropzone` | `files` | `<id>.dzbundle/` holding `action.rb` and `run.sh` |
 | `dropover-script` | `files` | `<id>.sh` plus a shared `manifest.json` |
-| `shortcuts-cherri` | `text`, `args`, `none` | `<id>.cherri` source, compiled to `<id>.shortcut` when Cherri is installed |
+| `shortcuts-cherri` | `text`, `files`, `args`, `none` | `<id>.cherri` source, compiled to `<id>.shortcut` when Cherri is installed |
 | `raycast-snippet` | `text`, `none` | shared `snippets.json`, opt in per command via `x.raycast.snippet` |
 | `raycast-quicklink` | `args`, `none` | shared `quicklinks.json`, opt in per command via `x.raycast.quicklink` |
 | `agent-cli` | all four | executable stub plus `<id>.polycast-meta.json` |
@@ -137,7 +137,7 @@ and Raycast Level A visual proof, in [`LAUNCH_CRITERIA.md`](LAUNCH_CRITERIA.md).
 Level A for Shortcuts is still open and tracked there as P1-5.
 
 What is not there yet: this is macOS only, Dropover import is staged manually
-rather than programmatically, and the four commands in `commands/` are a sample
+rather than programmatically, and the commands in `commands/` are a sample
 pack rather than a library. The `raycast-snippet` and `raycast-quicklink`
 emitters produce nothing until a command opts in, which is why the sample build
 above writes no `snippets.json`.
