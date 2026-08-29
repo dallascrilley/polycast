@@ -48,6 +48,21 @@ exec "$POLYCAST" run --commands "$COMMANDS" open-repo "$@"', nil, '/bin/bash')
 
 `dropdown` args skip Shortcuts (Raycast-only); plain `text`/`password` args supported.
 
+## Files modality template
+
+Pass Input is `as arguments` so paths stay `"$@"` instead of newline-delimited stdin:
+
+```cherri
+#define name File to Inbox
+#define from sharesheet
+#define inputs file
+#include 'actions/mac'
+runShellScript('set -euo pipefail
+POLYCAST="${POLYCAST_BIN:-polycast}"
+COMMANDS="${POLYCAST_COMMANDS_DIR:-$HOME/.polycast/commands}"
+exec "$POLYCAST" run --commands "$COMMANDS" file-to-inbox "$@"', ShortcutInput, '/bin/bash', 'as arguments')
+```
+
 ## Native `shortcuts` CLI (runtime, not authoring)
 
 - `shortcuts run "Name" -i path -o path`
@@ -61,7 +76,7 @@ exec "$POLYCAST" run --commands "$COMMANDS" open-repo "$@"', nil, '/bin/bash')
 | `text` | yes (Cherri + ShortcutInput) |
 | `none` | yes (no `#define inputs`) |
 | `args` | yes — runtime `prompt()` per arg, then `polycast run` with `"$@"` |
-| `files` | skip |
+| `files` | yes — `#define inputs file`, `runShellScript(..., ShortcutInput, '/bin/bash', 'as arguments')` so paths stay argv |
 
 ## Output layout
 

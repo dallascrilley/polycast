@@ -1,6 +1,6 @@
-import type { CommandDef } from "./types.ts";
+import type { CommandDef, ScriptLang } from "./types.ts";
 
-const SHEBANG: Record<CommandDef["body"]["lang"], string> = {
+const SHEBANG: Record<ScriptLang, string> = {
   bash: "#!/bin/bash",
   node: "#!/usr/bin/env node",
   applescript: "#!/usr/bin/osascript",
@@ -8,6 +8,9 @@ const SHEBANG: Record<CommandDef["body"]["lang"], string> = {
 
 /** Executable script with modality adapter around the body. */
 export function wrappedScript(cmd: CommandDef): string {
+  if (cmd.body.lang === "exec") {
+    throw new Error(`exec body cannot be wrapped as a script: "${cmd.id}"`);
+  }
   const shebang = SHEBANG[cmd.body.lang];
   const body = cmd.body.source.trimEnd();
 

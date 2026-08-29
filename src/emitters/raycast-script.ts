@@ -1,12 +1,6 @@
 import { dispatcherRunBody } from "../shim.ts";
 import type { CommandArg, CommandDef, EmittedFile, Emitter, ValidationIssue } from "../types.ts";
 
-const SHEBANG: Record<CommandDef["body"]["lang"], string> = {
-  bash: "#!/bin/bash",
-  node: "#!/usr/bin/env node",
-  applescript: "#!/usr/bin/osascript",
-};
-
 function argumentJson(arg: CommandArg, index: number): string {
   const spec: Record<string, unknown> = {
     type: arg.type ?? "text",
@@ -26,7 +20,7 @@ export const raycastScript: Emitter = {
     if (!this.supports.includes(cmd.modality)) return [];
 
     const lines: string[] = [
-      SHEBANG[cmd.body.lang],
+      "#!/bin/bash",
       "",
       "# Required parameters:",
       "# @raycast.schemaVersion 1",

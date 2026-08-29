@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
-import { assertValid } from "./define.ts";
+import { parseCommandDefJson } from "./schema/command-def.ts";
 import type { CommandDef } from "./types.ts";
 
 export function defaultCommandsDir(outRoot: string): string {
@@ -37,8 +37,7 @@ export async function writeCommandsJson(
 export async function loadCommandJson(id: string, dir: string): Promise<CommandDef> {
   const path = join(resolve(dir), `${id}.json`);
   const raw = await readFile(path, "utf8");
-  const cmd = JSON.parse(raw) as CommandDef;
-  assertValid(cmd);
+  const cmd = parseCommandDefJson(JSON.parse(raw));
   if (cmd.id !== id) {
     throw new Error(`command id mismatch: expected "${id}", got "${cmd.id}"`);
   }

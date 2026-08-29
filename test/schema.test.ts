@@ -38,6 +38,26 @@ describe("command-def schema", () => {
     ).toThrow();
   });
 
+  test("accepts an exec body and rejects an empty executable", () => {
+    const cmd = defineCommand({
+      id: "exec-test",
+      title: "Exec Test",
+      description: "valid",
+      modality: "files",
+      body: { lang: "exec", executable: "/usr/bin/true" },
+    });
+    expect(parseCommandDefJson(cmd).body).toEqual({ lang: "exec", executable: "/usr/bin/true" });
+    expect(() =>
+      commandDefSchema.parse({
+        id: "empty-exec",
+        title: "x",
+        description: "x",
+        modality: "files",
+        body: { lang: "exec", executable: "" },
+      }),
+    ).toThrow();
+  });
+
   test("requires args when modality is args", () => {
     expect(() =>
       parseCommandDefJson({

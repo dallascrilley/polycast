@@ -50,6 +50,11 @@ export function shortcutsNoneShim(cmd: CommandDef): string {
   return [...DISPATCHER_RUN_PREFIX, runExec(cmd)].join("\n");
 }
 
+/** Cherri runShellScript body — file paths as "$@" (Pass Input: as arguments). */
+export function shortcutsFilesShim(cmd: CommandDef): string {
+  return [...DISPATCHER_RUN_PREFIX, runExec(cmd, '"$@"')].join("\n");
+}
+
 /** Cherri runShellScript body — args after Cherri prompt() + set -- lines. */
 export function shortcutsArgsShim(cmd: CommandDef): string {
   const args = cmd.args ?? [];

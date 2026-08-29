@@ -20,10 +20,18 @@ const commandArgSchema = z.object({
     .optional(),
 });
 
-const commandBodySchema = z.object({
+const scriptBodySchema = z.object({
   lang: z.enum(["bash", "node", "applescript"]),
   source: z.string(),
 });
+
+const execBodySchema = z.object({
+  lang: z.literal("exec"),
+  executable: z.string().min(1),
+  args: z.array(z.string()).optional(),
+});
+
+const commandBodySchema = z.discriminatedUnion("lang", [scriptBodySchema, execBodySchema]);
 
 const shortcutsInputSchema = z.enum(SHORTCUTS_INPUTS);
 
@@ -104,7 +112,15 @@ export const commandDefSchema = z
         path: ["args"],
       });
     }
-    if (!cmd.body.source.trim()) {
+    if (cmd.body.lang === "exec") {
+      if (!cmd.body.executable.trim()) {
+        ctx.addIssue({
+          code: "custom",
+          message: "body.executable must be non-empty",
+          path: ["body", "executable"],
+        });
+      }
+    } else if (!cmd.body.source.trim()) {
       ctx.addIssue({
         code: "custom",
         message: "body.source must be non-empty",

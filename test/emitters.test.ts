@@ -172,8 +172,14 @@ describe("shortcuts-cherri emitter", () => {
     expect(shortcutsCherri.emit(cmd)).toEqual([]);
   });
 
-  test("skips files commands", () => {
-    expect(shortcutsCherri.emit(filesCmd)).toEqual([]);
+  test("emits files commands with ShortcutInput as arguments", () => {
+    const [file] = shortcutsCherri.emit(filesCmd);
+    expect(file?.path).toBe("basename-files.cherri");
+    expect(file?.contents).toContain("#define inputs file");
+    expect(file?.contents).toContain("'as arguments'");
+    expect(file?.contents).toContain('run --commands "$COMMANDS" basename-files "$@"');
+    expect(file?.contents).not.toContain(" --text ");
+    expect(file?.contents).not.toContain("for f in");
   });
 
   // Regression: `#define name "Uppercase"` made the quotes part of the shortcut

@@ -35,7 +35,8 @@ Schema is Draft 2020-12. It enforces the required properties, field types,
 enum values, and kebab-case `id`. It requires `body.source` to be a string, but
 it does not require that string to be non-empty or require `args` when
 `modality` is `args`. The runtime Zod parser adds those refinements:
-`body.source` must be non-empty, and `modality: "args"` must include at least
+`body.source` must be non-empty for script bodies, `body.executable` must be
+non-empty for `lang: "exec"`, and `modality: "args"` must include at least
 one `args` entry.
 
 Use this input to preview a command and its strict build without changing the
