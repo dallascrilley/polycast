@@ -108,10 +108,12 @@ export function printCommandUsage(cmd: CommandDef): void {
 
 /** Run a command body with modality-appropriate stdin/argv wiring. */
 export function executeCommand(cmd: CommandDef, options: RunOptions): number {
-  const helpIdx = options.argv.findIndex((a) => a === "-h" || a === "--help");
-  if (helpIdx >= 0) {
-    printCommandUsage(cmd);
-    return 0;
+  if (cmd.body.lang !== "exec") {
+    const helpIdx = options.argv.findIndex((a) => a === "-h" || a === "--help");
+    if (helpIdx >= 0) {
+      printCommandUsage(cmd);
+      return 0;
+    }
   }
 
   const positional = options.argv.filter((a) => a !== "--");

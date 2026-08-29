@@ -62,6 +62,16 @@ describe("file-to-inbox capability", () => {
       expect(await readFile(first, "utf8")).toBe("alpha");
       expect(await readFile(join(inbox, "notes.txt"), "utf8")).toBe("already here");
       expect(await readFile(join(inbox, "notes-2.txt"), "utf8")).toBe("alpha");
+      await writeSource(sources, ".env", "secret=1");
+      await writeSource(inbox, ".env", "existing");
+      const dot = await fileToInbox({
+        sources: [join(sources, ".env")],
+        inbox,
+        tag: "Review",
+        dryRun: false,
+      });
+      expect(dot.entries[0]?.destination).toBe(join(inbox, ".env-2"));
+      expect(await readFile(join(inbox, ".env-2"), "utf8")).toBe("secret=1");
       expect(readFinderTagPlist(join(inbox, "notes-2.txt"))).toContain("Review");
       expect(receipt.receiptPath).toBeTruthy();
       const stored = JSON.parse(await readFile(receipt.receiptPath ?? "", "utf8"));
@@ -155,6 +165,14 @@ describe("file-to-inbox capability", () => {
       ).rejects.toMatchObject({ code: EX_NOINPUT });
       expect("error" in parseFileToInboxArgs(["--nope"])).toBe(true);
       expect(await runFileToInbox([])).toBe(EX_USAGE);
+      const commandsDir = join(root, "commands");
+      await writeCommandsJson([fileToInboxCommand], commandsDir);
+      const help = Bun.spawnSync(
+        ["bun", "run", cli, "run", fileToInboxCommand.id, "--commands", commandsDir, "--help"],
+        { cwd: join(import.meta.dir, ".."), stdout: "pipe", stderr: "pipe" },
+      );
+      expect(help.exitCode).toBe(0);
+      expect(help.stdout.toString()).toContain("--inbox");
     } finally {
       await rm(root, { recursive: true, force: true });
     }
@@ -165,6 +183,7 @@ describe("file-to-inbox capability", () => {
     const commandsDir = join(root, "commands");
     try {
       const src = await writeSource(sources, "via-run.txt", "from polycast run");
+      const spaced = await writeSource(sources, "my notes.txt", "spaced argv");
       await writeCommandsJson([fileToInboxCommand], commandsDir);
       const result = Bun.spawnSync(
         [
@@ -179,6 +198,7 @@ describe("file-to-inbox capability", () => {
           "--inbox",
           inbox,
           src,
+          spaced,
         ],
         {
           cwd: join(import.meta.dir, ".."),
@@ -188,8 +208,11 @@ describe("file-to-inbox capability", () => {
       );
       expect(result.exitCode).toBe(0);
       const receipt = JSON.parse(result.stdout.toString());
-      expect(receipt.entries[0].destination).toBe(join(inbox, "via-run.txt"));
+      expect(receipt.entries.map((e: { destination: string }) => e.destination).sort()).toEqual(
+        [join(inbox, "via-run.txt"), join(inbox, "my notes.txt")].sort(),
+      );
       expect(await readFile(join(inbox, "via-run.txt"), "utf8")).toBe("from polycast run");
+      expect(await readFile(join(inbox, "my notes.txt"), "utf8")).toBe("spaced argv");
       expect(result.stderr.toString()).toBe("");
     } finally {
       await rm(root, { recursive: true, force: true });

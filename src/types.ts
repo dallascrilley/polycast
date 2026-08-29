@@ -59,10 +59,6 @@ export interface ExecBody {
 
 export type CommandBody = ScriptBody | ExecBody;
 
-export function isExecBody(body: CommandBody): body is ExecBody {
-  return body.lang === "exec";
-}
-
 /** Content item classes accepted by a Shortcut from macOS share surfaces. */
 export const SHORTCUTS_INPUTS = [
   "installedapp",

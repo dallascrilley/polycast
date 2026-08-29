@@ -106,8 +106,8 @@ export function fileToInboxUsage(): string {
 function collisionName(filename: string, attempt: number): string {
   if (attempt === 0) return filename;
   const ext = extname(filename);
-  const stem = ext ? filename.slice(0, -ext.length) : filename;
-  return `${stem}-${attempt + 1}${ext}`;
+  if (!ext || ext === filename) return `${filename}-${attempt + 1}`;
+  return `${filename.slice(0, -ext.length)}-${attempt + 1}${ext}`;
 }
 
 async function digestFile(path: string): Promise<{ bytes: number; sha256: string }> {
