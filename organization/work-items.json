@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "project": "polycast",
+  "policy": {
+    "linearOwns": [
+      "human commitments",
+      "portfolio priority",
+      "project health",
+      "cross-project coordination"
+    ],
+    "beadsOwns": [
+      "local execution tasks",
+      "dependency graphs",
+      "agent-discovered work",
+      "implementation notes"
+    ],
+    "promotionLabel": "promote:linear",
+    "pushScope": "exact-bead-ids",
+    "automaticBidirectionalSync": false,
+    "boundedReconciliation": true,
+    "stopConditions": [
+      "irreversible action without a verified recovery path",
+      "ambiguous target or conflicting intent that cannot be resolved from evidence",
+      "required authority cannot be safely scoped",
+      "recovery or verification step fails"
+    ]
+  },
+  "linear": {
+    "workspace": "dallascrilley",
+    "team": {
+      "id": "8b799053-907f-4ddf-a416-95a29140b475",
+      "key": "WKS",
+      "name": "Workspace"
+    },
+    "project": {
+      "id": "03bcd222-3e15-4aee-b257-ce547bf24771",
+      "name": "Polycast"
+    },
+    "quota_domain": "workspace",
+    "sync_min_interval_seconds": 300,
+    "sync_max_attempts_per_hour": 12
+  },
+  "credentials": {
+    "provider": "1Password service account via Keychain-backed op shim",
+    "vault": "Agent Automation",
+    "linearApiKey": "op://nijmtsgv2ajhcrm6voh3h7ylha/xtjpkgtz3gdqtn3b6xwt6eabem/credential"
+  },
+  "beads": {
+    "prefix": "polycast",
+    "requiredVersion": "1.2.1",
+    "clientPath": "/Users/dallascrilley/.local/bin/bd-1.2.1",
+    "doltRemote": "git+https://github.com/dallascrilley/polycast",
+    "automaticRemotePush": false,
+    "databaseInitialized": true,
+    "state": "initialized-embedded-dolt",
+    "databaseProjectId": "bc5f7485-4e27-4bc7-8374-5abfc52634c3"
+  },
+  "receipts": {
+    "root": "/Users/dallascrilley/Backups/Receipts/polycast"
+  },
+  "preflightHooks": []
+}
