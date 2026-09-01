@@ -36,6 +36,14 @@ export type Modality =
 
 export type ArgType = "text" | "password" | "dropdown";
 
+/**
+ * Rich-launcher hint naming a dynamic value picker for a text argument.
+ * Launchers that can honor it (the flagship Raycast extension) render a live
+ * picker; launchers that cannot (script commands, CLI stubs) fall back to the
+ * plain field. The submitted value contract is identical either way.
+ */
+export type ArgPicker = "orca-worktree";
+
 export interface CommandArg {
   readonly name: string;
   readonly placeholder?: string;
@@ -43,6 +51,7 @@ export interface CommandArg {
   readonly type?: ArgType;
   readonly percentEncoded?: boolean;
   readonly data?: readonly { readonly title: string; readonly value: string }[];
+  readonly picker?: ArgPicker;
 }
 
 export type ScriptLang = "bash" | "node" | "applescript";

@@ -18,6 +18,7 @@ const commandArgSchema = z.object({
       }),
     )
     .optional(),
+  picker: z.enum(["orca-worktree"]).optional(),
 });
 
 const scriptBodySchema = z.object({

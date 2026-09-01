@@ -26,6 +26,30 @@ describe("command-def schema", () => {
     expect(parseCommandDefJson(cmd).id).toBe("schema-test");
   });
 
+  test("accepts a picker hint on a text arg and rejects it on a dropdown", () => {
+    const cmd = defineCommand({
+      id: "picker-test",
+      title: "Picker Test",
+      description: "valid",
+      modality: "args",
+      args: [{ name: "worktree", optional: true, picker: "orca-worktree" }],
+      body: { lang: "bash", source: "cat" },
+    });
+    expect(parseCommandDefJson(cmd).args?.[0]?.picker).toBe("orca-worktree");
+    expect(() =>
+      defineCommand({
+        ...cmd,
+        args: [{ name: "worktree", type: "dropdown", picker: "orca-worktree" }],
+      }),
+    ).toThrow(/pickers refine text args/);
+    expect(() =>
+      commandDefSchema.parse({
+        ...cmd,
+        args: [{ name: "worktree", picker: "not-a-picker" }],
+      }),
+    ).toThrow();
+  });
+
   test("validates a non-empty, unique target allowlist", () => {
     const cmd = defineCommand({
       id: "snippet-only",

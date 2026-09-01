@@ -8,6 +8,8 @@
   `polycast run` without copying that logic into launcher shims.
 - `file-to-inbox` copies files into Inbox with a Review tag and a structured
   receipt. Shortcuts now emit the files modality as argv, not newline text.
+- The flagship Raycast extension reads the command store, provides Orca
+  worktree and argument pickers, and streams `polycast run` output.
 
 ## [0.1.0] - 2026-08-26
 
