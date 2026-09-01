@@ -44,8 +44,8 @@ function commandEnvironment(preferences: Preferences): NodeJS.ProcessEnv {
   return { ...process.env, PATH: pathEntries.join(delimiter) };
 }
 
-function appendOutput(previous: string, chunk: string | Uint8Array): string {
-  return previous + (typeof chunk === "string" ? chunk : new TextDecoder().decode(chunk));
+function appendOutput(previous: string, chunk: string): string {
+  return previous + chunk;
 }
 
 function tailLines(value: string, limit = 200): string {
@@ -138,12 +138,14 @@ function CommandForm({ command }: { readonly command: StoredCommand }) {
 
   useEffect(() => {
     if (!pickerNeeded) return;
+    let mounted = true;
 
-    execFile(
+    const pickerProcess = execFile(
       expandHome(preferences.orcaBin || "/usr/local/bin/orca"),
       ["worktree", "list", "--json"],
       { encoding: "utf8", maxBuffer: 4 * 1024 * 1024 },
       (error, stdout) => {
+        if (!mounted) return;
         if (error) {
           setPickerStatus("failed");
           void showToast({
@@ -157,6 +159,21 @@ function CommandForm({ command }: { readonly command: StoredCommand }) {
         setPickerStatus("ready");
       },
     );
+
+    return () => {
+      mounted = false;
+      if (
+        pickerProcess.pid !== undefined &&
+        pickerProcess.exitCode === null &&
+        !pickerProcess.killed
+      ) {
+        try {
+          process.kill(pickerProcess.pid, "SIGTERM");
+        } catch {
+          // The process may have exited between the checks and cleanup.
+        }
+      }
+    };
   }, [pickerNeeded, preferences.orcaBin]);
 
   function handleSubmit(values: Form.Values) {
@@ -231,10 +248,12 @@ function RunView({
       });
     };
 
-    child.stdout?.on("data", (chunk: string | Uint8Array) => {
+    child.stdout?.setEncoding("utf8");
+    child.stderr?.setEncoding("utf8");
+    child.stdout?.on("data", (chunk: string) => {
       setOutput((previous) => tailLines(appendOutput(previous, chunk)));
     });
-    child.stderr?.on("data", (chunk: string | Uint8Array) => {
+    child.stderr?.on("data", (chunk: string) => {
       setOutput((previous) => tailLines(appendOutput(previous, chunk)));
     });
     child.on("error", (error: Error) => {
