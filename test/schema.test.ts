@@ -26,6 +26,22 @@ describe("command-def schema", () => {
     expect(parseCommandDefJson(cmd).id).toBe("schema-test");
   });
 
+  test("validates a non-empty, unique target allowlist", () => {
+    const cmd = defineCommand({
+      id: "snippet-only",
+      title: "Snippet Only",
+      description: "valid",
+      modality: "none",
+      body: { lang: "bash", source: "true" },
+      targets: ["raycast-snippet"],
+    });
+    expect(parseCommandDefJson(cmd).targets).toEqual(["raycast-snippet"]);
+    expect(() => commandDefSchema.parse({ ...cmd, targets: [] })).toThrow();
+    expect(() =>
+      commandDefSchema.parse({ ...cmd, targets: ["raycast-snippet", "raycast-snippet"] }),
+    ).toThrow();
+  });
+
   test("rejects invalid id and empty body", () => {
     expect(() =>
       commandDefSchema.parse({

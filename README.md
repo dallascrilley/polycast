@@ -142,7 +142,8 @@ pack rather than a library. The `raycast-snippet` and `raycast-quicklink`
 emitters produce nothing until a command opts in, which is why the sample build
 above writes no `snippets.json`.
 
-- CLI: `list`, `build` (`--strict`), `targets`, `apply` (`--write` to install,
+- CLI: `list`, `build` (`--strict`), `targets`, `capture` (dry-run-first Raycast
+  snippet export capture), `apply` (`--write` to install,
   `--import-shortcuts` for explicit Shortcuts.app import, `--prune` /
   `--prune-only` to uninstall), `run`.
 - MCP server (`bun run mcp`): stdio tools mirroring the non-UI CLI operations.
@@ -165,8 +166,40 @@ bun run dev targets              # list registered emitters
 bun run dev runner list          # list RunnerDef files
 bun run dev runner targets       # list runner compiler targets
 bun run dev runner build         # emit all compatible runner targets into ./build/
+bun run dev capture --from raycast-snippets  # preview latest export capture
 bun run mcp                      # start MCP stdio server (Cursor / Claude Desktop)
 ```
+
+### Capture Raycast snippets safely
+
+`capture --from raycast-snippets` turns a Raycast snippets JSON export into
+validated `CommandDef` modules under `commands/raycast-snippets/`. It discovers
+the newest JSON file in `~/.dotfiles/raycast/snippets/` or a snippet-named JSON
+file in `~/Downloads/`. Pass `--input <path>` to select an export explicitly.
+
+Capture is a dry run unless you pass `--write`:
+
+```sh
+bun run dev capture --from raycast-snippets
+bun run dev capture --from raycast-snippets --write
+```
+
+The command never edits or copies the export. It reports only the source path,
+SHA-256 digest, counts, and rejection reasons. It does not print rejected names
+or text. The committed `capture-report.json` identifies accepted and rejected
+rows by zero-based source index so you can review any loss against the preserved
+export without copying unsafe content into Git.
+
+The public Polycast repository uses conservative filters. Capture rejects known
+credential shapes, high-entropy tokens, personal email and payment data,
+private business content, Raycast dynamic placeholders, home-relative and
+machine-specific paths, private hosts, control characters, destructive shell
+and Git deletion shortcuts, agent permission bypasses, text over 8 KiB, invalid
+records, and keyword or ID collisions.
+Raycast tags and unknown fields are omitted from portable definitions and
+counted in the loss report. See
+[`docs/guides/raycast-snippet-capture.md`](docs/guides/raycast-snippet-capture.md)
+for the review and rerun workflow.
 
 ### MCP (agent-native)
 

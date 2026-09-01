@@ -102,6 +102,23 @@
         }
       ]
     },
+    "targets": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "raycast-script",
+          "popclip",
+          "dropzone",
+          "dropover-script",
+          "shortcuts-cherri",
+          "raycast-snippet",
+          "raycast-quicklink",
+          "agent-cli"
+        ]
+      }
+    },
     "x": {
       "type": "object",
       "properties": {

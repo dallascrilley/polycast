@@ -9,6 +9,19 @@
  * See docs/DESIGN.md for the full rationale.
  */
 
+export const COMMAND_TARGETS = [
+  "raycast-script",
+  "popclip",
+  "dropzone",
+  "dropover-script",
+  "shortcuts-cherri",
+  "raycast-snippet",
+  "raycast-quicklink",
+  "agent-cli",
+] as const;
+
+export type CommandTarget = (typeof COMMAND_TARGETS)[number];
+
 /**
  * What the command body receives as input. This is the single semantic that
  * makes one body legally renderable to multiple surfaces — and the reason an
@@ -132,6 +145,8 @@ export interface CommandDef {
   /** Required when `modality === "args"`. */
   readonly args?: readonly CommandArg[];
   readonly body: CommandBody;
+  /** Optional target allowlist. Omit to use every modality-compatible target. */
+  readonly targets?: readonly CommandTarget[];
   readonly x?: CrossTargetHints;
   readonly author?: string;
 }
@@ -146,7 +161,7 @@ export interface EmittedFile {
 }
 
 export interface ValidationIssue {
-  readonly target: string;
+  readonly target: CommandTarget;
   readonly message: string;
   readonly severity: "error" | "warning";
 }
@@ -157,7 +172,7 @@ export interface ValidationIssue {
  */
 export interface Emitter {
   /** Stable target id, e.g. "raycast-script". */
-  readonly target: string;
+  readonly target: CommandTarget;
   /** Modalities this surface can represent. */
   readonly supports: readonly Modality[];
   /** Render the command, or return [] when the command is incompatible. */
