@@ -9,7 +9,7 @@ import type { CommandDef } from "./types.ts";
  */
 export async function loadCommands(dir: string): Promise<CommandDef[]> {
   const root = resolve(dir);
-  const glob = new Glob("*.ts");
+  const glob = new Glob("**/*.ts");
   const commands: CommandDef[] = [];
   const seen = new Set<string>();
 

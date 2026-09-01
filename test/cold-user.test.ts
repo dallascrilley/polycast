@@ -7,9 +7,10 @@
  */
 import { describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { needsTrailingNewline } from "../src/run.ts";
 
 const CLI = join(process.cwd(), "src/cli.ts");
@@ -70,9 +71,19 @@ describe("apply --write on a fresh build (D2)", () => {
     const root = await mkdtemp(join(tmpdir(), "polycast-cold-apply-"));
     const env = sandboxEnv(root);
     try {
+      const definitions = join(root, "definitions");
+      await mkdir(definitions);
+      await writeFile(
+        join(definitions, "plain.ts"),
+        [
+          `import { defineCommand } from ${JSON.stringify(pathToFileURL(resolve("src/define.ts")).href)};`,
+          'export default defineCommand({ id: "plain", title: "Plain", description: "plain", modality: "none", body: { lang: "bash", source: "true" } });',
+          "",
+        ].join("\n"),
+      );
       const build = spawnSync(
         "bun",
-        ["run", CLI, "build", "--out", join(root, "build"), "--strict"],
+        ["run", CLI, "build", "--dir", definitions, "--out", join(root, "build"), "--strict"],
         {
           cwd: process.cwd(),
           encoding: "utf8",
@@ -80,13 +91,12 @@ describe("apply --write on a fresh build (D2)", () => {
         },
       );
       expect(build.status).toBe(0);
-      // No sample command opts into snippets or quicklinks, so those dirs do
-      // not exist — the same state a fresh clone is in.
+      // This isolated command opts into no shared catalog, so those dirs do not exist.
       await expect(stat(join(root, "build", "raycast-snippet"))).rejects.toThrow();
 
       const apply = spawnSync(
         "bun",
-        ["run", CLI, "apply", "--out", join(root, "build"), "--write"],
+        ["run", CLI, "apply", "--dir", definitions, "--out", join(root, "build"), "--write"],
         { cwd: process.cwd(), encoding: "utf8", env },
       );
       expect(apply.stderr).not.toContain("missing build output");

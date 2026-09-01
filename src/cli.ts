@@ -2,6 +2,10 @@
 import { join, resolve } from "node:path";
 import { operatorApprovedShortcutImport } from "./apply.ts";
 import {
+  captureRaycastSnippets,
+  type RaycastSnippetCapturePlan,
+} from "./importers/raycast-snippets.ts";
+import {
   PolycastError,
   polycastApply,
   polycastBuild,
@@ -26,6 +30,7 @@ Usage:
   polycast runner list [--dir <runners>]
   polycast runner targets
   polycast runner build [--dir <runners>] [--out <dir>] [--target <a,b>]
+  polycast capture --from raycast-snippets [--input <export.json>] [--dir <output>] [--write]
   polycast run <id> [--commands <dir>] [--] [args...]
   polycast apply [--out <dir>] [--target <a,b>] [--write] [--import-shortcuts] [--prune] [--prune-only]
 
@@ -33,9 +38,11 @@ Options:
   --dir       <path>   command definitions directory (default: ./commands)
   --out       <path>   build output root (default: ./build)
   --commands  <path>   JSON command store for run (default: <out>/commands)
+  --from      <source> capture source (supported: raycast-snippets)
+  --input     <path>   source export (default: latest bounded Raycast snippets export)
   --target    <list>   comma-separated target ids (default: all)
   --strict           fail build on validation warnings/errors
-  --write            apply writes to install locations (default: dry-run)
+  --write            perform apply/capture writes (both default to dry-run)
   --import-shortcuts import compiled .shortcut files in Shortcuts.app (requires --write; explicit operator consent)
   --prune            remove polycast-owned artifacts (incl. the JSON body store) before install
   --prune-only       remove polycast-owned artifacts only (skip install)
@@ -49,6 +56,7 @@ Environment:
   POLYCAST_AGENT_BIN         agent-cli install dir
   POLYCAST_COMMANDS_DIR      JSON command store (default: ~/.polycast/commands on apply)
   POLYCAST_BIN               polycast executable for agent-cli stubs (default: polycast)
+  POLYCAST_RAYCAST_SNIPPET_EXPORT_DIR optional directory for latest-export discovery
 `;
 
 interface Flags {
@@ -56,6 +64,8 @@ interface Flags {
   readonly dir: string;
   readonly out: string;
   readonly commands?: string;
+  readonly from?: string;
+  readonly input?: string;
   readonly target?: string[];
   readonly strict: boolean;
   readonly write: boolean;
@@ -74,6 +84,8 @@ function parseFlags(argv: string[], options: ParseFlagOptions = {}): Flags {
   let dir = options.defaultDir ?? "commands";
   let out = "build";
   let commands: string | undefined;
+  let from: string | undefined;
+  let input: string | undefined;
   let target: string[] | undefined;
   let strict = false;
   let write = false;
@@ -90,6 +102,8 @@ function parseFlags(argv: string[], options: ParseFlagOptions = {}): Flags {
     if (a === "--dir") dir = argv[++i] ?? dir;
     else if (a === "--out") out = argv[++i] ?? out;
     else if (a === "--commands") commands = argv[++i] ?? commands;
+    else if (a === "--from") from = argv[++i] ?? from;
+    else if (a === "--input") input = argv[++i] ?? input;
     else if (a === "--target") target = (argv[++i] ?? "").split(",").filter(Boolean);
     else if (a === "--strict") strict = true;
     else if (a === "--write") write = true;
@@ -105,6 +119,8 @@ function parseFlags(argv: string[], options: ParseFlagOptions = {}): Flags {
     dir,
     out,
     commands,
+    from,
+    input,
     target,
     strict,
     write,
@@ -112,6 +128,52 @@ function parseFlags(argv: string[], options: ParseFlagOptions = {}): Flags {
     prune,
     pruneOnly,
   };
+}
+
+function nonzeroCounts(counts: Readonly<Record<string, number>>): readonly [string, number][] {
+  return Object.entries(counts).filter((entry): entry is [string, number] => entry[1] > 0);
+}
+
+function printCaptureSummary(plan: RaycastSnippetCapturePlan): void {
+  console.log(`source      ${plan.sourcePath}`);
+  console.log(`sha256      ${plan.sourceSha256}`);
+  console.log(`entries     ${plan.sourceEntries}`);
+  console.log(`accepted    ${plan.accepted}`);
+  console.log(`rejected    ${plan.rejected}`);
+  for (const [reason, count] of nonzeroCounts(plan.rejectionCounts)) {
+    console.log(`  reject ${reason.padEnd(24)} ${count}`);
+  }
+  for (const [reason, count] of nonzeroCounts(plan.lossCounts)) {
+    console.log(`  loss   ${reason.padEnd(24)} ${count}`);
+  }
+  console.log(`output      ${plan.outputDir}`);
+  console.log(
+    `definitions create=${plan.create} update=${plan.update} remove=${plan.remove} unchanged=${plan.unchanged}`,
+  );
+  console.log(`report      ${plan.reportChanged ? "update" : "unchanged"}`);
+  console.log(
+    plan.written
+      ? "\nCapture written. The source export was not modified or copied."
+      : "\nDry run. Review the rejection counts, then pass --write to create definitions.",
+  );
+}
+
+async function cmdCapture(argv: string[]): Promise<void> {
+  const flags = parseFlags(argv, { defaultDir: join("commands", "raycast-snippets") });
+  if (flags.from !== "raycast-snippets") {
+    fail(new PolycastError("capture requires --from raycast-snippets", "CAPTURE_SOURCE_REQUIRED"));
+  }
+  try {
+    printCaptureSummary(
+      await captureRaycastSnippets({
+        input: flags.input,
+        outputDir: flags.dir,
+        write: flags.write,
+      }),
+    );
+  } catch (error) {
+    fail(error);
+  }
 }
 
 async function cmdRunner(argv: string[]): Promise<void> {
@@ -292,6 +354,8 @@ async function main(): Promise<void> {
       return cmdTargets();
     case "runner":
       return cmdRunner(rest);
+    case "capture":
+      return cmdCapture(rest);
     case undefined:
     case "help":
     case "--help":

@@ -17,7 +17,8 @@ MCP server over the same API. It does not run a long-lived production service.
 | `src/emitters/*` | One module per target. `src/registry.ts` is the list. |
 | `src/validate/` | Runs emitter validation and applies strict or default severity rules. |
 | `src/post-build.ts` | Compiles `.cherri` files to `.shortcut` files when Cherri is available. |
-| `src/cli.ts` | `polycast list \| build \| targets \| apply \| run` (entry and `bin`). |
+| `src/cli.ts` | `polycast list \| build \| targets \| capture \| apply \| run` (entry and `bin`). |
+| `src/importers/raycast-snippets.ts` | Validates and filters Raycast exports, plans deterministic capture output, and owns generated capture files. |
 | `src/polycast-api.ts` | Shared API used by both the CLI and the MCP tools. |
 | `src/mcp/server.ts` | stdio MCP server (`bun run mcp`). |
 | `src/mcp/command-upsert-tool.ts` | Description and schema pointer for `polycast_command_upsert`. |
@@ -34,15 +35,18 @@ MCP server over the same API. It does not run a long-lived production service.
 
 1. `loadCommands` imports each default-exported `CommandDef` from the selected
    `commands/` directory and validates its shape.
-2. `polycastBuild` writes one JSON body file at
+2. A definition may declare a non-empty `targets` allowlist. The registry skips
+   it everywhere else before per-command or catalog emission. Captured snippets
+   use this to avoid generating unrelated launcher artifacts.
+3. `polycastBuild` writes one JSON body file at
    `build/commands/<id>.json` and the native files produced by compatible
    emitters. The output root is configurable.
-3. Thin launcher shims call `polycast run --commands <dir> <id>`. For targets
+4. Thin launcher shims call `polycast run --commands <dir> <id>`. For targets
    that use the dispatcher, `apply --write` copies the JSON body store to
    `POLYCAST_COMMANDS_DIR` and installs the launcher files.
-4. `polycastRun` loads the JSON file, validates its command ID, and executes the
+5. `polycastRun` loads the JSON file, validates its command ID, and executes the
    stored body with the modality-specific stdin or argument contract.
-5. The MCP tool `polycast_command_upsert` serializes a validated `CommandDef` as
+6. The MCP tool `polycast_command_upsert` serializes a validated `CommandDef` as
    a TypeScript module. `write: false` returns the module text without editing
    the repository. `write: true` writes `commands/<id>.ts`. `previewBuild: true`
    builds that command in an isolated temporary directory; it does not install
@@ -101,6 +105,10 @@ the support declarations and `docs/specs/modality-matrix.md` for the matrix.
   normal `apply --write` never opens a UI; `--import-shortcuts` is a separate
   operator-consent flag for importing them. `apply --prune` does not remove
   imported Shortcuts or stale files under `build/shortcuts-cherri/`.
+- `capture --from raycast-snippets` reads a regular export file and writes only
+  its marked `commands/raycast-snippets/` files when `--write` is present. It
+  never changes or copies the export. Build recursively loads the generated
+  modules through the same `CommandDef` validator as hand-authored commands.
 - PopClip uses native `stdin: text` in `Config.json`, so bodies read stdin.
 - macOS-only by design, since these are macOS launchers.
 - No external services and no secrets. Local codegen only.
