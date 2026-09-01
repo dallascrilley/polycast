@@ -57,6 +57,10 @@
               "required": ["title", "value"],
               "additionalProperties": false
             }
+          },
+          "picker": {
+            "type": "string",
+            "enum": ["orca-worktree"]
           }
         },
         "required": ["name"],
