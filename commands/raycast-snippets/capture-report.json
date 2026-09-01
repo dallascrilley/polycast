@@ -15,18 +15,8 @@
       "losses": []
     },
     {
-      "sourceIndex": 114,
-      "id": "raycast-snippet-ai-path-audit-7918b7ab80",
-      "losses": []
-    },
-    {
       "sourceIndex": 330,
       "id": "raycast-snippet-ai-prime-6bb321b0b1",
-      "losses": []
-    },
-    {
-      "sourceIndex": 36,
-      "id": "raycast-snippet-ai-prompt-audit-and-assign-evaluate-project-holi-646a19daa5",
       "losses": []
     },
     {
@@ -122,27 +112,6 @@
       "losses": []
     },
     {
-      "sourceIndex": 17,
-      "id": "raycast-snippet-clean-branches-and-worktrees-1a069ed8c6",
-      "losses": [
-        "tags-omitted"
-      ]
-    },
-    {
-      "sourceIndex": 43,
-      "id": "raycast-snippet-cleanup-back-to-main-4ba7d07462",
-      "losses": [
-        "tags-omitted"
-      ]
-    },
-    {
-      "sourceIndex": 39,
-      "id": "raycast-snippet-cleanup-back-to-main-orca-abff4d0a14",
-      "losses": [
-        "tags-omitted"
-      ]
-    },
-    {
       "sourceIndex": 86,
       "id": "raycast-snippet-codex-review-uncommitted-a48bb0a87d",
       "losses": [
@@ -197,11 +166,6 @@
       "losses": []
     },
     {
-      "sourceIndex": 153,
-      "id": "raycast-snippet-copy-claude-boilerplate-f2f41f3342",
-      "losses": []
-    },
-    {
       "sourceIndex": 136,
       "id": "raycast-snippet-create-handoff-from-session-a06fea044a",
       "losses": []
@@ -229,11 +193,6 @@
     {
       "sourceIndex": 103,
       "id": "raycast-snippet-debug-and-fix-troubleshoot-agent-68e72360f1",
-      "losses": []
-    },
-    {
-      "sourceIndex": 74,
-      "id": "raycast-snippet-delegator-c09fc1bb53",
       "losses": []
     },
     {
@@ -378,16 +337,6 @@
     {
       "sourceIndex": 112,
       "id": "raycast-snippet-implement-and-use-your-best-judgement-9fe39f1a4d",
-      "losses": []
-    },
-    {
-      "sourceIndex": 55,
-      "id": "raycast-snippet-jcs-goal-d592d92226",
-      "losses": []
-    },
-    {
-      "sourceIndex": 194,
-      "id": "raycast-snippet-kitty-start-default-session-63b1a11628",
       "losses": []
     },
     {
@@ -589,11 +538,6 @@
       "losses": []
     },
     {
-      "sourceIndex": 360,
-      "id": "raycast-snippet-mobile-e5651d0833",
-      "losses": []
-    },
-    {
       "sourceIndex": 255,
       "id": "raycast-snippet-mobile-pbcopy-721f27c933",
       "losses": []
@@ -660,11 +604,6 @@
       ]
     },
     {
-      "sourceIndex": 344,
-      "id": "raycast-snippet-proposal-title-public-relations-the-rundown-reta-f204f04ac8",
-      "losses": []
-    },
-    {
       "sourceIndex": 357,
       "id": "raycast-snippet-ptl-expand-please-take-a-look-f3adebc35e",
       "losses": []
@@ -720,20 +659,8 @@
       "losses": []
     },
     {
-      "sourceIndex": 132,
-      "id": "raycast-snippet-remotion-promo-best-practices-305fbad35c",
-      "losses": [
-        "name-trimmed"
-      ]
-    },
-    {
       "sourceIndex": 131,
       "id": "raycast-snippet-remotion-shorts-acdefa1fec",
-      "losses": []
-    },
-    {
-      "sourceIndex": 7,
-      "id": "raycast-snippet-repo-hygiene-for-smart-models-04369ad34f",
       "losses": []
     },
     {
@@ -752,18 +679,8 @@
       "losses": []
     },
     {
-      "sourceIndex": 336,
-      "id": "raycast-snippet-search-docs-ai-688f5b964a",
-      "losses": []
-    },
-    {
       "sourceIndex": 215,
       "id": "raycast-snippet-serious-lookg-unicode-2939089bc0",
-      "losses": []
-    },
-    {
-      "sourceIndex": 361,
-      "id": "raycast-snippet-shell-cd-to-dotfiles-172f20a383",
       "losses": []
     },
     {
@@ -774,11 +691,6 @@
     {
       "sourceIndex": 386,
       "id": "raycast-snippet-shell-list-newest-files-modified-date-3afc2217b4",
-      "losses": []
-    },
-    {
-      "sourceIndex": 374,
-      "id": "raycast-snippet-shell-source-zshrc-d6ee281096",
       "losses": []
     },
     {
@@ -804,11 +716,6 @@
     {
       "sourceIndex": 260,
       "id": "raycast-snippet-snippet-argument-8c654c5462",
-      "losses": []
-    },
-    {
-      "sourceIndex": 128,
-      "id": "raycast-snippet-speckit-multi-agent-78f2c3101f",
       "losses": []
     },
     {
@@ -864,13 +771,6 @@
       "sourceIndex": 165,
       "id": "raycast-snippet-tmux-synchronize-panes-no-colon-3f764ee01a",
       "losses": []
-    },
-    {
-      "sourceIndex": 87,
-      "id": "raycast-snippet-triage-merge-open-prs-8f7b7f8216",
-      "losses": [
-        "tags-omitted"
-      ]
     },
     {
       "sourceIndex": 245,
@@ -945,6 +845,10 @@
       "reason": "dynamic-placeholder"
     },
     {
+      "sourceIndex": 7,
+      "reason": "unsafe-operation"
+    },
+    {
       "sourceIndex": 10,
       "reason": "personal-data"
     },
@@ -959,6 +863,10 @@
     {
       "sourceIndex": 16,
       "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 17,
+      "reason": "unsafe-operation"
     },
     {
       "sourceIndex": 18,
@@ -1021,8 +929,16 @@
       "reason": "credential-like"
     },
     {
+      "sourceIndex": 36,
+      "reason": "unsafe-operation"
+    },
+    {
       "sourceIndex": 37,
       "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 39,
+      "reason": "unsafe-operation"
     },
     {
       "sourceIndex": 40,
@@ -1030,6 +946,10 @@
     },
     {
       "sourceIndex": 41,
+      "reason": "unsafe-operation"
+    },
+    {
+      "sourceIndex": 43,
       "reason": "unsafe-operation"
     },
     {
@@ -1063,6 +983,10 @@
     {
       "sourceIndex": 53,
       "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 55,
+      "reason": "private-business-content"
     },
     {
       "sourceIndex": 57,
@@ -1113,6 +1037,10 @@
       "reason": "unsafe-operation"
     },
     {
+      "sourceIndex": 74,
+      "reason": "machine-specific"
+    },
+    {
       "sourceIndex": 76,
       "reason": "oversized"
     },
@@ -1122,6 +1050,10 @@
     },
     {
       "sourceIndex": 78,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 87,
       "reason": "machine-specific"
     },
     {
@@ -1157,6 +1089,10 @@
       "reason": "dynamic-placeholder"
     },
     {
+      "sourceIndex": 114,
+      "reason": "machine-specific"
+    },
+    {
       "sourceIndex": 116,
       "reason": "oversized"
     },
@@ -1189,12 +1125,20 @@
       "reason": "dynamic-placeholder"
     },
     {
+      "sourceIndex": 128,
+      "reason": "machine-specific"
+    },
+    {
       "sourceIndex": 129,
       "reason": "dynamic-placeholder"
     },
     {
       "sourceIndex": 130,
       "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 132,
+      "reason": "private-business-content"
     },
     {
       "sourceIndex": 133,
@@ -1247,6 +1191,10 @@
     {
       "sourceIndex": 151,
       "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 153,
+      "reason": "machine-specific"
     },
     {
       "sourceIndex": 154,
@@ -1366,6 +1314,10 @@
     },
     {
       "sourceIndex": 192,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 194,
       "reason": "machine-specific"
     },
     {
@@ -1586,7 +1538,7 @@
     },
     {
       "sourceIndex": 284,
-      "reason": "unsafe-operation"
+      "reason": "machine-specific"
     },
     {
       "sourceIndex": 285,
@@ -1737,16 +1689,24 @@
       "reason": "unicode-format-character"
     },
     {
+      "sourceIndex": 336,
+      "reason": "machine-specific"
+    },
+    {
       "sourceIndex": 340,
       "reason": "dynamic-placeholder"
     },
     {
       "sourceIndex": 342,
-      "reason": "dynamic-placeholder"
+      "reason": "private-business-content"
     },
     {
       "sourceIndex": 343,
-      "reason": "dynamic-placeholder"
+      "reason": "private-business-content"
+    },
+    {
+      "sourceIndex": 344,
+      "reason": "private-business-content"
     },
     {
       "sourceIndex": 346,
@@ -1781,6 +1741,14 @@
       "reason": "credential-like"
     },
     {
+      "sourceIndex": 360,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 361,
+      "reason": "machine-specific"
+    },
+    {
       "sourceIndex": 362,
       "reason": "credential-like"
     },
@@ -1790,7 +1758,7 @@
     },
     {
       "sourceIndex": 368,
-      "reason": "unsafe-operation"
+      "reason": "machine-specific"
     },
     {
       "sourceIndex": 369,
@@ -1806,11 +1774,15 @@
     },
     {
       "sourceIndex": 372,
-      "reason": "dynamic-placeholder"
+      "reason": "private-business-content"
     },
     {
       "sourceIndex": 373,
-      "reason": "dynamic-placeholder"
+      "reason": "private-business-content"
+    },
+    {
+      "sourceIndex": 374,
+      "reason": "machine-specific"
     },
     {
       "sourceIndex": 375,

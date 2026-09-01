@@ -192,9 +192,10 @@ export without copying unsafe content into Git.
 
 The public Polycast repository uses conservative filters. Capture rejects known
 credential shapes, high-entropy tokens, personal email and payment data,
-Raycast dynamic placeholders, machine-specific paths and private hosts, control
-characters, destructive shell shortcuts, agent permission bypasses, text over
-8 KiB, invalid records, and keyword or ID collisions.
+private business content, Raycast dynamic placeholders, home-relative and
+machine-specific paths, private hosts, control characters, destructive shell
+and Git deletion shortcuts, agent permission bypasses, text over 8 KiB, invalid
+records, and keyword or ID collisions.
 Raycast tags and unknown fields are omitted from portable definitions and
 counted in the loss report. See
 [`docs/guides/raycast-snippet-capture.md`](docs/guides/raycast-snippet-capture.md)

@@ -32,9 +32,9 @@ different file explicitly when needed:
 bun run dev capture --from raycast-snippets --input "/path/to/Snippets export.json"
 ```
 
-The preview prints the input path and SHA-256 digest of the exact file bytes, accepted and rejected
-counts, counts by rejection and loss reason, and the planned file changes. It
-does not print snippet names or text.
+The preview prints the input path and SHA-256 digest of the exact file bytes,
+accepted and rejected counts, counts by rejection and loss reason, and the
+planned file changes. It does not print snippet names or text.
 
 Capture requires valid UTF-8 and valid JSON. Those failures use fixed diagnostics
 that do not include source content.
@@ -48,11 +48,13 @@ Polycast rejects a row when it finds any of these conditions:
 - a known token, private key, authorization header, credential assignment,
   credential-bearing URL, high-entropy token, or short single-token password shape
 - personal email, phone, Social Security, passport, or payment-card data
+- private campaign, press, communications-proposal, or promotional content
 - a Raycast dynamic placeholder such as `{clipboard}`, `{date}`, or `{argument}`
+- a home-relative path such as `~/`, `$HOME/`, or `${HOME}/`
 - a user-specific absolute path, machine or device UUID, private IP address,
   localhost URL, or internal host
 - a physical street address, Tailscale host, raw IP address, or SSH key path
-- a destructive shell shortcut or an agent permission-bypass flag
+- a destructive shell or Git deletion shortcut, or an agent permission-bypass flag
 - a duplicate keyword or deterministic command ID
 
 The filters favor false rejections over committing private text to Polycast's

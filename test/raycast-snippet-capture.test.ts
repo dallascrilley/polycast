@@ -152,6 +152,120 @@ describe("Raycast snippet capture", () => {
     }
   });
 
+  test("rejects general home-relative and home-variable paths", async () => {
+    const root = await mkdtemp(join(tmpdir(), "polycast-raycast-home-paths-"));
+    try {
+      const input = join(root, "Snippets export.json");
+      await writeFile(
+        input,
+        `${JSON.stringify([
+          { name: "Tilde config", text: "source ~/.config/tool/settings" },
+          { name: "Home variable", text: 'open "$HOME/Documents/private.txt"' },
+          { name: "Braced home variable", text: 'cat "${HOME}/.config/tool/settings"' },
+          { name: "Portable config", text: "Read docs/configuration.md before setup." },
+        ])}\n`,
+      );
+
+      const plan = await captureRaycastSnippets({
+        input,
+        outputDir: join(root, "output"),
+      });
+
+      expect(plan.accepted).toBe(1);
+      expect(plan.rejectionCounts["machine-specific"]).toBe(3);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("rejects destructive Git branch, worktree, and remote deletion commands", async () => {
+    const root = await mkdtemp(join(tmpdir(), "polycast-raycast-destructive-git-"));
+    try {
+      const input = join(root, "Snippets export.json");
+      const destructive = [
+        "git branch -d topic",
+        "git branch -D topic",
+        "git branch --delete topic",
+        "git branch --delete=topic",
+        "git worktree remove ../topic",
+        "git worktree prune",
+        "git push origin --delete topic",
+        "git push -d origin topic",
+        "git push origin :topic",
+        "git remote remove origin",
+        "git remote rm origin",
+        "git remote prune origin",
+      ];
+      const neutral = [
+        "git branch --list",
+        "git worktree list",
+        "git remote -v",
+        "git push --dry-run origin topic",
+      ];
+      await writeFile(
+        input,
+        `${JSON.stringify(
+          [...destructive, ...neutral].map((text, index) => ({
+            name: `Git command ${index}`,
+            text,
+          })),
+        )}\n`,
+      );
+
+      const plan = await captureRaycastSnippets({
+        input,
+        outputDir: join(root, "output"),
+      });
+
+      expect(plan.accepted).toBe(neutral.length);
+      expect(plan.rejectionCounts["unsafe-operation"]).toBe(destructive.length);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("rejects private business content while preserving neutral workplace text", async () => {
+    const root = await mkdtemp(join(tmpdir(), "polycast-raycast-private-business-"));
+    try {
+      const input = join(root, "Snippets export.json");
+      await writeFile(
+        input,
+        `${JSON.stringify([
+          {
+            name: "Campaign brief",
+            text: "Prepare the campaign and press outreach plan for launch.",
+          },
+          {
+            name: "Communications proposal",
+            text: "Draft a retainer proposal for public relations outreach.",
+          },
+          {
+            name: "Promo video",
+            text: "Write a promotional video call to action for launch.",
+          },
+          {
+            name: "Status update",
+            text: "Summarize project progress, decisions, and next steps.",
+          },
+          {
+            name: "Business writing",
+            text: "Rewrite this memo in concise professional language.",
+          },
+        ])}\n`,
+      );
+
+      const plan = await captureRaycastSnippets({
+        input,
+        outputDir: join(root, "output"),
+      });
+
+      expect(plan.accepted).toBe(2);
+      expect(plan.rejectionCounts["private-business-content"]).toBe(3);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
   test("rejects invisible Unicode format characters", async () => {
     const root = await mkdtemp(join(tmpdir(), "polycast-raycast-unicode-format-"));
     try {

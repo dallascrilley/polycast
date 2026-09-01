@@ -45,6 +45,7 @@ export type RaycastSnippetRejectionCode =
   | "blank-keyword"
   | "credential-like"
   | "personal-data"
+  | "private-business-content"
   | "dynamic-placeholder"
   | "machine-specific"
   | "unsafe-operation"
@@ -274,6 +275,17 @@ function containsPersonalData(value: string): boolean {
   );
 }
 
+function containsPrivateBusinessContent(value: string): boolean {
+  const campaignPress = /\bcampaign\b/i.test(value) && /\bpress\b/i.test(value);
+  const communicationsProposal =
+    /\bproposal\b/i.test(value) && /\b(?:retainer|public relations)\b/i.test(value);
+  const promotionalVideoCallToAction =
+    /\bpromo(?:tional)?\b/i.test(value) &&
+    /\bvideo\b/i.test(value) &&
+    /\b(?:call(?:[ -]+)to(?:[ -]+)action|cta)\b/i.test(value);
+  return campaignPress || communicationsProposal || promotionalVideoCallToAction;
+}
+
 function containsDynamicPlaceholder(value: string): boolean {
   return /\{(?:clipboard|snippet|cursor|date|time|datetime|day|uuid|selection|argument|calculator|browser-tab)(?:\s|\||\})/i.test(
     value,
@@ -284,6 +296,7 @@ function containsMachineSpecificReference(value: string): boolean {
   return (
     /\/(?:users|home)\//i.test(value) ||
     /\b[A-Z]:\\Users\\[^\\\s]+\\/i.test(value) ||
+    /(?:^|[\s"'`=:(])(?:~\/|\$(?:HOME|\{HOME\})\/)/m.test(value) ||
     /\b(?:tailscale|magicdns)\b|\.ts\.net\b/i.test(value) ||
     /\b(?:\d{1,3}\.){3}\d{1,3}\b/.test(value) ||
     /\b(?:[0-9A-F]{2}:){5}[0-9A-F]{2}\b/i.test(value) ||
@@ -300,6 +313,10 @@ function containsUnsafeOperation(value: string): boolean {
   return (
     /\brm\s+-[^\n]*r[^\n]*f|\brm\s+-[^\n]*f[^\n]*r/i.test(value) ||
     /\bgit\s+(?:reset\s+--hard|clean\s+-[^\s]*f|checkout\s+--\s+\.|restore\s+\.)/i.test(value) ||
+    /\bgit\s+branch\b[^\n]*(?:\s--delete(?:=|\s)|\s-(?!-)[A-Z]*[dD][A-Z]*(?:\s|$))/im.test(value) ||
+    /\bgit\s+worktree\s+(?:remove|prune)\b/i.test(value) ||
+    /\bgit\s+push\b[^\n]*(?:--delete(?:=|\s)|\s-d(?:\s|$)|\s:\S+)/i.test(value) ||
+    /\bgit\s+remote\s+(?:remove|rm|prune)\b/i.test(value) ||
     /\b(?:pkill|killall|mkfs)\b|\bdd\s+if=/i.test(value) ||
     /\bchmod\s+(?:-R\s+)?777\b/i.test(value) ||
     /\bcurl\b[^\n|]*\|\s*(?:ba|z|fi)?sh\b/i.test(value) ||
@@ -323,6 +340,7 @@ function rejectionFor(snippet: RaycastSnippet): RaycastSnippetRejectionCode | un
     return "credential-like";
   }
   if (containsPersonalData(inspected)) return "personal-data";
+  if (containsPrivateBusinessContent(inspected)) return "private-business-content";
   if (containsDynamicPlaceholder(snippet.text)) return "dynamic-placeholder";
   if (containsMachineSpecificReference(inspected)) return "machine-specific";
   if (containsUnsafeOperation(snippet.text)) return "unsafe-operation";
@@ -346,6 +364,7 @@ const ALL_REJECTION_CODES = [
   "blank-keyword",
   "credential-like",
   "personal-data",
+  "private-business-content",
   "dynamic-placeholder",
   "machine-specific",
   "unsafe-operation",
