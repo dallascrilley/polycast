@@ -32,20 +32,25 @@ different file explicitly when needed:
 bun run dev capture --from raycast-snippets --input "/path/to/Snippets export.json"
 ```
 
-The preview prints the input path and SHA-256 digest, accepted and rejected
+The preview prints the input path and SHA-256 digest of the exact file bytes, accepted and rejected
 counts, counts by rejection and loss reason, and the planned file changes. It
 does not print snippet names or text.
+
+Capture requires valid UTF-8 and valid JSON. Those failures use fixed diagnostics
+that do not include source content.
 
 ## Review the safety result
 
 Polycast rejects a row when it finds any of these conditions:
 
-- an invalid object, blank required field, control character, or text over 8 KiB
+- an invalid object, blank required field, control or Unicode format character,
+  or text over 8 KiB
 - a known token, private key, authorization header, credential assignment,
-  credential-bearing URL, or high-entropy token
+  credential-bearing URL, high-entropy token, or short single-token password shape
 - personal email, phone, Social Security, passport, or payment-card data
 - a Raycast dynamic placeholder such as `{clipboard}`, `{date}`, or `{argument}`
-- a user-specific absolute path, private IP address, localhost URL, or internal host
+- a user-specific absolute path, machine or device UUID, private IP address,
+  localhost URL, or internal host
 - a physical street address, Tailscale host, raw IP address, or SSH key path
 - a destructive shell shortcut or an agent permission-bypass flag
 - a duplicate keyword or deterministic command ID
@@ -78,7 +83,11 @@ while the Raycast hint rebuilds `build/raycast-snippet/snippets.json`.
 Capture owns only files with its generated header and its marked report. It
 refuses to write if the output directory contains any other file or directory.
 On rerun it updates changed definitions and removes stale generated definitions.
-An unchanged export produces no file diff.
+Atomic writes reserve narrowly named `.polycast-tmp-<pid>` files beside generated
+definitions and the report. A dry run reports stale files in that namespace but
+does not remove them. A `--write` rerun removes them and converges. All other
+unrecognized files still cause capture to refuse the write. An unchanged export
+produces no file diff.
 
 To use another source-controlled destination, pass `--dir <path>`. Build loads
 nested command directories, so definitions under the default directory join the

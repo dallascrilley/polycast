@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readdir, readFile, rm, stat, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -107,6 +108,189 @@ async function writeFixture(root: string): Promise<string> {
 }
 
 describe("Raycast snippet capture", () => {
+  test("rejects a short single-token password shape", async () => {
+    const root = await mkdtemp(join(tmpdir(), "polycast-raycast-password-shape-"));
+    try {
+      const input = join(root, "Snippets export.json");
+      await writeFile(
+        input,
+        `${JSON.stringify([{ name: "Saved value", text: "Ab3!Cd4@Ef5#Gh6$Ij7" }])}\n`,
+      );
+
+      const plan = await captureRaycastSnippets({
+        input,
+        outputDir: join(root, "output"),
+      });
+
+      expect(plan.accepted).toBe(0);
+      expect(plan.rejectionCounts["credential-like"]).toBe(1);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("rejects machine and device UUIDs", async () => {
+    const root = await mkdtemp(join(tmpdir(), "polycast-raycast-device-uuid-"));
+    try {
+      const input = join(root, "Snippets export.json");
+      await writeFile(
+        input,
+        `${JSON.stringify([
+          {
+            name: "Arrange displays",
+            text: "displayplacer id:123e4567-e89b-12d3-a456-426614174000",
+          },
+        ])}\n`,
+      );
+
+      const plan = await captureRaycastSnippets({
+        input,
+        outputDir: join(root, "output"),
+      });
+
+      expect(plan.accepted).toBe(0);
+      expect(plan.rejectionCounts["machine-specific"]).toBe(1);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("rejects invisible Unicode format characters", async () => {
+    const root = await mkdtemp(join(tmpdir(), "polycast-raycast-unicode-format-"));
+    try {
+      const input = join(root, "Snippets export.json");
+      await writeFile(
+        input,
+        `${JSON.stringify([
+          { name: "Word joiner", text: "left\u2060right" },
+          { name: "Byte order mark", text: "left\uFEFFright" },
+        ])}\n`,
+      );
+
+      const plan = await captureRaycastSnippets({
+        input,
+        outputDir: join(root, "output"),
+      });
+
+      expect(plan.accepted).toBe(0);
+      expect(plan.rejectionCounts["unicode-format-character"]).toBe(2);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("malformed JSON diagnostics never echo source content", async () => {
+    const root = await mkdtemp(join(tmpdir(), "polycast-raycast-invalid-json-"));
+    const marker = "PRIVATE_JSON_MARKER_7f31";
+    try {
+      const input = join(root, "Snippets export.json");
+      const outputDir = join(root, "output");
+      await writeFile(input, `[{"name":"x","text":"${marker}",}]\n`);
+
+      let capturedError: unknown;
+      try {
+        await captureRaycastSnippets({ input, outputDir });
+      } catch (error) {
+        capturedError = error;
+      }
+      expect(capturedError).toEqual(
+        expect.objectContaining({
+          code: "INVALID_JSON",
+          message: "Raycast snippet export is not valid JSON",
+        }),
+      );
+      expect(String(capturedError)).not.toContain(marker);
+
+      const result = Bun.spawnSync([
+        "bun",
+        "run",
+        "src/cli.ts",
+        "capture",
+        "--from",
+        "raycast-snippets",
+        "--input",
+        input,
+        "--dir",
+        outputDir,
+      ]);
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout.toString()).not.toContain(marker);
+      expect(result.stderr.toString()).not.toContain(marker);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("hashes source bytes including a UTF-8 byte order mark", async () => {
+    const root = await mkdtemp(join(tmpdir(), "polycast-raycast-byte-hash-"));
+    try {
+      const input = join(root, "Snippets export.json");
+      const json = `${JSON.stringify([{ name: "Portable", text: "café" }])}\n`;
+      const bytes = Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from(json)]);
+      await writeFile(input, bytes);
+
+      const plan = await captureRaycastSnippets({
+        input,
+        outputDir: join(root, "output"),
+      });
+
+      expect(plan.accepted).toBe(1);
+      expect(plan.sourceSha256).toBe(createHash("sha256").update(bytes).digest("hex"));
+      expect(plan.sourceSha256).not.toBe(createHash("sha256").update(json).digest("hex"));
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("rejects invalid UTF-8 without echoing source content", async () => {
+    const root = await mkdtemp(join(tmpdir(), "polycast-raycast-invalid-utf8-"));
+    const marker = "PRIVATE_UTF8_MARKER_82c4";
+    try {
+      const input = join(root, "Snippets export.json");
+      const outputDir = join(root, "output");
+      await writeFile(
+        input,
+        Buffer.concat([
+          Buffer.from(`[{"name":"x","text":"${marker}`),
+          Buffer.from([0xc3, 0x28]),
+          Buffer.from('"}]\n'),
+        ]),
+      );
+
+      let capturedError: unknown;
+      try {
+        await captureRaycastSnippets({ input, outputDir });
+      } catch (error) {
+        capturedError = error;
+      }
+      expect(capturedError).toEqual(
+        expect.objectContaining({
+          code: "INVALID_UTF8",
+          message: "Raycast snippet export is not valid UTF-8",
+        }),
+      );
+      expect(String(capturedError)).not.toContain(marker);
+
+      const result = Bun.spawnSync([
+        "bun",
+        "run",
+        "src/cli.ts",
+        "capture",
+        "--from",
+        "raycast-snippets",
+        "--input",
+        input,
+        "--dir",
+        outputDir,
+      ]);
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout.toString()).not.toContain(marker);
+      expect(result.stderr.toString()).not.toContain(marker);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
   test("classifies unsafe and lossy entries without exposing them in output", async () => {
     const root = await mkdtemp(join(tmpdir(), "polycast-raycast-capture-"));
     try {
@@ -188,6 +372,35 @@ describe("Raycast snippet capture", () => {
     }
   });
 
+  test("stale atomic-write files are dry-run safe and removed only on write", async () => {
+    const root = await mkdtemp(join(tmpdir(), "polycast-raycast-capture-stale-temp-"));
+    try {
+      const input = await writeFixture(root);
+      const outputDir = join(root, "commands", "raycast-snippets");
+      await captureRaycastSnippets({ input, outputDir, write: true });
+      const generated = (await readdir(outputDir)).find((entry) => entry.endsWith(".ts"));
+      expect(generated).toBeDefined();
+      const staleTemporary = join(outputDir, `${generated}.polycast-tmp-424242`);
+      await writeFile(staleTemporary, "interrupted write\n");
+
+      const dryRun = await captureRaycastSnippets({ input, outputDir });
+      expect(dryRun.remove).toBe(1);
+      expect(await readFile(staleTemporary, "utf8")).toBe("interrupted write\n");
+
+      const written = await captureRaycastSnippets({ input, outputDir, write: true });
+      expect(written.remove).toBe(1);
+      await expect(stat(staleTemporary)).rejects.toThrow();
+
+      const converged = await captureRaycastSnippets({ input, outputDir, write: true });
+      expect(converged.create).toBe(0);
+      expect(converged.update).toBe(0);
+      expect(converged.remove).toBe(0);
+      expect(converged.reportChanged).toBe(false);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
   test("refuses to mix generated output with a foreign file", async () => {
     const root = await mkdtemp(join(tmpdir(), "polycast-raycast-capture-foreign-"));
     try {
@@ -201,6 +414,24 @@ describe("Raycast snippet capture", () => {
         expect.objectContaining({ code: "FOREIGN_OUTPUT" }),
       );
       expect(await readFile(foreign, "utf8")).toBe("export default {};\n");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("refuses temp-like files outside the reserved namespace", async () => {
+    const root = await mkdtemp(join(tmpdir(), "polycast-raycast-capture-foreign-temp-"));
+    try {
+      const input = await writeFixture(root);
+      const outputDir = join(root, "commands", "raycast-snippets");
+      await mkdir(outputDir, { recursive: true });
+      const foreign = join(outputDir, "hand-authored.ts.polycast-tmp-424242");
+      await writeFile(foreign, "foreign temporary\n");
+
+      await expect(captureRaycastSnippets({ input, outputDir, write: true })).rejects.toEqual(
+        expect.objectContaining({ code: "FOREIGN_OUTPUT" }),
+      );
+      expect(await readFile(foreign, "utf8")).toBe("foreign temporary\n");
     } finally {
       await rm(root, { recursive: true, force: true });
     }

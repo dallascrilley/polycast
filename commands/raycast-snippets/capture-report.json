@@ -242,11 +242,6 @@
       "losses": []
     },
     {
-      "sourceIndex": 64,
-      "id": "raycast-snippet-dogs-5752596e8a",
-      "losses": []
-    },
-    {
       "sourceIndex": 350,
       "id": "raycast-snippet-email-subject-as-needed-podcasting-c61cd6cb41",
       "losses": []
@@ -653,11 +648,6 @@
       "losses": []
     },
     {
-      "sourceIndex": 335,
-      "id": "raycast-snippet-prime-ai-a11375d322",
-      "losses": []
-    },
-    {
       "sourceIndex": 337,
       "id": "raycast-snippet-proceed-ai-a931c7b476",
       "losses": []
@@ -735,11 +725,6 @@
       "losses": []
     },
     {
-      "sourceIndex": 133,
-      "id": "raycast-snippet-remotion-cta-252704f60f",
-      "losses": []
-    },
-    {
       "sourceIndex": 132,
       "id": "raycast-snippet-remotion-promo-best-practices-305fbad35c",
       "losses": [
@@ -779,11 +764,6 @@
     {
       "sourceIndex": 215,
       "id": "raycast-snippet-serious-lookg-unicode-2939089bc0",
-      "losses": []
-    },
-    {
-      "sourceIndex": 304,
-      "id": "raycast-snippet-sharper-vertical-mode-rncn-mac-235e1e49dd",
       "losses": []
     },
     {
@@ -1106,6 +1086,10 @@
       "reason": "dynamic-placeholder"
     },
     {
+      "sourceIndex": 64,
+      "reason": "credential-like"
+    },
+    {
       "sourceIndex": 65,
       "reason": "personal-data"
     },
@@ -1216,6 +1200,10 @@
     {
       "sourceIndex": 130,
       "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 133,
+      "reason": "unicode-format-character"
     },
     {
       "sourceIndex": 137,
@@ -1666,6 +1654,10 @@
       "reason": "dynamic-placeholder"
     },
     {
+      "sourceIndex": 304,
+      "reason": "machine-specific"
+    },
+    {
       "sourceIndex": 306,
       "reason": "dynamic-placeholder"
     },
@@ -1740,6 +1732,10 @@
     {
       "sourceIndex": 334,
       "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 335,
+      "reason": "unicode-format-character"
     },
     {
       "sourceIndex": 340,

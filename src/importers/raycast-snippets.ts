@@ -49,6 +49,7 @@ export type RaycastSnippetRejectionCode =
   | "machine-specific"
   | "unsafe-operation"
   | "control-character"
+  | "unicode-format-character"
   | "oversized"
   | "keyword-collision"
   | "id-collision";
@@ -117,7 +118,11 @@ export class RaycastSnippetCaptureError extends Error {
   }
 }
 
-function sha256(value: string): string {
+function sha256Text(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+function sha256Bytes(value: Uint8Array): string {
   return createHash("sha256").update(value).digest("hex");
 }
 
@@ -134,7 +139,7 @@ function slugify(value: string): string {
 }
 
 function commandId(snippet: RaycastSnippet): string {
-  const fingerprint = sha256(
+  const fingerprint = sha256Text(
     `${snippet.name.trim()}\0${snippet.keyword ?? ""}\0${snippet.text}`,
   ).slice(0, 10);
   return `raycast-snippet-${slugify(snippet.name)}-${fingerprint}`;
@@ -169,6 +174,10 @@ function hasControlCharacter(value: string): boolean {
   return /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u.test(value);
 }
 
+function hasUnicodeFormatCharacter(value: string): boolean {
+  return /\p{Cf}/u.test(value);
+}
+
 function shannonEntropy(value: string): number {
   const frequencies = new Map<string, number>();
   for (const char of value) frequencies.set(char, (frequencies.get(char) ?? 0) + 1);
@@ -189,6 +198,13 @@ function hasHighEntropyToken(value: string): boolean {
     if (classes >= 3 && shannonEntropy(token) >= 4.2) return true;
   }
   return false;
+}
+
+function hasShortSingleTokenPasswordShape(value: string): boolean {
+  const token = value.trim();
+  if (token.length < 12 || token.length > 39 || /\s/u.test(token)) return false;
+  if (!/^[\x21-\x7E]+$/u.test(token)) return false;
+  return [/[a-z]/, /[A-Z]/, /\d/, /[^A-Za-z0-9]/].every((pattern) => pattern.test(token));
 }
 
 function containsCredential(value: string): boolean {
@@ -271,6 +287,7 @@ function containsMachineSpecificReference(value: string): boolean {
     /\b(?:tailscale|magicdns)\b|\.ts\.net\b/i.test(value) ||
     /\b(?:\d{1,3}\.){3}\d{1,3}\b/.test(value) ||
     /\b(?:[0-9A-F]{2}:){5}[0-9A-F]{2}\b/i.test(value) ||
+    /\b[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}\b/i.test(value) ||
     /(?:^|[\s"'`])~\/\.ssh\//m.test(value) ||
     /\b[^/\s]+\.(?:local|internal)\b/i.test(value) ||
     /https?:\/\/(?:localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(?:1[6-9]|2\d|3[01])\.\d+\.\d+|[^/\s]+\.(?:local|internal))(?:[/:]|$)/i.test(
@@ -297,7 +314,12 @@ function rejectionFor(snippet: RaycastSnippet): RaycastSnippetRejectionCode | un
   if (snippet.text.length > MAX_PORTABLE_TEXT_LENGTH) return "oversized";
   const inspected = `${snippet.name}\n${snippet.text}\n${snippet.keyword ?? ""}`;
   if (hasControlCharacter(inspected)) return "control-character";
-  if (containsCredential(inspected) || namesCredentialMaterial(inspected)) {
+  if (hasUnicodeFormatCharacter(inspected)) return "unicode-format-character";
+  if (
+    containsCredential(inspected) ||
+    hasShortSingleTokenPasswordShape(snippet.text) ||
+    namesCredentialMaterial(inspected)
+  ) {
     return "credential-like";
   }
   if (containsPersonalData(inspected)) return "personal-data";
@@ -328,6 +350,7 @@ const ALL_REJECTION_CODES = [
   "machine-specific",
   "unsafe-operation",
   "control-character",
+  "unicode-format-character",
   "oversized",
   "keyword-collision",
   "id-collision",
@@ -347,9 +370,9 @@ function parseExport(raw: string): {
   let input: unknown;
   try {
     input = JSON.parse(raw);
-  } catch (error) {
+  } catch {
     throw new RaycastSnippetCaptureError(
-      `Raycast snippet export is not valid JSON: ${error instanceof Error ? error.message : String(error)}`,
+      "Raycast snippet export is not valid JSON",
       "INVALID_JSON",
     );
   }
@@ -469,13 +492,33 @@ function reportFor(
   };
 }
 
-async function readOwnedOutput(outputDir: string): Promise<Map<string, string>> {
+interface OwnedOutput {
+  readonly files: ReadonlyMap<string, string>;
+  readonly staleTemporaries: readonly string[];
+}
+
+function isAtomicTemporary(name: string): boolean {
+  const match = /^(.*)\.polycast-tmp-[1-9]\d*$/u.exec(name);
+  const target = match?.[1];
+  if (!target) return false;
+  return (
+    target === REPORT_FILENAME ||
+    /^raycast-snippet-[a-z0-9]+(?:-[a-z0-9]+)*-[0-9a-f]{10}\.ts$/u.test(target)
+  );
+}
+
+async function readOwnedOutput(outputDir: string): Promise<OwnedOutput> {
   const files = new Map<string, string>();
+  const staleTemporaries: string[] = [];
   const entries = await readdir(outputDir, { withFileTypes: true }).catch((error) => {
     if (error instanceof Error && "code" in error && error.code === "ENOENT") return [];
     throw error;
   });
   for (const entry of entries) {
+    if (entry.isFile() && isAtomicTemporary(entry.name)) {
+      staleTemporaries.push(entry.name);
+      continue;
+    }
     if (!entry.isFile()) {
       throw new RaycastSnippetCaptureError(
         `refusing to write: ${join(outputDir, entry.name)} is not a generated file`,
@@ -517,7 +560,7 @@ async function readOwnedOutput(outputDir: string): Promise<Map<string, string>> 
     }
     files.set(entry.name, contents);
   }
-  return files;
+  return { files, staleTemporaries };
 }
 
 async function writeAtomically(path: string, contents: string): Promise<void> {
@@ -578,8 +621,17 @@ export async function captureRaycastSnippets(
     );
   }
 
-  const raw = await readFile(sourcePath, "utf8");
-  const sourceSha256 = sha256(raw);
+  const sourceBytes = await readFile(sourcePath);
+  const sourceSha256 = sha256Bytes(sourceBytes);
+  let raw: string;
+  try {
+    raw = new TextDecoder("utf-8", { fatal: true }).decode(sourceBytes);
+  } catch {
+    throw new RaycastSnippetCaptureError(
+      "Raycast snippet export is not valid UTF-8",
+      "INVALID_UTF8",
+    );
+  }
   const { sourceEntries, parsed, rejected: initialRejected } = parseExport(raw);
   const { accepted, rejected } = resolveConflicts(parsed, initialRejected);
   if (accepted.length === 0 && options.write) {
@@ -601,7 +653,7 @@ export async function captureRaycastSnippets(
   const report = reportFor(sourceSha256, sourceEntries, accepted, rejected);
   desired.set(REPORT_FILENAME, `${JSON.stringify(report, null, 2)}\n`);
 
-  const existing = await readOwnedOutput(outputDir);
+  const { files: existing, staleTemporaries } = await readOwnedOutput(outputDir);
   const create = [...desired].filter(([name]) => !existing.has(name)).length;
   const update = [...desired].filter(
     ([name, contents]) => existing.has(name) && existing.get(name) !== contents,
@@ -609,7 +661,8 @@ export async function captureRaycastSnippets(
   const unchanged = [...desired].filter(
     ([name, contents]) => existing.get(name) === contents,
   ).length;
-  const remove = [...existing].filter(([name]) => !desired.has(name)).length;
+  const remove =
+    [...existing].filter(([name]) => !desired.has(name)).length + staleTemporaries.length;
   const reportChanged = existing.get(REPORT_FILENAME) !== desired.get(REPORT_FILENAME);
 
   if (options.write) {
@@ -620,6 +673,9 @@ export async function captureRaycastSnippets(
     }
     for (const [name] of existing) {
       if (!desired.has(name)) await rm(join(outputDir, name));
+    }
+    for (const name of staleTemporaries) {
+      await rm(join(outputDir, name), { force: true });
     }
   }
 
