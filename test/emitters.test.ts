@@ -140,6 +140,17 @@ describe("shortcuts-cherri emitter", () => {
     expect(file?.contents).not.toContain("tr '[:lower:]'");
   });
 
+  test("emits explicit Shortcut share-sheet input classes", () => {
+    const cmd = defineCommand({
+      ...textCmd,
+      id: "open-shared-url",
+      x: { shortcuts: { from: "sharesheet", inputs: ["url", "webpage", "text"] } },
+    });
+    const [file] = shortcutsCherri.emit(cmd);
+    expect(file?.contents).toContain("#define from sharesheet");
+    expect(file?.contents).toContain("#define inputs url, webpage, text");
+  });
+
   test("emits args commands with prompt and polycast run stub", () => {
     const files = shortcutsCherri.emit(argsCmd);
     const cherri = files.find((f) => f.path.endsWith(".cherri"));
@@ -161,8 +172,14 @@ describe("shortcuts-cherri emitter", () => {
     expect(shortcutsCherri.emit(cmd)).toEqual([]);
   });
 
-  test("skips files commands", () => {
-    expect(shortcutsCherri.emit(filesCmd)).toEqual([]);
+  test("emits files commands with ShortcutInput as arguments", () => {
+    const [file] = shortcutsCherri.emit(filesCmd);
+    expect(file?.path).toBe("basename-files.cherri");
+    expect(file?.contents).toContain("#define inputs file");
+    expect(file?.contents).toContain("'as arguments'");
+    expect(file?.contents).toContain('run --commands "$COMMANDS" basename-files "$@"');
+    expect(file?.contents).not.toContain(" --text ");
+    expect(file?.contents).not.toContain("for f in");
   });
 
   // Regression: `#define name "Uppercase"` made the quotes part of the shortcut
@@ -256,6 +273,23 @@ describe("registry", () => {
     expect(results.find((r) => r.target === "raycast-script")?.skipped).toBe(false);
     expect(results.find((r) => r.target === "shortcuts-cherri")?.skipped).toBe(false);
     expect(results.find((r) => r.target === "popclip")?.skipped).toBe(true);
+  });
+
+  test("target allowlists skip unrelated emitters and retain their catalog", () => {
+    const snippetOnly = defineCommand({
+      id: "snippet-only",
+      title: "Snippet Only",
+      description: "snippet",
+      modality: "none",
+      body: { lang: "node", source: 'process.stdout.write("hello");' },
+      targets: ["raycast-snippet"],
+      x: { raycast: { snippet: { text: "hello" } } },
+    });
+    const commandResults = emitCommand(snippetOnly);
+    expect(commandResults.every((result) => result.skipped)).toBe(true);
+    const catalog = emitCatalogs([snippetOnly]);
+    expect(catalog.find((result) => result.target === "raycast-snippet")?.skipped).toBe(false);
+    expect(catalog.find((result) => result.target === "raycast-quicklink")?.skipped).toBe(true);
   });
 
   test("throws on unknown target", () => {

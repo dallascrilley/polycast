@@ -23,10 +23,20 @@ export function assertValid(cmd: CommandDef): void {
   if (!cmd.title.trim()) {
     throw new Error(`command "${cmd.id}" needs a title`);
   }
+  if (cmd.targets?.length === 0) {
+    throw new Error(`command "${cmd.id}" has an empty target allowlist`);
+  }
+  if (cmd.targets && new Set(cmd.targets).size !== cmd.targets.length) {
+    throw new Error(`command "${cmd.id}" has duplicate targets`);
+  }
   if (cmd.modality === "args" && (!cmd.args || cmd.args.length === 0)) {
     throw new Error(`command "${cmd.id}" has modality "args" but no args`);
   }
-  if (!cmd.body.source.trim()) {
+  if (cmd.body.lang === "exec") {
+    if (!cmd.body.executable.trim()) {
+      throw new Error(`command "${cmd.id}" has an empty executable`);
+    }
+  } else if (!cmd.body.source.trim()) {
     throw new Error(`command "${cmd.id}" has an empty body`);
   }
 }

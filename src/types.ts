@@ -9,6 +9,19 @@
  * See docs/DESIGN.md for the full rationale.
  */
 
+export const COMMAND_TARGETS = [
+  "raycast-script",
+  "popclip",
+  "dropzone",
+  "dropover-script",
+  "shortcuts-cherri",
+  "raycast-snippet",
+  "raycast-quicklink",
+  "agent-cli",
+] as const;
+
+export type CommandTarget = (typeof COMMAND_TARGETS)[number];
+
 /**
  * What the command body receives as input. This is the single semantic that
  * makes one body legally renderable to multiple surfaces — and the reason an
@@ -32,10 +45,11 @@ export interface CommandArg {
   readonly data?: readonly { readonly title: string; readonly value: string }[];
 }
 
-export type BodyLang = "bash" | "node" | "applescript";
+export type ScriptLang = "bash" | "node" | "applescript";
+export type BodyLang = ScriptLang | "exec";
 
-export interface CommandBody {
-  readonly lang: BodyLang;
+export interface ScriptBody {
+  readonly lang: ScriptLang;
   /**
    * The body is a pure `input -> stdout` function. It reads its input per the
    * command's modality (stdin for text, "$@" paths for files, argv for args)
@@ -44,6 +58,46 @@ export interface CommandBody {
    */
   readonly source: string;
 }
+
+/**
+ * Invoke a headless executable instead of inlining the implementation in the
+ * command definition. Launchers still emit `polycast run` shims; `run` spawns
+ * this executable with the same modality argv/stdin contract as a script body.
+ */
+export interface ExecBody {
+  readonly lang: "exec";
+  readonly executable: string;
+  readonly args?: readonly string[];
+}
+
+export type CommandBody = ScriptBody | ExecBody;
+
+/** Content item classes accepted by a Shortcut from macOS share surfaces. */
+export const SHORTCUTS_INPUTS = [
+  "installedapp",
+  "app",
+  "article",
+  "contact",
+  "date",
+  "email",
+  "folder",
+  "file",
+  "image",
+  "itunes",
+  "location",
+  "maplink",
+  "media",
+  "pdf",
+  "phonenumber",
+  "richtext",
+  "webpage",
+  "text",
+  "dictionary",
+  "number",
+  "url",
+] as const;
+
+export type ShortcutsInput = (typeof SHORTCUTS_INPUTS)[number];
 
 /** Target-specific hints that have no home in the language-agnostic core. */
 export interface CrossTargetHints {
@@ -76,6 +130,7 @@ export interface CrossTargetHints {
     readonly glyph?: string;
     readonly color?: string;
     readonly from?: string;
+    readonly inputs?: readonly ShortcutsInput[];
   };
 }
 
@@ -90,6 +145,8 @@ export interface CommandDef {
   /** Required when `modality === "args"`. */
   readonly args?: readonly CommandArg[];
   readonly body: CommandBody;
+  /** Optional target allowlist. Omit to use every modality-compatible target. */
+  readonly targets?: readonly CommandTarget[];
   readonly x?: CrossTargetHints;
   readonly author?: string;
 }
@@ -104,7 +161,7 @@ export interface EmittedFile {
 }
 
 export interface ValidationIssue {
-  readonly target: string;
+  readonly target: CommandTarget;
   readonly message: string;
   readonly severity: "error" | "warning";
 }
@@ -115,7 +172,7 @@ export interface ValidationIssue {
  */
 export interface Emitter {
   /** Stable target id, e.g. "raycast-script". */
-  readonly target: string;
+  readonly target: CommandTarget;
   /** Modalities this surface can represent. */
   readonly supports: readonly Modality[];
   /** Render the command, or return [] when the command is incompatible. */

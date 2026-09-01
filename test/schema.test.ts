@@ -26,6 +26,22 @@ describe("command-def schema", () => {
     expect(parseCommandDefJson(cmd).id).toBe("schema-test");
   });
 
+  test("validates a non-empty, unique target allowlist", () => {
+    const cmd = defineCommand({
+      id: "snippet-only",
+      title: "Snippet Only",
+      description: "valid",
+      modality: "none",
+      body: { lang: "bash", source: "true" },
+      targets: ["raycast-snippet"],
+    });
+    expect(parseCommandDefJson(cmd).targets).toEqual(["raycast-snippet"]);
+    expect(() => commandDefSchema.parse({ ...cmd, targets: [] })).toThrow();
+    expect(() =>
+      commandDefSchema.parse({ ...cmd, targets: ["raycast-snippet", "raycast-snippet"] }),
+    ).toThrow();
+  });
+
   test("rejects invalid id and empty body", () => {
     expect(() =>
       commandDefSchema.parse({
@@ -34,6 +50,26 @@ describe("command-def schema", () => {
         description: "x",
         modality: "text",
         body: { lang: "bash", source: "   " },
+      }),
+    ).toThrow();
+  });
+
+  test("accepts an exec body and rejects an empty executable", () => {
+    const cmd = defineCommand({
+      id: "exec-test",
+      title: "Exec Test",
+      description: "valid",
+      modality: "files",
+      body: { lang: "exec", executable: "/usr/bin/true" },
+    });
+    expect(parseCommandDefJson(cmd).body).toEqual({ lang: "exec", executable: "/usr/bin/true" });
+    expect(() =>
+      commandDefSchema.parse({
+        id: "empty-exec",
+        title: "x",
+        description: "x",
+        modality: "files",
+        body: { lang: "exec", executable: "" },
       }),
     ).toThrow();
   });

@@ -1,0 +1,21 @@
+schema_version: 1
+harness_contract_version: 3
+id: polycast
+canonical_path: /Users/dallascrilley/Workspace/operations/polycast
+generated_state_root: /Users/dallascrilley/.local/state/agents/polycast
+tracking:
+  system: linear
+linear:
+  team_id: 8b799053-907f-4ddf-a416-95a29140b475
+legacy:
+  beads:
+    state: frozen
+    frozen_at: 2026-08-31T18:51:13Z
+    snapshot_receipt:
+      path: /Users/dallascrilley/Backups/Receipts/polycast/beads-cutover-20260831T185053Z/journal.json.beads-cutover.json
+      sha256: cd97a0cc2fc7e44078ea7423fb7421f42ae53c1fa7f3529f31b4d7fd19e10dbb
+credentials:
+  references:
+    - op://nijmtsgv2ajhcrm6voh3h7ylha/xtjpkgtz3gdqtn3b6xwt6eabem/credential
+receipts:
+  root: /Users/dallascrilley/Backups/Receipts/polycast

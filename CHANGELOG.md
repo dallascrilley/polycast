@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `CommandDef` `body.lang: "exec"` invokes a headless executable through
+  `polycast run` without copying that logic into launcher shims.
+- `file-to-inbox` copies files into Inbox with a Review tag and a structured
+  receipt. Shortcuts now emit the files modality as argv, not newline text.
+
 ## [0.1.0] - 2026-08-26
 
 ### Added

@@ -9,7 +9,7 @@
 | `popclip` | yes | — | — | — | `emit` returns `[]` |
 | `dropzone` | partial (`Handles: Text`) | yes | — | — | `emit` returns `[]` |
 | `dropover-script` | — | yes | — | — | `emit` returns `[]` |
-| `shortcuts-cherri` | yes | — | yes | yes | `emit` returns `[]` for unsupported (e.g. dropdown args) |
+| `shortcuts-cherri` | yes | yes | yes | yes | `emit` returns `[]` for unsupported (e.g. dropdown args) |
 | `raycast-snippet` | hint | — | — | hint | catalog omits command |
 | `raycast-quicklink` | — | — | hint | hint | catalog omits command |
 | `agent-cli` | yes | yes | yes | yes | `emit` returns `[]` |
@@ -19,7 +19,7 @@
 | Modality | Body contract | Injected by emitter |
 |----------|---------------|---------------------|
 | `text` | read stdin | PopClip `stdin: text`; Cherri `ShortcutInput`; agent `--text` |
-| `files` | `"$@"` paths | Dropzone Ruby shell-out; Dropover `"$@"` loop; agent argv |
+| `files` | `"$@"` paths | Dropzone Ruby shell-out; Dropover `"$@"` loop; Shortcuts `as arguments`; agent argv |
 | `args` | `$1..$n` | Raycast native; agent positional |
 | `none` | stdout only | direct body |
 

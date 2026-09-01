@@ -1,7 +1,9 @@
 # Raycast snippets and quicklinks
 
-**Fetched:** 2026-06-14
-**Source:** Operator samples in `~/.dotfiles/raycast/shell-functions-snippets.json`, `~/.dotfiles/raycast/quicklinks/quicklinks-import.json`
+**Fetched:** 2026-08-31
+**Sources:** [Raycast Snippets manual](https://manual.raycast.com/snippets),
+[Raycast Import & Export manual](https://manual.raycast.com/import-export), and
+operator exports under `~/.dotfiles/raycast/`
 
 ## Snippets
 
@@ -12,6 +14,10 @@ JSON array of objects:
 ```
 
 Static text expansion only — no script execution. Maps to `x.raycast.snippet.text` (+ optional `keyword`) on `CommandDef`.
+
+Current exports may include a `tags` array even though the documented JSON
+import shape names only `name`, `text`, and `keyword`. Capture reports tags as
+omitted target metadata. It does not silently treat them as portable fields.
 
 ## Quicklinks
 
@@ -31,6 +37,11 @@ One catalog file per build:
 - `build/raycast-quicklink/quicklinks.json`
 
 Import via Raycast UI or dotfiles import scripts.
+
+`polycast capture --from raycast-snippets` runs the reverse path. It reads an
+export, filters private or nonportable rows, and creates validated nested
+`CommandDef` modules. Capture is a dry run unless `--write` is present. The
+source export is never edited or copied into Git.
 
 ## I/O contract
 

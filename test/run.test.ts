@@ -74,14 +74,14 @@ describe("commands JSON store", () => {
     try {
       await writeCommandsJson([uppercase], dir);
       const loaded = await loadCommandJson("uppercase", dir);
-      expect(loaded.body.source).toBe(uppercase.body.source);
+      expect(loaded.body).toEqual(uppercase.body);
 
       await writeFile(
         join(dir, "uppercase.json"),
         `${JSON.stringify({ ...uppercase, body: { lang: "bash", source: "sed 's/.*/REPLACED/'" } }, null, 2)}\n`,
       );
       const reloaded = await loadCommandJson("uppercase", dir);
-      expect(reloaded.body.source).toBe("sed 's/.*/REPLACED/'");
+      expect(reloaded.body).toEqual({ lang: "bash", source: "sed 's/.*/REPLACED/'" });
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

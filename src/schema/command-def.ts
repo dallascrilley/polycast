@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { assertValid } from "../define.ts";
-import type { CommandDef } from "../types.ts";
+import { COMMAND_TARGETS, type CommandDef, SHORTCUTS_INPUTS } from "../types.ts";
 
 const KEBAB_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -20,10 +20,20 @@ const commandArgSchema = z.object({
     .optional(),
 });
 
-const commandBodySchema = z.object({
+const scriptBodySchema = z.object({
   lang: z.enum(["bash", "node", "applescript"]),
   source: z.string(),
 });
+
+const execBodySchema = z.object({
+  lang: z.literal("exec"),
+  executable: z.string().min(1),
+  args: z.array(z.string()).optional(),
+});
+
+const commandBodySchema = z.discriminatedUnion("lang", [scriptBodySchema, execBodySchema]);
+
+const shortcutsInputSchema = z.enum(SHORTCUTS_INPUTS);
 
 const crossTargetHintsSchema = z
   .object({
@@ -75,6 +85,7 @@ const crossTargetHintsSchema = z
         glyph: z.string().optional(),
         color: z.string().optional(),
         from: z.string().optional(),
+        inputs: z.array(shortcutsInputSchema).min(1).optional(),
       })
       .optional(),
   })
@@ -90,10 +101,18 @@ export const commandDefSchema = z
     modality: z.enum(["text", "files", "args", "none"]),
     args: z.array(commandArgSchema).optional(),
     body: commandBodySchema,
+    targets: z.array(z.enum(COMMAND_TARGETS)).min(1).optional(),
     x: crossTargetHintsSchema,
     author: z.string().optional(),
   })
   .superRefine((cmd, ctx) => {
+    if (cmd.targets && new Set(cmd.targets).size !== cmd.targets.length) {
+      ctx.addIssue({
+        code: "custom",
+        message: "targets must not contain duplicates",
+        path: ["targets"],
+      });
+    }
     if (cmd.modality === "args" && (!cmd.args || cmd.args.length === 0)) {
       ctx.addIssue({
         code: "custom",
@@ -101,7 +120,15 @@ export const commandDefSchema = z
         path: ["args"],
       });
     }
-    if (!cmd.body.source.trim()) {
+    if (cmd.body.lang === "exec") {
+      if (!cmd.body.executable.trim()) {
+        ctx.addIssue({
+          code: "custom",
+          message: "body.executable must be non-empty",
+          path: ["body", "executable"],
+        });
+      }
+    } else if (!cmd.body.source.trim()) {
       ctx.addIssue({
         code: "custom",
         message: "body.source must be non-empty",

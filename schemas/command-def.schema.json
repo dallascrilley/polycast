@@ -64,18 +64,60 @@
       }
     },
     "body": {
-      "type": "object",
-      "properties": {
-        "lang": {
-          "type": "string",
-          "enum": ["bash", "node", "applescript"]
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "lang": {
+              "type": "string",
+              "enum": ["bash", "node", "applescript"]
+            },
+            "source": {
+              "type": "string"
+            }
+          },
+          "required": ["lang", "source"],
+          "additionalProperties": false
         },
-        "source": {
-          "type": "string"
+        {
+          "type": "object",
+          "properties": {
+            "lang": {
+              "type": "string",
+              "const": "exec"
+            },
+            "executable": {
+              "type": "string",
+              "minLength": 1
+            },
+            "args": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": ["lang", "executable"],
+          "additionalProperties": false
         }
-      },
-      "required": ["lang", "source"],
-      "additionalProperties": false
+      ]
+    },
+    "targets": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "raycast-script",
+          "popclip",
+          "dropzone",
+          "dropover-script",
+          "shortcuts-cherri",
+          "raycast-snippet",
+          "raycast-quicklink",
+          "agent-cli"
+        ]
+      }
     },
     "x": {
       "type": "object",
@@ -195,6 +237,36 @@
             },
             "from": {
               "type": "string"
+            },
+            "inputs": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "installedapp",
+                  "app",
+                  "article",
+                  "contact",
+                  "date",
+                  "email",
+                  "folder",
+                  "file",
+                  "image",
+                  "itunes",
+                  "location",
+                  "maplink",
+                  "media",
+                  "pdf",
+                  "phonenumber",
+                  "richtext",
+                  "webpage",
+                  "text",
+                  "dictionary",
+                  "number",
+                  "url"
+                ]
+              }
             }
           },
           "additionalProperties": false
