@@ -42,6 +42,9 @@ try {
   }
 
   const paths = new Set(packageRecord.files.map((file) => file.path));
+  if ([...paths].some((path) => path === "raycast-extension" || path.startsWith("raycast-extension/"))) {
+    fail("packed artifact unexpectedly includes the local Raycast extension");
+  }
   for (const required of [
     "package.json",
     "README.md",

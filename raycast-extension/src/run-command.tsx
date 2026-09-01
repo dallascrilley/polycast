@@ -89,14 +89,15 @@ function PickerField({
       </Form.Dropdown>
     );
   }
+  if (status === "loading") {
+    return (
+      <Form.Dropdown id={arg.name} title={arg.name} defaultValue="">
+        <Form.Dropdown.Item value="" title="Loading worktrees..." />
+      </Form.Dropdown>
+    );
+  }
 
-  return (
-    <Form.TextField
-      id={arg.name}
-      title={arg.name}
-      placeholder={status === "loading" ? "Loading worktrees..." : arg.placeholder}
-    />
-  );
+  return <Form.TextField id={arg.name} title={arg.name} placeholder={arg.placeholder} />;
 }
 
 function ArgField({
@@ -177,6 +178,14 @@ function CommandForm({ command }: { readonly command: StoredCommand }) {
   }, [pickerNeeded, preferences.orcaBin]);
 
   function handleSubmit(values: Form.Values) {
+    if (pickerStatus === "loading") {
+      void showToast({
+        style: Toast.Style.Failure,
+        title: "Worktrees still loading",
+        message: "Wait for the Orca worktree list before running.",
+      });
+      return;
+    }
     const stringValues: Record<string, string> = {};
     for (const arg of command.args ?? []) {
       const value = values[arg.name];
@@ -195,6 +204,7 @@ function CommandForm({ command }: { readonly command: StoredCommand }) {
 
   return (
     <Form
+      isLoading={pickerStatus === "loading"}
       navigationTitle={command.title}
       actions={
         <ActionPanel>
@@ -273,7 +283,9 @@ function RunView({
     };
   }, [argv, command, commandsDir, polycastBin, preferences.extraPath]);
 
-  const markdown = `\`\`\`text\n${tailLines(output) || "Waiting for output..."}\n\`\`\``;
+  const outputBody =
+    tailLines(output) || (exitCode === null ? "Waiting for output..." : "(no output)");
+  const markdown = `\`\`\`text\n${outputBody}\n\`\`\``;
   return <Detail isLoading={exitCode === null} markdown={markdown} />;
 }
 
