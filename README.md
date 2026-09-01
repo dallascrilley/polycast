@@ -170,6 +170,31 @@ bun run dev capture --from raycast-snippets  # preview latest export capture
 bun run mcp                      # start MCP stdio server (Cursor / Claude Desktop)
 ```
 
+### Raycast extension (flagship)
+
+The hand-written extension in [`raycast-extension/`](raycast-extension/) reads
+`~/.polycast/commands`, lets you choose a command and its arguments, and streams
+`polycast run` output. It includes an Orca worktree picker when a command marks
+an argument with `picker: "orca-worktree"`; failed picker lookups fall back to a
+text field.
+
+Develop it locally with:
+
+```sh
+cd raycast-extension
+npm i
+npm run dev
+```
+
+Raycast's development command registers the extension for local use. The four
+extension preferences configure the `polycast` binary, commands store directory,
+Orca binary, and extra PATH directories. Set extra PATH entries when Raycast's
+minimal environment cannot find `orca`, `jq`, `bun`, or `pi`.
+
+The existing script-command emission remains available for distributing
+commands through the generated launcher store; the flagship extension is a
+runtime-dynamic UI over that same command store.
+
 ### Capture Raycast snippets safely
 
 `capture --from raycast-snippets` turns a Raycast snippets JSON export into
