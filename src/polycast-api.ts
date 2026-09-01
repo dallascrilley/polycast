@@ -92,6 +92,7 @@ export class PolycastError extends Error {
 }
 
 function emitterListedForCommand(emitter: (typeof emitters)[number], cmd: CommandDef): boolean {
+  if (cmd.targets && !cmd.targets.includes(emitter.target)) return false;
   if (emitter.supports.includes(cmd.modality) && emitter.emit(cmd).length > 0) return true;
   if (!emitter.emitCatalog) return false;
   if (emitter.target === "raycast-snippet") return Boolean(cmd.x?.raycast?.snippet?.text);

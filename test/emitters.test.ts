@@ -275,6 +275,23 @@ describe("registry", () => {
     expect(results.find((r) => r.target === "popclip")?.skipped).toBe(true);
   });
 
+  test("target allowlists skip unrelated emitters and retain their catalog", () => {
+    const snippetOnly = defineCommand({
+      id: "snippet-only",
+      title: "Snippet Only",
+      description: "snippet",
+      modality: "none",
+      body: { lang: "node", source: 'process.stdout.write("hello");' },
+      targets: ["raycast-snippet"],
+      x: { raycast: { snippet: { text: "hello" } } },
+    });
+    const commandResults = emitCommand(snippetOnly);
+    expect(commandResults.every((result) => result.skipped)).toBe(true);
+    const catalog = emitCatalogs([snippetOnly]);
+    expect(catalog.find((result) => result.target === "raycast-snippet")?.skipped).toBe(false);
+    expect(catalog.find((result) => result.target === "raycast-quicklink")?.skipped).toBe(true);
+  });
+
   test("throws on unknown target", () => {
     expect(() => emitCommand(argsCmd, ["nope"])).toThrow(/unknown target/);
   });

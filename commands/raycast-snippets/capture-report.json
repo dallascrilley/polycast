@@ -1,0 +1,2004 @@
+{
+  "schemaVersion": 1,
+  "generatedBy": "polycast capture --from raycast-snippets",
+  "sourceSha256": "a506696178d64c015674ecf4ad8a3a6a319d3fa31dc8f90b1e7b20b17e8aeddd",
+  "sourceEntries": 438,
+  "accepted": [
+    {
+      "sourceIndex": 358,
+      "id": "raycast-snippet-abs-expand-absolutely-4ddceb922b",
+      "losses": []
+    },
+    {
+      "sourceIndex": 390,
+      "id": "raycast-snippet-ai-archive-summarize-conversation-aaaf5b8505",
+      "losses": []
+    },
+    {
+      "sourceIndex": 114,
+      "id": "raycast-snippet-ai-path-audit-7918b7ab80",
+      "losses": []
+    },
+    {
+      "sourceIndex": 330,
+      "id": "raycast-snippet-ai-prime-6bb321b0b1",
+      "losses": []
+    },
+    {
+      "sourceIndex": 36,
+      "id": "raycast-snippet-ai-prompt-audit-and-assign-evaluate-project-holi-646a19daa5",
+      "losses": []
+    },
+    {
+      "sourceIndex": 69,
+      "id": "raycast-snippet-ai-prompt-convert-into-td-work-038e435c7b",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 14,
+      "id": "raycast-snippet-ai-prompt-evaluate-project-holisically-and-recom-9d294ebfb1",
+      "losses": []
+    },
+    {
+      "sourceIndex": 420,
+      "id": "raycast-snippet-ai-provide-documentation-ef29783984",
+      "losses": []
+    },
+    {
+      "sourceIndex": 115,
+      "id": "raycast-snippet-ai-refactoring-plan-844d4f2c10",
+      "losses": []
+    },
+    {
+      "sourceIndex": 418,
+      "id": "raycast-snippet-ai-review-diff-2656343984",
+      "losses": []
+    },
+    {
+      "sourceIndex": 124,
+      "id": "raycast-snippet-ai-skill-improvements-75ec73bc5b",
+      "losses": []
+    },
+    {
+      "sourceIndex": 331,
+      "id": "raycast-snippet-ai-startup-output-style-58fb35391d",
+      "losses": []
+    },
+    {
+      "sourceIndex": 416,
+      "id": "raycast-snippet-ai-system-prompt-preset-raycast-expert-ca4255d260",
+      "losses": []
+    },
+    {
+      "sourceIndex": 384,
+      "id": "raycast-snippet-ai-system-prompt-zapier-expert-0e52765722",
+      "losses": []
+    },
+    {
+      "sourceIndex": 437,
+      "id": "raycast-snippet-ai-system-prompts-smart-llm-manager-03f0b7d615",
+      "losses": []
+    },
+    {
+      "sourceIndex": 382,
+      "id": "raycast-snippet-ai-yagni-avoid-overengineering-cbbde2e427",
+      "losses": []
+    },
+    {
+      "sourceIndex": 341,
+      "id": "raycast-snippet-amplifier-create-scenario-d95e17dcef",
+      "losses": []
+    },
+    {
+      "sourceIndex": 339,
+      "id": "raycast-snippet-amplify-memory-extraction-987941127c",
+      "losses": []
+    },
+    {
+      "sourceIndex": 209,
+      "id": "raycast-snippet-angry-cat-unicode-4374b95b32",
+      "losses": []
+    },
+    {
+      "sourceIndex": 158,
+      "id": "raycast-snippet-audit-zshell-c0fb68f295",
+      "losses": []
+    },
+    {
+      "sourceIndex": 23,
+      "id": "raycast-snippet-bak-create-a-bak-copy-c4dff7ad9e",
+      "losses": []
+    },
+    {
+      "sourceIndex": 359,
+      "id": "raycast-snippet-bd-expand-best-dallas-a561663415",
+      "losses": []
+    },
+    {
+      "sourceIndex": 146,
+      "id": "raycast-snippet-cdls-change-directory-and-list-contents-843c41ad8a",
+      "losses": []
+    },
+    {
+      "sourceIndex": 17,
+      "id": "raycast-snippet-clean-branches-and-worktrees-1a069ed8c6",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 43,
+      "id": "raycast-snippet-cleanup-back-to-main-4ba7d07462",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 39,
+      "id": "raycast-snippet-cleanup-back-to-main-orca-abff4d0a14",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 86,
+      "id": "raycast-snippet-codex-review-uncommitted-a48bb0a87d",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 85,
+      "id": "raycast-snippet-codex-review-vs-base-6cc42eff1f",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 125,
+      "id": "raycast-snippet-commit-and-push-043894c4d4",
+      "losses": []
+    },
+    {
+      "sourceIndex": 3,
+      "id": "raycast-snippet-commit-push-pr-b9e23ff245",
+      "losses": []
+    },
+    {
+      "sourceIndex": 8,
+      "id": "raycast-snippet-commit-push-pr-merge-0d43f3d57e",
+      "losses": []
+    },
+    {
+      "sourceIndex": 329,
+      "id": "raycast-snippet-compress-consolidate-documentation-7b005dfa63",
+      "losses": []
+    },
+    {
+      "sourceIndex": 204,
+      "id": "raycast-snippet-compress-shorten-prompt-d63ac81269",
+      "losses": []
+    },
+    {
+      "sourceIndex": 238,
+      "id": "raycast-snippet-concrete-spec-469d57678c",
+      "losses": []
+    },
+    {
+      "sourceIndex": 62,
+      "id": "raycast-snippet-continue-autonomously-83c2b24ced",
+      "losses": []
+    },
+    {
+      "sourceIndex": 4,
+      "id": "raycast-snippet-continue-f5565a7223",
+      "losses": []
+    },
+    {
+      "sourceIndex": 153,
+      "id": "raycast-snippet-copy-claude-boilerplate-f2f41f3342",
+      "losses": []
+    },
+    {
+      "sourceIndex": 136,
+      "id": "raycast-snippet-create-handoff-from-session-a06fea044a",
+      "losses": []
+    },
+    {
+      "sourceIndex": 230,
+      "id": "raycast-snippet-css-center-align-dba12af38e",
+      "losses": []
+    },
+    {
+      "sourceIndex": 156,
+      "id": "raycast-snippet-cursor-agent-map-key-entry-points-fd25f97a91",
+      "losses": []
+    },
+    {
+      "sourceIndex": 243,
+      "id": "raycast-snippet-cursor-web-search-prompt-4defdbfaa0",
+      "losses": []
+    },
+    {
+      "sourceIndex": 218,
+      "id": "raycast-snippet-cute-unicode-b998506c70",
+      "losses": []
+    },
+    {
+      "sourceIndex": 103,
+      "id": "raycast-snippet-debug-and-fix-troubleshoot-agent-68e72360f1",
+      "losses": []
+    },
+    {
+      "sourceIndex": 74,
+      "id": "raycast-snippet-delegator-c09fc1bb53",
+      "losses": []
+    },
+    {
+      "sourceIndex": 134,
+      "id": "raycast-snippet-do-what-you-think-is-best-2c5b6a0962",
+      "losses": []
+    },
+    {
+      "sourceIndex": 350,
+      "id": "raycast-snippet-email-subject-as-needed-podcasting-c61cd6cb41",
+      "losses": []
+    },
+    {
+      "sourceIndex": 321,
+      "id": "raycast-snippet-execute-a-plan-ai-84931cdde5",
+      "losses": []
+    },
+    {
+      "sourceIndex": 279,
+      "id": "raycast-snippet-explain-documentation-pattern-2f59439ae5",
+      "losses": []
+    },
+    {
+      "sourceIndex": 278,
+      "id": "raycast-snippet-extract-article-wisdom-pattern-3e808c1dd6",
+      "losses": []
+    },
+    {
+      "sourceIndex": 277,
+      "id": "raycast-snippet-extract-insights-pattern-b74c07f627",
+      "losses": []
+    },
+    {
+      "sourceIndex": 276,
+      "id": "raycast-snippet-extract-patterns-34ba8321ad",
+      "losses": []
+    },
+    {
+      "sourceIndex": 254,
+      "id": "raycast-snippet-extract-wisdom-pattern-7cfa972ba4",
+      "losses": []
+    },
+    {
+      "sourceIndex": 22,
+      "id": "raycast-snippet-find-bugs-8ab15f5fe4",
+      "losses": []
+    },
+    {
+      "sourceIndex": 220,
+      "id": "raycast-snippet-flipping-table-unicode-7c8b93b419",
+      "losses": []
+    },
+    {
+      "sourceIndex": 9,
+      "id": "raycast-snippet-fresh-eyes-c9e9601023",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 166,
+      "id": "raycast-snippet-fresh-eyes-codebaze-review-612deda2b0",
+      "losses": []
+    },
+    {
+      "sourceIndex": 167,
+      "id": "raycast-snippet-fresh-eyes-codebaze-review-optimized-20e5fb238b",
+      "losses": []
+    },
+    {
+      "sourceIndex": 58,
+      "id": "raycast-snippet-game-changing-features-19ccff8205",
+      "losses": []
+    },
+    {
+      "sourceIndex": 247,
+      "id": "raycast-snippet-generate-code-rules-pattern-7856d08cd3",
+      "losses": []
+    },
+    {
+      "sourceIndex": 293,
+      "id": "raycast-snippet-generate-random-32-char-key-4c0f96cd0d",
+      "losses": []
+    },
+    {
+      "sourceIndex": 1,
+      "id": "raycast-snippet-get-second-opinion-267c72067c",
+      "losses": []
+    },
+    {
+      "sourceIndex": 88,
+      "id": "raycast-snippet-git-commit-push-pr-full-lifecycle-0e707757fa",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 413,
+      "id": "raycast-snippet-git-diff-between-branches-with-exclusions-e53c301367",
+      "losses": []
+    },
+    {
+      "sourceIndex": 379,
+      "id": "raycast-snippet-git-install-ccpm-7a9372d817",
+      "losses": []
+    },
+    {
+      "sourceIndex": 274,
+      "id": "raycast-snippet-git-merge-prune-e0dc335766",
+      "losses": []
+    },
+    {
+      "sourceIndex": 425,
+      "id": "raycast-snippet-git-undo-last-commit-hard-cbada74df1",
+      "losses": []
+    },
+    {
+      "sourceIndex": 138,
+      "id": "raycast-snippet-git-undo-last-commit-soft-30263942f8",
+      "losses": []
+    },
+    {
+      "sourceIndex": 233,
+      "id": "raycast-snippet-github-issue-template-cd8bee0810",
+      "losses": []
+    },
+    {
+      "sourceIndex": 234,
+      "id": "raycast-snippet-github-pull-request-template-ec6af1ae43",
+      "losses": []
+    },
+    {
+      "sourceIndex": 219,
+      "id": "raycast-snippet-glasses-of-disapproval-unicode-0791532dba",
+      "losses": []
+    },
+    {
+      "sourceIndex": 213,
+      "id": "raycast-snippet-happy-with-it-unicode-f1ca69042f",
+      "losses": []
+    },
+    {
+      "sourceIndex": 112,
+      "id": "raycast-snippet-implement-and-use-your-best-judgement-9fe39f1a4d",
+      "losses": []
+    },
+    {
+      "sourceIndex": 55,
+      "id": "raycast-snippet-jcs-goal-d592d92226",
+      "losses": []
+    },
+    {
+      "sourceIndex": 194,
+      "id": "raycast-snippet-kitty-start-default-session-63b1a11628",
+      "losses": []
+    },
+    {
+      "sourceIndex": 356,
+      "id": "raycast-snippet-las-expand-0aedd0c780",
+      "losses": []
+    },
+    {
+      "sourceIndex": 210,
+      "id": "raycast-snippet-lenny-unicode-d7a35eb1f8",
+      "losses": []
+    },
+    {
+      "sourceIndex": 75,
+      "id": "raycast-snippet-library-developer-audience-context-9bb21f4680",
+      "losses": []
+    },
+    {
+      "sourceIndex": 100,
+      "id": "raycast-snippet-loop-add-test-coverage-52e29e3a84",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 101,
+      "id": "raycast-snippet-loop-assign-pr-reviewers-4ea5f2ba40",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 56,
+      "id": "raycast-snippet-loop-autofix-pr-comments-49313d37e3",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 98,
+      "id": "raycast-snippet-loop-clean-up-feature-flags-8313f07e04",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 96,
+      "id": "raycast-snippet-loop-customer-health-monitoring-agent-f3cd487c11",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 80,
+      "id": "raycast-snippet-loop-desloppify-pass-eb5c2f04f9",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 15,
+      "id": "raycast-snippet-loop-docs-agent-62a460f33f",
+      "losses": []
+    },
+    {
+      "sourceIndex": 81,
+      "id": "raycast-snippet-loop-docs-sync-after-edit-3414cf5f59",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 84,
+      "id": "raycast-snippet-loop-e2e-until-green-0d0eed9f95",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 97,
+      "id": "raycast-snippet-loop-find-critical-bugs-282e8a4a84",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 99,
+      "id": "raycast-snippet-loop-fix-ci-failures-1d4fb2fce3",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 95,
+      "id": "raycast-snippet-loop-generate-docs-4eaa90f1dd",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 82,
+      "id": "raycast-snippet-loop-guardrails-learning-loop-72da59ac54",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 49,
+      "id": "raycast-snippet-loop-impeccable-e2f3934f08",
+      "losses": []
+    },
+    {
+      "sourceIndex": 91,
+      "id": "raycast-snippet-loop-investigate-sentry-issues-1d952b9c9e",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 79,
+      "id": "raycast-snippet-loop-pr-self-review-139fc81c62",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 92,
+      "id": "raycast-snippet-loop-product-analytics-agent-37616a84c1",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 93,
+      "id": "raycast-snippet-loop-product-faq-agent-dbbbdaab20",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 94,
+      "id": "raycast-snippet-loop-summarize-changes-daily-b7ff3c26a2",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 46,
+      "id": "raycast-snippet-loop-the-full-product-evaluation-loop-9906d58da7",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 83,
+      "id": "raycast-snippet-loop-visual-regressions-until-match-deee3c07e7",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 345,
+      "id": "raycast-snippet-loveto-expand-we-d-love-to-work-with-db2e420d77",
+      "losses": []
+    },
+    {
+      "sourceIndex": 291,
+      "id": "raycast-snippet-mcp-inspector-4e6c565d76",
+      "losses": []
+    },
+    {
+      "sourceIndex": 354,
+      "id": "raycast-snippet-mcp-sequential-thinking-519067d146",
+      "losses": []
+    },
+    {
+      "sourceIndex": 214,
+      "id": "raycast-snippet-meh-unicode-12501ac44d",
+      "losses": []
+    },
+    {
+      "sourceIndex": 152,
+      "id": "raycast-snippet-merge-tmux-windows-9e05545098",
+      "losses": []
+    },
+    {
+      "sourceIndex": 364,
+      "id": "raycast-snippet-mkcp-create-directory-and-copy-file-into-it-78f2d32d15",
+      "losses": []
+    },
+    {
+      "sourceIndex": 365,
+      "id": "raycast-snippet-mkmv-create-directory-and-move-file-into-it-7c390aa419",
+      "losses": []
+    },
+    {
+      "sourceIndex": 366,
+      "id": "raycast-snippet-mktouch-create-directory-path-and-file-42d6a1828f",
+      "losses": []
+    },
+    {
+      "sourceIndex": 360,
+      "id": "raycast-snippet-mobile-e5651d0833",
+      "losses": []
+    },
+    {
+      "sourceIndex": 255,
+      "id": "raycast-snippet-mobile-pbcopy-721f27c933",
+      "losses": []
+    },
+    {
+      "sourceIndex": 367,
+      "id": "raycast-snippet-mobile-pbpaste-4a05334674",
+      "losses": []
+    },
+    {
+      "sourceIndex": 338,
+      "id": "raycast-snippet-next-steps-ai-9b741aef47",
+      "losses": []
+    },
+    {
+      "sourceIndex": 221,
+      "id": "raycast-snippet-noggles-e27142f42d",
+      "losses": []
+    },
+    {
+      "sourceIndex": 68,
+      "id": "raycast-snippet-omp-profile-agent-native-plan-f419c48125",
+      "losses": []
+    },
+    {
+      "sourceIndex": 106,
+      "id": "raycast-snippet-omp-profile-android-dm-8efd18a7b1",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 24,
+      "id": "raycast-snippet-orca-rename-tabs-within-worktree-f70696d795",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 42,
+      "id": "raycast-snippet-orchestration-d7773f2880",
+      "losses": []
+    },
+    {
+      "sourceIndex": 104,
+      "id": "raycast-snippet-plan-fix-8e18e52349",
+      "losses": []
+    },
+    {
+      "sourceIndex": 242,
+      "id": "raycast-snippet-portkey-no-local-dev-1-3abeed680e",
+      "losses": []
+    },
+    {
+      "sourceIndex": 337,
+      "id": "raycast-snippet-proceed-ai-a931c7b476",
+      "losses": []
+    },
+    {
+      "sourceIndex": 2,
+      "id": "raycast-snippet-proceed-b943e0a94b",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 344,
+      "id": "raycast-snippet-proposal-title-public-relations-the-rundown-reta-f204f04ac8",
+      "losses": []
+    },
+    {
+      "sourceIndex": 357,
+      "id": "raycast-snippet-ptl-expand-please-take-a-look-f3adebc35e",
+      "losses": []
+    },
+    {
+      "sourceIndex": 216,
+      "id": "raycast-snippet-putting-table-back-unicode-d15a210bd7",
+      "losses": []
+    },
+    {
+      "sourceIndex": 318,
+      "id": "raycast-snippet-python-brainstorming-prompt-25d04dfd77",
+      "losses": []
+    },
+    {
+      "sourceIndex": 377,
+      "id": "raycast-snippet-python-mcp-servers-d43a4e567e",
+      "losses": []
+    },
+    {
+      "sourceIndex": 317,
+      "id": "raycast-snippet-python-refactoring-prompt-a6e227ff04",
+      "losses": []
+    },
+    {
+      "sourceIndex": 381,
+      "id": "raycast-snippet-python-uv-sync-097530b80b",
+      "losses": []
+    },
+    {
+      "sourceIndex": 159,
+      "id": "raycast-snippet-python-uv-venv-3b01b335a2",
+      "losses": []
+    },
+    {
+      "sourceIndex": 269,
+      "id": "raycast-snippet-quick-win-refactoring-ai-f1a01f2fa7",
+      "losses": []
+    },
+    {
+      "sourceIndex": 305,
+      "id": "raycast-snippet-rank-order-by-impact-ease-of-speed-implementatio-52e700ba40",
+      "losses": []
+    },
+    {
+      "sourceIndex": 149,
+      "id": "raycast-snippet-realpath-truepath-a10f14722e",
+      "losses": []
+    },
+    {
+      "sourceIndex": 326,
+      "id": "raycast-snippet-reference-doc-prompt-v2-8e86993e62",
+      "losses": []
+    },
+    {
+      "sourceIndex": 132,
+      "id": "raycast-snippet-remotion-promo-best-practices-305fbad35c",
+      "losses": [
+        "name-trimmed"
+      ]
+    },
+    {
+      "sourceIndex": 131,
+      "id": "raycast-snippet-remotion-shorts-acdefa1fec",
+      "losses": []
+    },
+    {
+      "sourceIndex": 7,
+      "id": "raycast-snippet-repo-hygiene-for-smart-models-04369ad34f",
+      "losses": []
+    },
+    {
+      "sourceIndex": 411,
+      "id": "raycast-snippet-repomix-copy-to-clipboard-6983979afe",
+      "losses": []
+    },
+    {
+      "sourceIndex": 117,
+      "id": "raycast-snippet-retouch-edit-ai-headshot-109eb4a454",
+      "losses": []
+    },
+    {
+      "sourceIndex": 333,
+      "id": "raycast-snippet-review-and-test-code-changes-ai-42bae0c0df",
+      "losses": []
+    },
+    {
+      "sourceIndex": 336,
+      "id": "raycast-snippet-search-docs-ai-688f5b964a",
+      "losses": []
+    },
+    {
+      "sourceIndex": 215,
+      "id": "raycast-snippet-serious-lookg-unicode-2939089bc0",
+      "losses": []
+    },
+    {
+      "sourceIndex": 361,
+      "id": "raycast-snippet-shell-cd-to-dotfiles-172f20a383",
+      "losses": []
+    },
+    {
+      "sourceIndex": 387,
+      "id": "raycast-snippet-shell-list-newest-files-creation-date-c3c32a3474",
+      "losses": []
+    },
+    {
+      "sourceIndex": 386,
+      "id": "raycast-snippet-shell-list-newest-files-modified-date-3afc2217b4",
+      "losses": []
+    },
+    {
+      "sourceIndex": 374,
+      "id": "raycast-snippet-shell-source-zshrc-d6ee281096",
+      "losses": []
+    },
+    {
+      "sourceIndex": 217,
+      "id": "raycast-snippet-shrug-b65310809f",
+      "losses": []
+    },
+    {
+      "sourceIndex": 120,
+      "id": "raycast-snippet-skill-grill-me-367423b968",
+      "losses": []
+    },
+    {
+      "sourceIndex": 282,
+      "id": "raycast-snippet-skill-md-creation-prompt-pattern-122aa0c4f3",
+      "losses": []
+    },
+    {
+      "sourceIndex": 226,
+      "id": "raycast-snippet-sleep-promise-5bea0e5733",
+      "losses": []
+    },
+    {
+      "sourceIndex": 260,
+      "id": "raycast-snippet-snippet-argument-8c654c5462",
+      "losses": []
+    },
+    {
+      "sourceIndex": 128,
+      "id": "raycast-snippet-speckit-multi-agent-78f2c3101f",
+      "losses": []
+    },
+    {
+      "sourceIndex": 399,
+      "id": "raycast-snippet-superclaude-help-460e569b80",
+      "losses": []
+    },
+    {
+      "sourceIndex": 328,
+      "id": "raycast-snippet-synthesize-documentation-07b20fd49b",
+      "losses": []
+    },
+    {
+      "sourceIndex": 256,
+      "id": "raycast-snippet-take-clone-repo-and-cd-into-it-750ab2f4a6",
+      "losses": []
+    },
+    {
+      "sourceIndex": 108,
+      "id": "raycast-snippet-td-0-clean-out-td-board-48d0bfae84",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 105,
+      "id": "raycast-snippet-td-0-clean-out-td-board-short-99f5bcb1e3",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 212,
+      "id": "raycast-snippet-tears-of-joy-unicode-787cb0c003",
+      "losses": []
+    },
+    {
+      "sourceIndex": 155,
+      "id": "raycast-snippet-tmux-move-all-windows-into-active-session-a729e39761",
+      "losses": []
+    },
+    {
+      "sourceIndex": 160,
+      "id": "raycast-snippet-tmux-session-info-c411aa9412",
+      "losses": []
+    },
+    {
+      "sourceIndex": 193,
+      "id": "raycast-snippet-tmux-synchronize-panes-8cbb20c6c7",
+      "losses": []
+    },
+    {
+      "sourceIndex": 165,
+      "id": "raycast-snippet-tmux-synchronize-panes-no-colon-3f764ee01a",
+      "losses": []
+    },
+    {
+      "sourceIndex": 87,
+      "id": "raycast-snippet-triage-merge-open-prs-8f7b7f8216",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 245,
+      "id": "raycast-snippet-use-code-reviewer-skill-62888f2678",
+      "losses": []
+    },
+    {
+      "sourceIndex": 38,
+      "id": "raycast-snippet-use-your-best-judgement-03662e5058",
+      "losses": []
+    },
+    {
+      "sourceIndex": 13,
+      "id": "raycast-snippet-use-your-best-judgement-9b3b177b2b",
+      "losses": []
+    },
+    {
+      "sourceIndex": 322,
+      "id": "raycast-snippet-uv-single-file-scripts-running-scripts-with-uv-d2368f7229",
+      "losses": []
+    },
+    {
+      "sourceIndex": 164,
+      "id": "raycast-snippet-validate-review-feedback-cbr-7443cdc5d6",
+      "losses": []
+    },
+    {
+      "sourceIndex": 200,
+      "id": "raycast-snippet-validation-review-31bd3ffcfd",
+      "losses": []
+    },
+    {
+      "sourceIndex": 0,
+      "id": "raycast-snippet-wdur-9faefff7c7",
+      "losses": []
+    },
+    {
+      "sourceIndex": 135,
+      "id": "raycast-snippet-wdut-a5836a30ad",
+      "losses": []
+    },
+    {
+      "sourceIndex": 54,
+      "id": "raycast-snippet-website-photo-optimization-ui-generator-6dd22709f1",
+      "losses": [
+        "tags-omitted"
+      ]
+    },
+    {
+      "sourceIndex": 63,
+      "id": "raycast-snippet-what-s-next-rule-74945652f8",
+      "losses": []
+    },
+    {
+      "sourceIndex": 211,
+      "id": "raycast-snippet-wink-unicode-817d3db401",
+      "losses": []
+    },
+    {
+      "sourceIndex": 290,
+      "id": "raycast-snippet-zen-precommit-695cf1f899",
+      "losses": []
+    }
+  ],
+  "rejected": [
+    {
+      "sourceIndex": 5,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 6,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 10,
+      "reason": "personal-data"
+    },
+    {
+      "sourceIndex": 11,
+      "reason": "unsafe-operation"
+    },
+    {
+      "sourceIndex": 12,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 16,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 18,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 19,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 20,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 21,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 25,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 26,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 27,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 28,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 29,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 30,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 31,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 32,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 33,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 34,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 35,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 37,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 40,
+      "reason": "personal-data"
+    },
+    {
+      "sourceIndex": 41,
+      "reason": "unsafe-operation"
+    },
+    {
+      "sourceIndex": 44,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 45,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 47,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 48,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 50,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 51,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 52,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 53,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 57,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 59,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 60,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 61,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 64,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 65,
+      "reason": "personal-data"
+    },
+    {
+      "sourceIndex": 66,
+      "reason": "personal-data"
+    },
+    {
+      "sourceIndex": 67,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 70,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 71,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 72,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 73,
+      "reason": "unsafe-operation"
+    },
+    {
+      "sourceIndex": 76,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 77,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 78,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 89,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 90,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 102,
+      "reason": "unsafe-operation"
+    },
+    {
+      "sourceIndex": 107,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 109,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 110,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 111,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 113,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 116,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 118,
+      "reason": "unsafe-operation"
+    },
+    {
+      "sourceIndex": 119,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 121,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 122,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 123,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 126,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 127,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 129,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 130,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 133,
+      "reason": "unicode-format-character"
+    },
+    {
+      "sourceIndex": 137,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 139,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 140,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 141,
+      "reason": "unsafe-operation"
+    },
+    {
+      "sourceIndex": 142,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 143,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 144,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 145,
+      "reason": "unsafe-operation"
+    },
+    {
+      "sourceIndex": 147,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 148,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 150,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 151,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 154,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 157,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 161,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 162,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 163,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 168,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 169,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 170,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 171,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 172,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 173,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 174,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 175,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 176,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 177,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 178,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 179,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 180,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 181,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 182,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 183,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 184,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 185,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 186,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 187,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 188,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 189,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 190,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 191,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 192,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 195,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 196,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 197,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 198,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 199,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 201,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 202,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 203,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 205,
+      "reason": "unsafe-operation"
+    },
+    {
+      "sourceIndex": 206,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 207,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 208,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 222,
+      "reason": "personal-data"
+    },
+    {
+      "sourceIndex": 223,
+      "reason": "personal-data"
+    },
+    {
+      "sourceIndex": 224,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 225,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 227,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 228,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 229,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 231,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 232,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 235,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 236,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 237,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 239,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 240,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 241,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 244,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 246,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 248,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 249,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 250,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 251,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 252,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 253,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 257,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 258,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 259,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 261,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 262,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 263,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 264,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 265,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 266,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 267,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 268,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 270,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 271,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 272,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 273,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 275,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 280,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 281,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 283,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 284,
+      "reason": "unsafe-operation"
+    },
+    {
+      "sourceIndex": 285,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 286,
+      "reason": "personal-data"
+    },
+    {
+      "sourceIndex": 287,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 288,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 289,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 292,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 294,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 295,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 296,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 297,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 298,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 299,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 300,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 301,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 302,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 303,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 304,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 306,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 307,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 308,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 309,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 310,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 311,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 312,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 313,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 314,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 315,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 316,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 319,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 320,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 323,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 324,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 325,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 327,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 332,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 334,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 335,
+      "reason": "unicode-format-character"
+    },
+    {
+      "sourceIndex": 340,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 342,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 343,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 346,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 347,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 348,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 349,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 351,
+      "reason": "machine-specific"
+    },
+    {
+      "sourceIndex": 352,
+      "reason": "unsafe-operation"
+    },
+    {
+      "sourceIndex": 353,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 355,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 362,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 363,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 368,
+      "reason": "unsafe-operation"
+    },
+    {
+      "sourceIndex": 369,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 370,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 371,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 372,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 373,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 375,
+      "reason": "unsafe-operation"
+    },
+    {
+      "sourceIndex": 376,
+      "reason": "unsafe-operation"
+    },
+    {
+      "sourceIndex": 378,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 380,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 383,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 385,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 388,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 389,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 391,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 392,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 393,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 394,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 395,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 396,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 397,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 398,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 400,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 401,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 402,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 403,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 404,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 405,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 406,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 407,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 408,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 409,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 410,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 412,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 414,
+      "reason": "oversized"
+    },
+    {
+      "sourceIndex": 415,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 417,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 419,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 421,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 422,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 423,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 424,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 426,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 427,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 428,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 429,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 430,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 431,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 432,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 433,
+      "reason": "dynamic-placeholder"
+    },
+    {
+      "sourceIndex": 434,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 435,
+      "reason": "credential-like"
+    },
+    {
+      "sourceIndex": 436,
+      "reason": "dynamic-placeholder"
+    }
+  ]
+}
