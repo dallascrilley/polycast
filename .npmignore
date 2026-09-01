@@ -1,2 +1,27 @@
-# The Raycast app is distributed as a local extension, not in the npm CLI package.
+# Keep the local Raycast app out of the npm CLI package.
 raycast-extension/
+
+# Mirror the repository's generated, local, and editor-only exclusions because
+# npm uses .npmignore instead of falling back to .gitignore when this exists.
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
+.cache/
+tmp/
+*.tmp
+.worktrees/
+.idea/
+.vscode/
+*.swp
+node_modules/
+dist/
+build/
+coverage/
+.next/
+*.tsbuildinfo
+.pnpm-store/
+npm-debug.log*
+pnpm-debug.log*
+.todos/

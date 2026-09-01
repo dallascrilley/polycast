@@ -42,8 +42,24 @@ try {
   }
 
   const paths = new Set(packageRecord.files.map((file) => file.path));
-  if ([...paths].some((path) => path === "raycast-extension" || path.startsWith("raycast-extension/"))) {
-    fail("packed artifact unexpectedly includes the local Raycast extension");
+  const forbiddenPrefixes = [
+    "raycast-extension/",
+    "dist/",
+    "build/",
+    "coverage/",
+    ".cache/",
+    "tmp/",
+    ".worktrees/",
+  ];
+  if ([...paths].some((path) => forbiddenPrefixes.some((prefix) => path.startsWith(prefix)))) {
+    fail("packed artifact unexpectedly includes a local or generated directory");
+  }
+  if (
+    [...paths].some(
+      (path) => path === ".env" || (path.startsWith(".env.") && path !== ".env.example"),
+    )
+  ) {
+    fail("packed artifact unexpectedly includes an environment file");
   }
   for (const required of [
     "package.json",
