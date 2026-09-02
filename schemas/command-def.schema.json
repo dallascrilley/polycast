@@ -323,5 +323,40 @@
     }
   },
   "required": ["id", "title", "description", "modality", "body"],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "required": ["delegation"],
+        "properties": {
+          "delegation": {
+            "type": "object",
+            "required": ["kind"],
+            "properties": {
+              "kind": {
+                "const": "toolbox"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "body": {
+            "type": "object",
+            "required": ["lang", "args"],
+            "properties": {
+              "lang": {
+                "const": "exec"
+              },
+              "args": {
+                "type": "array",
+                "minItems": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }
