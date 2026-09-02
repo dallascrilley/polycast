@@ -15,3 +15,5 @@
 
 - New architectural decision → copy `decisions/0000-template.md` to the next number.
 - Keep docs close to the code they describe; link from `README.md` when user-facing.
+
+Current adapter authority: [`decisions/0002-toolbox-adapter-contract.md`](decisions/0002-toolbox-adapter-contract.md).

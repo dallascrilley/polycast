@@ -62,6 +62,23 @@ export interface CommandArg {
 export type ScriptLang = "bash" | "node" | "applescript";
 export type BodyLang = ScriptLang | "exec";
 
+/** Toolbox classifies effects; the canonical executable still authorizes them. */
+export type ToolboxEffectClass = "inspect" | "prepare" | "mutate" | "integrate";
+
+/**
+ * Versioned metadata for a thin delegation to the canonical Toolbox executable.
+ * The exec body owns the executable and fixed command prefix so those values
+ * cannot drift between two representations.
+ */
+export interface ToolboxDelegation {
+  readonly kind: "toolbox";
+  readonly contract: "toolbox-polycast-adapter/v1";
+  readonly effectClass: ToolboxEffectClass;
+  readonly output: "canonical";
+}
+
+export type CommandDelegation = ToolboxDelegation;
+
 export interface ScriptBody {
   readonly lang: ScriptLang;
   /**
@@ -163,6 +180,8 @@ export interface CommandDef {
   /** Required when `modality === "args"`. */
   readonly args?: readonly CommandArg[];
   readonly body: CommandBody;
+  /** Optional external authority delegated to by this command. */
+  readonly delegation?: CommandDelegation;
   /** Optional target allowlist. Omit to use every modality-compatible target. */
   readonly targets?: readonly CommandTarget[];
   readonly x?: CrossTargetHints;

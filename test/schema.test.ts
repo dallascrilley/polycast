@@ -98,6 +98,47 @@ describe("command-def schema", () => {
     ).toThrow();
   });
 
+  test("enforces the Toolbox delegation contract", () => {
+    const cmd = defineCommand({
+      id: "toolbox-knowledge-search",
+      title: "Search Toolbox knowledge",
+      description: "Delegates without owning Toolbox behavior or receipts.",
+      modality: "args",
+      args: [{ name: "query" }],
+      body: {
+        lang: "exec",
+        executable: "/verified/toolbox/bin/toolbox",
+        args: ["knowledge", "search"],
+      },
+      delegation: {
+        kind: "toolbox",
+        contract: "toolbox-polycast-adapter/v1",
+        effectClass: "inspect",
+        output: "canonical",
+      },
+    });
+
+    expect(parseCommandDefJson(cmd).delegation).toEqual(cmd.delegation);
+    expect(() =>
+      defineCommand({
+        ...cmd,
+        body: { lang: "bash", source: "toolbox knowledge search" },
+      }),
+    ).toThrow(/requires an exec body/);
+    expect(() =>
+      commandDefSchema.parse({
+        ...cmd,
+        body: { lang: "exec", executable: "/verified/toolbox/bin/toolbox" },
+      }),
+    ).toThrow(/fixed command prefix/);
+    expect(() =>
+      commandDefSchema.parse({
+        ...cmd,
+        delegation: { ...cmd.delegation, effectClass: "authorized" },
+      }),
+    ).toThrow();
+  });
+
   test("requires args when modality is args", () => {
     expect(() =>
       parseCommandDefJson({
