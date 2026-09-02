@@ -57,6 +57,18 @@ function runText(
   );
 }
 
+function runBeforeSeparator(
+  commandDir: string,
+  id: string,
+  argv: readonly string[],
+  env: NodeJS.ProcessEnv,
+) {
+  return spawnSync("bun", ["run", "src/cli.ts", "run", id, "--commands", commandDir, ...argv], {
+    cwd: process.cwd(),
+    env,
+  });
+}
+
 describe("Toolbox adapter dispatch", () => {
   test("passes canonical results, receipts, diagnostics, status, and argv through unchanged", async () => {
     const root = await mkdtemp(join(tmpdir(), "polycast-toolbox-adapter-"));
@@ -132,6 +144,18 @@ describe("Toolbox adapter dispatch", () => {
         Buffer.from('{"result":"failed","receipt":"toolbox://receipt/failure"}\n'),
       );
       expect(failure.stderr).toEqual(Buffer.from("canonical failure\n"));
+
+      const literalTextControl = run(commands, command.id, ["--text", "literal"], env);
+      expect(literalTextControl.status).toBe(0);
+      expect(await readFile(argvCapture)).toEqual(
+        Buffer.from("knowledge\0search\0--text\0literal\0"),
+      );
+
+      const argsLikeControl = runBeforeSeparator(commands, command.id, ["--text", "literal"], env);
+      expect(argsLikeControl.status).toBe(0);
+      expect(await readFile(argvCapture)).toEqual(
+        Buffer.from("knowledge\0search\0--text\0literal\0"),
+      );
     } finally {
       await rm(root, { recursive: true, force: true });
     }

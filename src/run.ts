@@ -120,10 +120,10 @@ export function executeCommand(cmd: CommandDef, options: RunOptions): number {
   // Every remaining value belongs to the body, including literal control-like
   // arguments such as "--" and "--text".
   const positional = options.argv;
-  let stdin = options.text;
+  let stdin = options.text ?? "";
 
   if (cmd.modality === "text") {
-    if (stdin === undefined && !process.stdin.isTTY) {
+    if (!stdin && !process.stdin.isTTY) {
       stdin = readFileSync(0, "utf8");
     }
   }
@@ -145,7 +145,9 @@ export function executeCommand(cmd: CommandDef, options: RunOptions): number {
     writeSync(1, out);
     // Canonical exec bodies own their output bytes. In particular, do not
     // append a newline that could corrupt a Toolbox result or receipt link.
-    if (cmd.body.lang !== "exec" && needsTrailingNewline(out)) writeSync(1, "\n");
+    if (cmd.delegation?.kind !== "toolbox" && needsTrailingNewline(out)) {
+      writeSync(1, "\n");
+    }
   }
 
   return result.status ?? 1;

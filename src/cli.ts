@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { join, resolve } from "node:path";
 import { operatorApprovedShortcutImport } from "./apply.ts";
+import { loadCommandJson } from "./commands-store.ts";
 import { deviceFabricCli } from "./device-fabric.ts";
 import {
   captureRaycastSnippets,
@@ -347,12 +348,13 @@ async function cmdRun(
     process.exit(1);
   }
   const commandsDir = flags.commands ?? join(resolve(flags.out), "commands");
+  const command = await loadCommandJson(id, commandsDir);
   const bodyBeforeSeparator: string[] = [];
   let text: string | undefined;
   for (let i = 0; i < beforeSeparator.length; i++) {
     const arg = beforeSeparator[i];
     if (arg === undefined) break;
-    if (arg === "--text") {
+    if (command.modality === "text" && arg === "--text") {
       text = beforeSeparator[i + 1] ?? "";
       i++;
     } else {
