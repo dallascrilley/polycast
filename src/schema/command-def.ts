@@ -34,6 +34,15 @@ const execBodySchema = z.object({
 
 const commandBodySchema = z.discriminatedUnion("lang", [scriptBodySchema, execBodySchema]);
 
+const commandDelegationSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("toolbox"),
+    contract: z.literal("toolbox-polycast-adapter/v1"),
+    effectClass: z.enum(["inspect", "prepare", "mutate", "integrate"]),
+    output: z.literal("canonical"),
+  }),
+]);
+
 const shortcutsInputSchema = z.enum(SHORTCUTS_INPUTS);
 
 const crossTargetHintsSchema = z
@@ -107,6 +116,7 @@ export const commandDefSchema = z
     modality: z.enum(["text", "files", "args", "none"]),
     args: z.array(commandArgSchema).optional(),
     body: commandBodySchema,
+    delegation: commandDelegationSchema.optional(),
     targets: z.array(z.enum(COMMAND_TARGETS)).min(1).optional(),
     x: crossTargetHintsSchema,
     author: z.string().optional(),
@@ -140,6 +150,21 @@ export const commandDefSchema = z
         message: "body.source must be non-empty",
         path: ["body", "source"],
       });
+    }
+    if (cmd.delegation?.kind === "toolbox") {
+      if (cmd.body.lang !== "exec") {
+        ctx.addIssue({
+          code: "custom",
+          message: "Toolbox delegation requires an exec body",
+          path: ["delegation"],
+        });
+      } else if (!cmd.body.args || cmd.body.args.length === 0) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Toolbox delegation requires a fixed command prefix in body.args",
+          path: ["body", "args"],
+        });
+      }
     }
   });
 

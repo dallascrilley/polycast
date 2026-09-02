@@ -69,6 +69,11 @@ lives in the executable, not in launcher shims. See
 An emitter declares which modalities it `supports` and returns `[]` for anything
 it cannot represent, so `build` skips a surface rather than mis-emitting for it.
 
+A Toolbox-backed command adds the versioned `delegation` contract described in
+[`docs/decisions/0002-toolbox-adapter-contract.md`](decisions/0002-toolbox-adapter-contract.md).
+Its `exec` body names the verified canonical executable and fixed command prefix;
+Polycast owns only launcher adaptation and passes canonical results through.
+
 This is the decision that makes one definition safe to cast everywhere: the
 generator never guesses at a mapping it cannot honor. See `src/registry.ts` for
 the support declarations and `docs/specs/modality-matrix.md` for the matrix.

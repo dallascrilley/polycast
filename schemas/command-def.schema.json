@@ -106,6 +106,33 @@
         }
       ]
     },
+    "delegation": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "toolbox"
+            },
+            "contract": {
+              "type": "string",
+              "const": "toolbox-polycast-adapter/v1"
+            },
+            "effectClass": {
+              "type": "string",
+              "enum": ["inspect", "prepare", "mutate", "integrate"]
+            },
+            "output": {
+              "type": "string",
+              "const": "canonical"
+            }
+          },
+          "required": ["kind", "contract", "effectClass", "output"],
+          "additionalProperties": false
+        }
+      ]
+    },
     "targets": {
       "minItems": 1,
       "type": "array",

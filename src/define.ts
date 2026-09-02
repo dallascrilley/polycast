@@ -49,4 +49,14 @@ export function assertValid(cmd: CommandDef): void {
   } else if (!cmd.body.source.trim()) {
     throw new Error(`command "${cmd.id}" has an empty body`);
   }
+  if (cmd.delegation?.kind === "toolbox") {
+    if (cmd.body.lang !== "exec") {
+      throw new Error(`command "${cmd.id}" Toolbox delegation requires an exec body`);
+    }
+    if (!cmd.body.args || cmd.body.args.length === 0) {
+      throw new Error(
+        `command "${cmd.id}" Toolbox delegation requires a fixed command prefix in body.args`,
+      );
+    }
+  }
 }
