@@ -80,9 +80,9 @@ polycast device run send-to-device --target local --destination tablet -- ./rece
 
 `--target` is mandatory. Every action first parses `tailscale status --json`
 and requires `BackendState` to be `Running`. PWA routes must remain HTTPS
-`.ts.net` URLs with the exact `/agents` or `/reviews` path and no URL credentials
-or fragments. Taildrop requires one or more existing files and an explicit safe
-destination name.
+`.ts.net` URLs with the exact `/agents` or `/reviews` path and no URL credentials,
+query, custom port, or fragment. Taildrop requires one or more regular files and
+an explicit safe destination name.
 
 Agent Console defaults to `ssh agent-console`. A host may select a different
 saved profile or mosh without expanding the action into a command runner:

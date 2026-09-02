@@ -1,6 +1,6 @@
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { readSync } from "node:fs";
 import {
   access,
   copyFile,
@@ -9,10 +9,11 @@ import {
   readdir,
   readFile,
   rm,
+  stat,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { basename, join, resolve } from "node:path";
+import { basename, join, relative, resolve, sep } from "node:path";
 import { OWNERSHIP_MARKER } from "./constants.ts";
 
 export const DEVICE_FABRIC_ACTIONS = [
@@ -87,7 +88,7 @@ interface SynchronousCommandResult {
 }
 
 function requireAction(id: string): DeviceFabricActionId {
-  if (!(id in ACTION_IDS)) {
+  if (!Object.hasOwn(ACTION_IDS, id)) {
     throw new Error(`unknown device action: ${id}`);
   }
   return id as DeviceFabricActionId;
@@ -160,10 +161,12 @@ function validatePwaUrl(raw: string, route: "/agents" | "/reviews"): string {
     url.pathname !== route ||
     url.username !== "" ||
     url.password !== "" ||
-    url.hash !== ""
+    url.hash !== "" ||
+    url.search !== "" ||
+    url.port !== ""
   ) {
     throw new Error(
-      `${route.slice(1)} URL must be an authenticated https .ts.net${route} route without credentials or fragments`,
+      `${route.slice(1)} URL must be an authenticated https .ts.net${route} route without credentials, query, port, or fragment`,
     );
   }
   return url.toString();
@@ -234,7 +237,8 @@ async function runLocal(options: DeviceFabricRunOptions, env: NodeJS.ProcessEnv)
       const files: string[] = [];
       for (const file of options.files ?? []) {
         const absolute = resolve(file);
-        await access(absolute);
+        const details = await stat(absolute);
+        if (!details.isFile()) throw new Error(`Taildrop input is not a file: ${file}`);
         files.push(absolute);
       }
       return await runInteractive(
@@ -242,6 +246,8 @@ async function runLocal(options: DeviceFabricRunOptions, env: NodeJS.ProcessEnv)
         env,
       );
     }
+    default:
+      throw new Error(`unknown device action: ${String(options.action)}`);
   }
 }
 
@@ -258,19 +264,20 @@ async function openUrl(url: string, env: NodeJS.ProcessEnv): Promise<number> {
 
 export async function runDeviceFabricAction(options: DeviceFabricRunOptions): Promise<number> {
   const env = options.env ?? process.env;
-  if (options.target === "local") return await runLocal(options, env);
+  const validatedOptions = { ...options, action: requireAction(options.action) };
+  if (validatedOptions.target === "local") return await runLocal(validatedOptions, env);
 
-  const target = validateSavedProfile(options.target, "remote target");
+  const target = validateSavedProfile(validatedOptions.target, "remote target");
   if (!allowedRemotes(env).has(target)) {
     throw new Error(`remote target ${target} is not in POLYCAST_DEVICE_FABRIC_REMOTES`);
   }
-  validateLocalArguments(options);
+  validateLocalArguments(validatedOptions);
   tailscalePreflight(env);
   const envelope: RemoteEnvelope = {
     version: 1,
-    action: options.action,
-    destination: options.destination,
-    files: options.files ?? [],
+    action: validatedOptions.action,
+    destination: validatedOptions.destination,
+    files: validatedOptions.files ?? [],
   };
   return await runInteractive(
     ["ssh", target, REMOTE_COMMAND],
@@ -315,15 +322,29 @@ function parseRemoteEnvelope(input: string): RemoteEnvelope {
   };
 }
 
+function readBoundedStdin(): string {
+  const buffer = Buffer.allocUnsafe(MAX_REMOTE_PAYLOAD_BYTES + 1);
+  let offset = 0;
+  while (offset < buffer.byteLength) {
+    const bytesRead = readSync(0, buffer, offset, buffer.byteLength - offset, null);
+    if (bytesRead === 0) break;
+    offset += bytesRead;
+  }
+  if (offset > MAX_REMOTE_PAYLOAD_BYTES) {
+    throw new Error("remote device payload exceeds 64 KiB");
+  }
+  return buffer.subarray(0, offset).toString("utf8");
+}
+
 export async function receiveDeviceFabricAction(
   originalCommand: string | undefined,
-  input = readFileSync(0, "utf8"),
+  input?: string,
   env: NodeJS.ProcessEnv = process.env,
 ): Promise<number> {
   if (originalCommand !== REMOTE_COMMAND) {
     throw new Error(`refusing remote command: expected ${REMOTE_COMMAND}`);
   }
-  const envelope = parseRemoteEnvelope(input);
+  const envelope = parseRemoteEnvelope(input ?? readBoundedStdin());
   return await runLocal({ ...envelope, target: "local", env }, env);
 }
 
@@ -471,6 +492,16 @@ export async function buildDeviceFabricShortcuts(
 ): Promise<DeviceFabricBuildSummary> {
   const sourceDir = resolve(options.dir ?? "shortcuts/device-fabric");
   const outRoot = resolve(options.out ?? "build/device-fabric");
+  const sourceContainsOutput = relative(sourceDir, outRoot);
+  const outputContainsSource = relative(outRoot, sourceDir);
+  const overlapsSource =
+    sourceContainsOutput === "" ||
+    outputContainsSource === "" ||
+    (sourceContainsOutput !== ".." && !sourceContainsOutput.startsWith(`..${sep}`)) ||
+    (outputContainsSource !== ".." && !outputContainsSource.startsWith(`..${sep}`));
+  if (overlapsSource) {
+    throw new Error("device fabric output must not equal, contain, or be contained by its source");
+  }
   const expectedIds = DEVICE_FABRIC_ACTIONS.map((action) => action.id);
   const actualIds = (await readdir(sourceDir))
     .filter((name) => name.endsWith(".cherri"))
