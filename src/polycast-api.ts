@@ -1,4 +1,4 @@
-import { chmod, mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import type { ApplyResult, ShortcutImportConsent } from "./apply.ts";
@@ -93,7 +93,10 @@ export class PolycastError extends Error {
 
 function emitterListedForCommand(emitter: (typeof emitters)[number], cmd: CommandDef): boolean {
   if (cmd.targets && !cmd.targets.includes(emitter.target)) return false;
-  if (emitter.supports.includes(cmd.modality) && emitter.emit(cmd).length > 0) return true;
+  if (emitter.supports.includes(cmd.modality)) {
+    const canEmit = emitter.canEmit ? emitter.canEmit(cmd) : emitter.emit(cmd).length > 0;
+    if (canEmit) return true;
+  }
   if (!emitter.emitCatalog) return false;
   if (emitter.target === "raycast-snippet") return Boolean(cmd.x?.raycast?.snippet?.text);
   if (emitter.target === "raycast-quicklink") return Boolean(cmd.x?.raycast?.quicklink?.link);
@@ -123,8 +126,12 @@ async function targetsExpectingOutput(
   const commands = await loadCommands(dir);
   const expected = new Set<string>();
   for (const cmd of commands) {
-    for (const result of emitCommand(cmd, [...targets])) {
-      if (!result.skipped) expected.add(result.target);
+    for (const target of targets) {
+      const emitter = emitters.find((candidate) => candidate.target === target);
+      if (!emitter) throw new Error(`unknown target: "${target}"`);
+      if (emitterListedForCommand(emitter, cmd)) {
+        expected.add(emitter.target);
+      }
     }
   }
   for (const result of emitCatalogs(commands, [...targets])) {
@@ -133,16 +140,34 @@ async function targetsExpectingOutput(
   return expected;
 }
 
-async function validateBuilt(dir: string, targets: readonly string[]): Promise<string[]> {
+async function validateBuilt(
+  outRoot: string,
+  dir: string,
+  targets: readonly string[],
+): Promise<string[]> {
   const commands = await loadCommands(dir);
   const issues: string[] = [];
   for (const cmd of commands) {
-    for (const result of emitCommand(cmd, [...targets])) {
-      if (result.skipped) continue;
-      const emitter = emitters.find((e) => e.target === result.target);
+    for (const target of targets) {
+      const emitter = emitters.find((candidate) => candidate.target === target);
       if (!emitter) continue;
-      for (const issue of validateAll(emitter, cmd, result.files, true)) {
-        issues.push(`${cmd.id}/${result.target}: [${issue.severity}] ${issue.message}`);
+      if (cmd.targets && !cmd.targets.includes(emitter.target)) continue;
+      let files: readonly EmittedFile[];
+      if (emitter.target === "shortcuts-remote-ssh") {
+        if (!emitter.canEmit?.(cmd)) continue;
+        files = [
+          {
+            path: `${cmd.id}.cherri`,
+            contents: await readFile(join(outRoot, emitter.target, `${cmd.id}.cherri`), "utf8"),
+          },
+        ];
+      } else {
+        const result = emitCommand(cmd, [emitter.target])[0];
+        if (!result || result.skipped) continue;
+        files = result.files;
+      }
+      for (const issue of validateAll(emitter, cmd, files, true)) {
+        issues.push(`${cmd.id}/${emitter.target}: [${issue.severity}] ${issue.message}`);
       }
     }
   }
@@ -200,7 +225,7 @@ async function buildCommands(
         files.push(await writeEmitted(outRoot, result.target, file));
         written++;
       }
-      if (result.target === "shortcuts-cherri") {
+      if (result.target === "shortcuts-cherri" || result.target === "shortcuts-remote-ssh") {
         // Compiled .shortcut files and their markers are written here, after
         // the emitter ran, so they have to be counted here too.
         const compiled = await compileCherriArtifacts(join(outRoot, result.target), result.files);
@@ -289,7 +314,7 @@ export async function polycastApply(
         throw new PolycastError("missing build/commands JSON store", "MISSING_COMMANDS");
       }
     }
-    const issues = await validateBuilt(dir, targets);
+    const issues = await validateBuilt(outRoot, dir, targets);
     if (issues.length > 0) {
       throw new PolycastError(issues.join("\n"), "VALIDATION_FAILED");
     }

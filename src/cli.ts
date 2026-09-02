@@ -14,6 +14,7 @@ import {
   polycastRun,
   polycastTargets,
 } from "./polycast-api.ts";
+import { polycastRemote } from "./remote.ts";
 import {
   polycastRunnerBuild,
   polycastRunnerList,
@@ -32,6 +33,7 @@ Usage:
   polycast runner build [--dir <runners>] [--out <dir>] [--target <a,b>]
   polycast capture --from raycast-snippets [--input <export.json>] [--dir <output>] [--write]
   polycast run <id> [--commands <dir>] [--] [args...]
+  polycast remote --forced [--commands <dir>]
   polycast apply [--out <dir>] [--target <a,b>] [--write] [--import-shortcuts] [--prune] [--prune-only]
 
 Options:
@@ -46,6 +48,7 @@ Options:
   --import-shortcuts import compiled .shortcut files in Shortcuts.app (requires --write; explicit operator consent)
   --prune            remove polycast-owned artifacts (incl. the JSON body store) before install
   --prune-only       remove polycast-owned artifacts only (skip install)
+  --forced           accept only SSH_ORIGINAL_COMMAND's fixed remote protocol form
 
 Environment:
   POLYCAST_SKIP_CHERRI=1     skip Cherri compile step
@@ -72,6 +75,7 @@ interface Flags {
   readonly importShortcuts: boolean;
   readonly prune: boolean;
   readonly pruneOnly: boolean;
+  readonly forced: boolean;
 }
 
 interface ParseFlagOptions {
@@ -92,6 +96,7 @@ function parseFlags(argv: string[], options: ParseFlagOptions = {}): Flags {
   let importShortcuts = false;
   let prune = false;
   let pruneOnly = false;
+  let forced = false;
 
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -112,7 +117,8 @@ function parseFlags(argv: string[], options: ParseFlagOptions = {}): Flags {
     else if (a === "--prune-only") {
       prune = true;
       pruneOnly = true;
-    } else if (a) positional.push(a);
+    } else if (a === "--forced") forced = true;
+    else if (a) positional.push(a);
   }
   return {
     _: positional,
@@ -127,6 +133,7 @@ function parseFlags(argv: string[], options: ParseFlagOptions = {}): Flags {
     importShortcuts,
     prune,
     pruneOnly,
+    forced,
   };
 }
 
@@ -337,6 +344,20 @@ async function cmdRun(
   );
 }
 
+async function cmdRemote(flags: Flags): Promise<void> {
+  if (!flags.forced || flags._.length > 0) {
+    console.error("usage: polycast remote --forced [--commands <dir>]");
+    process.exit(1);
+  }
+  const commandsDir = flags.commands ?? join(resolve(flags.out), "commands");
+  process.exit(
+    await polycastRemote({
+      commandsDir,
+      originalCommand: process.env.SSH_ORIGINAL_COMMAND,
+    }),
+  );
+}
+
 async function main(): Promise<void> {
   const [sub, ...rest] = process.argv.slice(2);
   const flags = parseFlags(rest, { stopAtSeparator: sub === "run" });
@@ -350,6 +371,8 @@ async function main(): Promise<void> {
       return cmdApply(flags);
     case "run":
       return cmdRun(flags._[0], flags, flags._.slice(1));
+    case "remote":
+      return cmdRemote(flags);
     case "targets":
       return cmdTargets();
     case "runner":

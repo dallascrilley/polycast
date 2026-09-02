@@ -4,7 +4,8 @@ import { basename, join } from "node:path";
 import { OWNERSHIP_MARKER } from "./constants.ts";
 import type { EmittedFile } from "./types.ts";
 
-function cherriAvailable(): boolean {
+/** Whether this host can run optional Cherri compilation. */
+export function cherriAvailable(): boolean {
   try {
     const r = Bun.spawnSync(["which", "cherri"], { stdout: "ignore", stderr: "ignore" });
     return r.exitCode === 0;

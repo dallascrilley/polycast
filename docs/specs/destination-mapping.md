@@ -16,6 +16,20 @@
 | `args` | `@raycast.argumentN` | — | — | — | v1 skip | positional |
 | `body.source` / `body.executable` | `polycast run` stub | `script.sh` → `polycast run --text` | `run.sh` → `polycast run` | `<id>.sh` → `polycast run` | `runShellScript` → `polycast run` (files: as arguments) | `polycast run` stub |
 
+## Remote opt-in surfaces
+
+`x.remote.profile` is an explicit opt-in, so existing commands stay local-only.
+It generates a separate remote Shortcut alongside any local Shortcut, rather
+than adding a runtime mode chooser to the local path.
+
+| Target | Initial modalities | Artifact | Connection state | Host command |
+|--------|--------------------|----------|------------------|--------------|
+| `shortcuts-remote-ssh` | `none`, `text` | `<id>.cherri` / compiled `.shortcut` | private local profile at build time | `polycast-remote --command <id> --protocol 1` |
+| `termux-shortcut` | `none` | `<id>.sh` | existing `mac-exec` route | `polycast-remote --command <id> --protocol 1` |
+
+See [remote-ssh.md](remote-ssh.md) for the profile format, forced-command
+configuration, and credential boundary.
+
 ## Static Raycast surfaces
 
 | Hint | Output |
@@ -35,6 +49,9 @@ build/
   dropover-script/manifest.json
   shortcuts-cherri/<id>.cherri
   shortcuts-cherri/<id>.shortcut   # when cherri compile runs
+  shortcuts-remote-ssh/<id>.cherri # only with x.remote.profile
+  shortcuts-remote-ssh/<id>.shortcut
+  termux-shortcut/<id>.sh          # only with x.remote.profile
   raycast-snippet/snippets.json
   raycast-quicklink/quicklinks.json
   agent-cli/<id>

@@ -32,6 +32,9 @@ export function assertValid(cmd: CommandDef): void {
   if (cmd.modality === "args" && (!cmd.args || cmd.args.length === 0)) {
     throw new Error(`command "${cmd.id}" has modality "args" but no args`);
   }
+  if (cmd.x?.remote && !ID_RE.test(cmd.x.remote.profile)) {
+    throw new Error(`command "${cmd.id}" has an invalid remote profile name`);
+  }
   for (const arg of cmd.args ?? []) {
     if (arg.picker && arg.type && arg.type !== "text") {
       throw new Error(
