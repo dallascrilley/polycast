@@ -11,7 +11,6 @@ const remoteProfileSchema = z.object({
   user: z.string().min(1),
   transport: z.object({
     kind: z.literal("ssh-key"),
-    identityFile: z.string().min(1),
   }),
 });
 
@@ -35,11 +34,4 @@ export function loadRemoteSshProfile(profileName: string): RemoteSshProfile {
   const profile = config.profiles[profileName];
   if (!profile) throw new Error(`remote profile not found: ${profileName}`);
   return profile;
-}
-
-/** Read the device-specific SSH private key only into ignored build output. */
-export function readRemoteIdentityFile(profile: RemoteSshProfile): string {
-  const identity = readFileSync(resolve(profile.transport.identityFile), "utf8");
-  if (!identity.trim()) throw new Error("remote SSH identity file is empty");
-  return identity;
 }

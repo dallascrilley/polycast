@@ -1,12 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { commandDefToModule } from "../src/command-source.ts";
 import { writeCommandsJson } from "../src/commands-store.ts";
 import { defineCommand } from "../src/define.ts";
 import { shortcutsRemoteSsh } from "../src/emitters/shortcuts-remote-ssh.ts";
 import { termuxShortcut } from "../src/emitters/termux-shortcut.ts";
+import { polycastApply, polycastList } from "../src/polycast-api.ts";
 import { emitCommand } from "../src/registry.ts";
 import { polycastRemote } from "../src/remote.ts";
 import type { CommandDef } from "../src/types.ts";
@@ -20,14 +22,19 @@ const remoteTextCommand: CommandDef = defineCommand({
   body: { lang: "bash", source: "tr '[:lower:]' '[:upper:]'" },
 });
 
+const remoteNoneCommand: CommandDef = defineCommand({
+  ...remoteTextCommand,
+  id: "remote-none",
+  title: "Remote None",
+  modality: "none",
+});
+
 describe("remote shortcut emitters", () => {
   test("opt-in emits a separate fixed-protocol Shortcut without the command body", async () => {
     const root = await mkdtemp(join(tmpdir(), "polycast-remote-profile-"));
     const profiles = join(root, "profiles.json");
-    const key = join(root, "id_tablet");
     const oldProfiles = process.env.POLYCAST_REMOTE_PROFILES;
     try {
-      await writeFile(key, "FAKE PRIVATE KEY\n");
       await writeFile(
         profiles,
         JSON.stringify({
@@ -37,7 +44,7 @@ describe("remote shortcut emitters", () => {
               host: "host.example.test",
               port: 2222,
               user: "operator",
-              transport: { kind: "ssh-key", identityFile: key },
+              transport: { kind: "ssh-key" },
             },
           },
         }),
@@ -49,10 +56,22 @@ describe("remote shortcut emitters", () => {
       expect(cherri?.contents).toContain("polycast-remote --command remote-uppercase --protocol 1");
       expect(cherri?.contents).toContain("host.example.test");
       expect(cherri?.contents).not.toContain("tr '[:lower:]'");
+      expect(cherri?.contents).toContain("'SSH Key', '')");
+      expect(cherri?.contents).not.toContain("PRIVATE KEY");
 
-      const [termux] = termuxShortcut.emit(remoteTextCommand);
+      const source = join(root, "remote.cherri");
+      await writeFile(source, cherri?.contents ?? "");
+      const compiled = spawnSync(
+        "cherri",
+        [source, "--skip-sign", `-o=${join(root, "remote.shortcut")}`],
+        { encoding: "utf8" },
+      );
+      expect(compiled.status).toBe(0);
+
+      expect(termuxShortcut.emit(remoteTextCommand)).toEqual([]);
+      const [termux] = termuxShortcut.emit(remoteNoneCommand);
       expect(termux?.contents).toContain('MAC_EXEC="${POLYCAST_TERMUX_MAC_EXEC:-mac-exec}"');
-      expect(termux?.contents).toContain("polycast-remote --command remote-uppercase --protocol 1");
+      expect(termux?.contents).toContain("polycast-remote --command remote-none --protocol 1");
       expect(termux?.contents).not.toContain("host.example.test");
 
       const emitted = emitCommand(remoteTextCommand);
@@ -60,7 +79,7 @@ describe("remote shortcut emitters", () => {
       expect(emitted.find((output) => output.target === "shortcuts-remote-ssh")?.skipped).toBe(
         false,
       );
-      expect(emitted.find((output) => output.target === "termux-shortcut")?.skipped).toBe(false);
+      expect(emitted.find((output) => output.target === "termux-shortcut")?.skipped).toBe(true);
 
       const hostilePresentation = defineCommand({
         ...remoteTextCommand,
@@ -99,6 +118,47 @@ describe("remote shortcut emitters", () => {
     });
     expect(shortcutsRemoteSsh.emit(local)).toEqual([]);
     expect(termuxShortcut.emit(local)).toEqual([]);
+  });
+
+  test("list and apply a remote build without loading a profile or key", async () => {
+    const root = await mkdtemp(join(tmpdir(), "polycast-remote-apply-"));
+    const commands = join(root, "commands");
+    const out = join(root, "build");
+    const commandsStore = join(root, "commands-store");
+    const oldProfiles = process.env.POLYCAST_REMOTE_PROFILES;
+    const oldStore = process.env.POLYCAST_COMMANDS_DIR;
+    try {
+      await mkdir(commands, { recursive: true });
+      await writeFile(
+        join(commands, "remote-uppercase.ts"),
+        commandDefToModule(remoteTextCommand, {
+          defineImport: join(process.cwd(), "src/define.ts"),
+        }),
+      );
+      await mkdir(join(out, "shortcuts-remote-ssh"), { recursive: true });
+      await writeCommandsJson([remoteTextCommand], join(out, "commands"));
+      await writeFile(
+        join(out, "shortcuts-remote-ssh", "remote-uppercase.cherri"),
+        "#include 'actions/network'\npolycast-remote --command remote-uppercase --protocol 1\n",
+      );
+      process.env.POLYCAST_REMOTE_PROFILES = join(root, "missing-profiles.json");
+      process.env.POLYCAST_COMMANDS_DIR = commandsStore;
+
+      expect((await polycastList(commands))[0]?.surfaces).toContain("shortcuts-remote-ssh");
+      const result = await polycastApply({
+        dir: commands,
+        out,
+        targets: ["shortcuts-remote-ssh"],
+        write: true,
+      });
+      expect(result.results.some((item) => item.target === "commands-store")).toBe(true);
+    } finally {
+      if (oldProfiles === undefined) delete process.env.POLYCAST_REMOTE_PROFILES;
+      else process.env.POLYCAST_REMOTE_PROFILES = oldProfiles;
+      if (oldStore === undefined) delete process.env.POLYCAST_COMMANDS_DIR;
+      else process.env.POLYCAST_COMMANDS_DIR = oldStore;
+      await rm(root, { recursive: true, force: true });
+    }
   });
 });
 

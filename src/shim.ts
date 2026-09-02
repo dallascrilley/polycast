@@ -69,7 +69,7 @@ export function filesRunShim(cmd: CommandDef): string {
 
 export const dropzoneRunShim = filesRunShim;
 
-/** Targets whose installed artifacts call polycast run and need the JSON command store. */
+/** Targets whose installed artifacts (including remote host dispatch) need the JSON command store. */
 export const DISPATCHER_TARGETS = [
   "agent-cli",
   "raycast-script",
@@ -77,6 +77,8 @@ export const DISPATCHER_TARGETS = [
   "dropzone",
   "dropover-script",
   "shortcuts-cherri",
+  "shortcuts-remote-ssh",
+  "termux-shortcut",
 ] as const;
 
 export function targetNeedsCommandsStore(target: string): boolean {

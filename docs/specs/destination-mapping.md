@@ -25,7 +25,7 @@ than adding a runtime mode chooser to the local path.
 | Target | Initial modalities | Artifact | Connection state | Host command |
 |--------|--------------------|----------|------------------|--------------|
 | `shortcuts-remote-ssh` | `none`, `text` | `<id>.cherri` / compiled `.shortcut` | private local profile at build time | `polycast-remote --command <id> --protocol 1` |
-| `termux-shortcut` | `none`, `text` | `<id>.sh` | existing `mac-exec` route | `polycast-remote --command <id> --protocol 1` |
+| `termux-shortcut` | `none` | `<id>.sh` | existing `mac-exec` route | `polycast-remote --command <id> --protocol 1` |
 
 See [remote-ssh.md](remote-ssh.md) for the profile format, forced-command
 configuration, and credential boundary.

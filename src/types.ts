@@ -193,6 +193,11 @@ export interface Emitter {
   readonly target: CommandTarget;
   /** Modalities this surface can represent. */
   readonly supports: readonly Modality[];
+  /**
+   * Whether this command can produce output without resolving private build
+   * configuration. Used by list/apply preflights, which must not load secrets.
+   */
+  canEmit?(cmd: CommandDef): boolean;
   /** Render the command, or return [] when the command is incompatible. */
   emit(cmd: CommandDef): readonly EmittedFile[];
   /** Optional catalog pass for aggregated outputs (snippets, quicklinks, manifest). */

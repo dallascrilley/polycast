@@ -340,7 +340,7 @@ async function applyTarget(
     results.push({
       target,
       action: "note",
-      path: "Transfer the compiled .shortcut to the intended iPhone or iPad. It is credential-bearing build output; do not import it into the Mac's local Shortcuts library.",
+      path: "Transfer the compiled .shortcut to the intended iPhone or iPad. It contains private connection metadata; do not import it into the Mac's local Shortcuts library.",
     });
     return results;
   }

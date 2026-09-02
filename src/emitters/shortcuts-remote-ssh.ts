@@ -1,6 +1,6 @@
 import { OWNERSHIP_MARKER } from "../constants.ts";
 import { REMOTE_PROTOCOL_VERSION } from "../remote.ts";
-import { loadRemoteSshProfile, readRemoteIdentityFile } from "../remote-profiles.ts";
+import { loadRemoteSshProfile } from "../remote-profiles.ts";
 import type { CommandDef, EmittedFile, Emitter, ValidationIssue } from "../types.ts";
 import { escapeCherriString } from "../wrappers.ts";
 
@@ -16,22 +16,29 @@ function remoteInput(cmd: CommandDef): string {
   return cmd.modality === "text" ? "ShortcutInput" : "nil";
 }
 
+function canEmitRemoteShortcut(cmd: CommandDef): boolean {
+  return (cmd.modality === "text" || cmd.modality === "none") && Boolean(cmd.x?.remote);
+}
+
 export const shortcutsRemoteSsh: Emitter = {
   target: "shortcuts-remote-ssh",
   supports: ["text", "none"],
 
+  canEmit: canEmitRemoteShortcut,
+
   emit(cmd: CommandDef): EmittedFile[] {
-    if (!this.supports.includes(cmd.modality) || !cmd.x?.remote) return [];
+    if (!canEmitRemoteShortcut(cmd) || !cmd.x?.remote) return [];
 
     const profile = loadRemoteSshProfile(cmd.x.remote.profile);
-    const identity = readRemoteIdentityFile(profile);
     const lines = [`#define name ${remoteShortcutName(cmd)}`];
-    // Remote artifacts carry a device credential. Do not interpolate general
-    // Cherri presentation directives from CommandDef into this source.
+    // Do not interpolate general Cherri presentation directives from
+    // CommandDef into this source.
     if (cmd.modality === "text") lines.push("#define inputs text");
     lines.push("#include 'actions/network'");
+    // Shortcuts generates and stores its SSH key on the device. Cherri's last
+    // argument maps to WFSSHPassword and cannot import a PEM identity.
     lines.push(
-      `runSSHScript('polycast-remote --command ${cmd.id} --protocol ${REMOTE_PROTOCOL_VERSION}', ${remoteInput(cmd)}, '${escapeCherriString(profile.host)}', '${profile.port}', '${escapeCherriString(profile.user)}', 'SSH Key', '${escapeCherriString(identity)}')`,
+      `runSSHScript('polycast-remote --command ${cmd.id} --protocol ${REMOTE_PROTOCOL_VERSION}', ${remoteInput(cmd)}, '${escapeCherriString(profile.host)}', '${profile.port}', '${escapeCherriString(profile.user)}', 'SSH Key', '')`,
       "",
     );
     return [
@@ -52,7 +59,11 @@ export const shortcutsRemoteSsh: Emitter = {
         severity: "error",
       });
     }
-    if (!cherri.contents.includes(`polycast-remote --command ${cmd.id} --protocol 1`)) {
+    if (
+      !cherri.contents.includes(
+        `polycast-remote --command ${cmd.id} --protocol ${REMOTE_PROTOCOL_VERSION}`,
+      )
+    ) {
       issues.push({
         target: this.target,
         message: "missing fixed remote protocol command",

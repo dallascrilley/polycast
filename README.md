@@ -22,7 +22,7 @@ guessing. That is the rule the whole thing rests on, and it lives in the
 | `dropover-script` | `files` | `<id>.sh` plus a shared `manifest.json` |
 | `shortcuts-cherri` | `text`, `files`, `args`, `none` | `<id>.cherri` source, compiled to `<id>.shortcut` when Cherri is installed |
 | `shortcuts-remote-ssh` | `text`, `none` | opt-in `<id>.cherri` SSH Shortcut; the Mac loads the stored body by ID |
-| `termux-shortcut` | `text`, `none` | opt-in `<id>.sh` calling the existing tablet `mac-exec` route |
+| `termux-shortcut` | `none` | opt-in `<id>.sh` calling the existing tablet `mac-exec` route |
 | `raycast-snippet` | `text`, `none` | shared `snippets.json`, opt in per command via `x.raycast.snippet` |
 | `raycast-quicklink` | `args`, `none` | shared `quicklinks.json`, opt in per command via `x.raycast.quicklink` |
 | `agent-cli` | all four | executable stub plus `<id>.polycast-meta.json` |
@@ -136,10 +136,12 @@ command's metadata or surface list changes.
 
 Add `x.remote.profile` to a `text` or `none` command to generate a second,
 separate `<title> Remote` Shortcut while preserving the ordinary local one.
-The public definition names only a private profile; host, key, and transport
-live outside Git. The remote Shortcut sends only the command ID, validated
-stdin, and protocol version. The Mac's forced host command loads the canonical
-stored body and rejects arbitrary shell source. See
+The public definition names only a private profile; host and transport metadata
+live outside Git. The imported Shortcut creates or selects its own SSH key; add
+that public key to the host's forced `authorized_keys` entry. The remote
+Shortcut sends only the command ID, validated stdin, and protocol version. The
+Mac's forced host command loads the canonical stored body and rejects arbitrary
+shell source. See
 [the remote SSH specification](docs/specs/remote-ssh.md).
 
 ## Status

@@ -2,16 +2,24 @@ import { OWNERSHIP_MARKER } from "../constants.ts";
 import { REMOTE_PROTOCOL_VERSION } from "../remote.ts";
 import type { CommandDef, EmittedFile, Emitter } from "../types.ts";
 
+function canEmitTermuxShortcut(cmd: CommandDef): boolean {
+  return cmd.modality === "none" && Boolean(cmd.x?.remote);
+}
+
 /**
  * Termux:Widget executes this script in the existing tablet-owned mac-exec
  * transport. It deliberately owns no SSH host, key, or general configuration.
  */
 export const termuxShortcut: Emitter = {
   target: "termux-shortcut",
-  supports: ["text", "none"],
+  // Termux:Widget does not provide a text-entry or stdin hand-off contract.
+  // Keep it trigger-only until an explicit tablet text UX is designed.
+  supports: ["none"],
+
+  canEmit: canEmitTermuxShortcut,
 
   emit(cmd: CommandDef): EmittedFile[] {
-    if (!this.supports.includes(cmd.modality) || !cmd.x?.remote) return [];
+    if (!canEmitTermuxShortcut(cmd)) return [];
     const script = [
       "#!/data/data/com.termux/files/usr/bin/bash",
       "set -euo pipefail",

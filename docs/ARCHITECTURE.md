@@ -108,8 +108,9 @@ the support declarations and `docs/specs/modality-matrix.md` for the matrix.
   operator-consent flag for importing them. `apply --prune` does not remove
   imported Shortcuts or stale files under `build/shortcuts-cherri/`.
 - `shortcuts-remote-ssh` is opt-in through `x.remote.profile`; its build output
-  is credential-bearing and must be transferred directly to the intended iOS
-  device. The host accepts it only through the forced remote protocol.
+  contains private connection metadata and must be transferred directly to the
+  intended iOS device. Shortcuts owns the SSH key; the host accepts it only
+  through the forced remote protocol.
 - `capture --from raycast-snippets` reads a regular export file and writes only
   its marked `commands/raycast-snippets/` files when `--write` is present. It
   never changes or copies the export. Build recursively loads the generated

@@ -23,8 +23,8 @@ produce remote artifacts and is rejected by the remote host entry point.
 ## Private build profile
 
 The build reads `POLYCAST_REMOTE_PROFILES` or, by default,
-`~/.config/polycast/remote-profiles.json`. Keep this file and the referenced
-identity file private and outside the repository.
+`~/.config/polycast/remote-profiles.json`. Keep this local connection metadata
+private and outside the repository.
 
 ```json
 {
@@ -35,8 +35,7 @@ identity file private and outside the repository.
       "port": 22,
       "user": "operator",
       "transport": {
-        "kind": "ssh-key",
-        "identityFile": "/private/path/to/id_polycast_ios"
+        "kind": "ssh-key"
       }
     }
   }
@@ -44,11 +43,12 @@ identity file private and outside the repository.
 ```
 
 Version 1 generates SSH-key Cherri profiles only. It deliberately does not
-model password authentication, sudo passwords, arbitrary SSH options, or a
-general-purpose SSH configuration. The compiled remote Shortcut and its Cherri
-source contain transport material, so `build/shortcuts-remote-ssh/` is ignored
-credential-bearing output: transfer it directly to the intended device and do
-not commit, share, or import it into the Mac's local Shortcuts library.
+model password authentication, private-key import, sudo passwords, arbitrary
+SSH options, or a general-purpose SSH configuration. The imported Shortcut must
+generate or select its device-owned SSH key, then its copied public key must be
+added to the host's forced `authorized_keys` entry. The build output contains
+private connection metadata, so keep `build/shortcuts-remote-ssh/` out of Git
+and transfer it only to the intended device.
 
 ## Wire and host boundary
 
@@ -72,6 +72,7 @@ command JSON, requires the command's explicit remote opt-in, and supports only
 `none` (empty stdin) and UTF-8 `text` (at most 64 KiB). `args` and files are
 rejected until their JSON-envelope and transfer semantics are designed.
 
-Termux output invokes the existing `mac-exec` command. Polycast does not create
-or alter a second Android SSH configuration. Remote version 1 has no sudo or
-privileged-service facility.
+Termux output invokes the existing `mac-exec` command. It currently supports
+only `none`: Termux:Widget has no defined text-entry/stdin contract. Polycast
+does not create or alter a second Android SSH configuration. Remote version 1
+has no sudo or privileged-service facility.
