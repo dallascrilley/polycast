@@ -1,4 +1,9 @@
-import type { CommandDef, CommandTarget, ToolboxEffectClass } from "./types.ts";
+import type {
+  CommandDelegation,
+  CommandTarget,
+  CrossTargetHints,
+  ToolboxEffectClass,
+} from "./types.ts";
 
 type SensitiveEffectAdmission = "direct" | "confirmation" | "deny";
 
@@ -31,9 +36,14 @@ export type ToolboxTargetCompatibility =
 
 const SENSITIVE_TOOLBOX_EFFECTS: readonly ToolboxEffectClass[] = ["mutate", "integrate"];
 
+export interface ToolboxCompatibilityInput {
+  readonly delegation?: CommandDelegation;
+  readonly x?: Pick<CrossTargetHints, "raycast">;
+}
+
 /** Check only the Toolbox delegation semantics for one existing Polycast target. */
 export function toolboxTargetCompatibility(
-  cmd: CommandDef,
+  cmd: ToolboxCompatibilityInput,
   target: CommandTarget,
 ): ToolboxTargetCompatibility {
   if (cmd.delegation?.kind !== "toolbox") return { compatible: true };

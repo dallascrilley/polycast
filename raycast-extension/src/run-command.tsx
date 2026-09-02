@@ -5,6 +5,7 @@ import { delimiter, join } from "node:path";
 import {
   Action,
   ActionPanel,
+  confirmAlert,
   Detail,
   Form,
   getPreferenceValues,
@@ -15,7 +16,14 @@ import {
 } from "@raycast/api";
 import { useEffect, useState } from "react";
 import { parseWorktreeOptions, type WorktreeOption } from "./lib/orca";
-import { buildArgv, parseStoredCommand, type StoredArg, type StoredCommand } from "./lib/store";
+import { formatRunResult, runArguments } from "./lib/run";
+import {
+  buildArgv,
+  filterRaycastCommands,
+  parseStoredCommand,
+  type StoredArg,
+  type StoredCommand,
+} from "./lib/store";
 
 interface Preferences {
   readonly polycastBin: string;
@@ -53,16 +61,22 @@ function tailLines(value: string, limit = 200): string {
   return lines.length > limit ? lines.slice(-limit).join("\n") : value;
 }
 
-function runArguments(
+async function confirmToolboxRun(command: StoredCommand): Promise<boolean> {
+  const effectClass = command.delegation?.effectClass;
+  if (effectClass !== "mutate" && effectClass !== "integrate") return true;
+  return confirmAlert({
+    title: `Run ${command.title}?`,
+    message: `This Toolbox command is classified as ${effectClass}.`,
+  });
+}
+
+async function pushRunView(
   command: StoredCommand,
-  commandsDir: string,
   argv: readonly string[],
-): string[] {
-  const args = ["run", "--commands", commandsDir, command.id, "--"];
-  if (command.modality === "text") {
-    return [...args, "--text", argv[0] ?? ""];
-  }
-  return [...args, ...argv];
+  navigation: ReturnType<typeof useNavigation>,
+): Promise<void> {
+  if (!(await confirmToolboxRun(command))) return;
+  navigation.push(<RunView command={command} argv={argv} />);
 }
 
 function PickerField({
@@ -177,7 +191,7 @@ function CommandForm({ command }: { readonly command: StoredCommand }) {
     };
   }, [pickerNeeded, preferences.orcaBin]);
 
-  function handleSubmit(values: Form.Values) {
+  async function handleSubmit(values: Form.Values) {
     if (pickerStatus === "loading") {
       void showToast({
         style: Toast.Style.Failure,
@@ -199,7 +213,7 @@ function CommandForm({ command }: { readonly command: StoredCommand }) {
       command.modality === "args"
         ? buildArgv(command.args ?? [], stringValues)
         : [stringValues.text ?? ""];
-    navigation.push(<RunView command={command} argv={argv} />);
+    await pushRunView(command, argv, navigation);
   }
 
   return (
@@ -261,10 +275,16 @@ function RunView({
     child.stdout?.setEncoding("utf8");
     child.stderr?.setEncoding("utf8");
     child.stdout?.on("data", (chunk: string) => {
-      setOutput((previous) => tailLines(appendOutput(previous, chunk)));
+      setOutput((previous) => {
+        const next = appendOutput(previous, chunk);
+        return command.delegation ? next : tailLines(next);
+      });
     });
     child.stderr?.on("data", (chunk: string) => {
-      setOutput((previous) => tailLines(appendOutput(previous, chunk)));
+      setOutput((previous) => {
+        const next = appendOutput(previous, chunk);
+        return command.delegation ? next : tailLines(next);
+      });
     });
     child.on("error", (error: Error) => {
       setOutput((previous) => appendOutput(previous, `${error.message}\n`));
@@ -283,10 +303,7 @@ function RunView({
     };
   }, [argv, command, commandsDir, polycastBin, preferences.extraPath]);
 
-  const outputBody =
-    tailLines(output) || (exitCode === null ? "Waiting for output..." : "(no output)");
-  const markdown = `\`\`\`text\n${outputBody}\n\`\`\``;
-  return <Detail isLoading={exitCode === null} markdown={markdown} />;
+  return <Detail isLoading={exitCode === null} markdown={formatRunResult(output, exitCode)} />;
 }
 
 function getPreferences(): Preferences {
@@ -312,10 +329,9 @@ export default function RunCommand() {
         );
         if (mounted) {
           setCommands(
-            documents
-              .filter((command): command is StoredCommand => command !== null)
-              .filter((command) => command.modality !== "files")
-              .sort((left, right) => left.title.localeCompare(right.title)),
+            filterRaycastCommands(
+              documents.filter((command): command is StoredCommand => command !== null),
+            ),
           );
         }
       })
@@ -346,20 +362,24 @@ export default function RunCommand() {
           icon={command.icon}
           title={command.title}
           subtitle={command.description}
-          accessories={[{ text: command.modality }]}
+          accessories={[
+            {
+              text: command.delegation
+                ? `Toolbox · ${command.delegation.effectClass}`
+                : command.modality,
+            },
+          ]}
           actions={
             <ActionPanel>
               <Action
                 title="Run Command"
-                onAction={() =>
-                  navigation.push(
-                    command.modality === "none" ? (
-                      <RunView command={command} argv={[]} />
-                    ) : (
-                      <CommandForm command={command} />
-                    ),
-                  )
-                }
+                onAction={() => {
+                  if (command.modality === "none") {
+                    void pushRunView(command, [], navigation);
+                  } else {
+                    navigation.push(<CommandForm command={command} />);
+                  }
+                }}
               />
             </ActionPanel>
           }

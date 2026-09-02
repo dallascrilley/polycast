@@ -1,6 +1,17 @@
 import { describe, expect, test } from "bun:test";
+import { spawnSync } from "node:child_process";
+import { chmod, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { parseWorktreeOptions } from "../raycast-extension/src/lib/orca.ts";
-import { buildArgv, parseStoredCommand } from "../raycast-extension/src/lib/store.ts";
+import { formatRunResult, runArguments } from "../raycast-extension/src/lib/run.ts";
+import {
+  buildArgv,
+  filterRaycastCommands,
+  parseStoredCommand,
+} from "../raycast-extension/src/lib/store.ts";
+import { writeCommandsJson } from "../src/commands-store.ts";
+import { defineToolboxCommand, resolveToolboxExecutable } from "../src/toolbox-adapter.ts";
 
 describe("Raycast extension store helpers", () => {
   test("ignore malformed command documents", () => {
@@ -63,6 +74,186 @@ describe("Raycast extension store helpers", () => {
   test("build argv in declared order and preserve missing positions", () => {
     const args = [{ name: "first" }, { name: "middle" }, { name: "last" }];
     expect(buildArgv(args, { first: "one", last: "three" })).toEqual(["one", "", "three"]);
+  });
+
+  test("retain Toolbox metadata and filter commands by Raycast compatibility", () => {
+    const visible = parseStoredCommand(
+      JSON.stringify({
+        id: "toolbox-visible",
+        title: "Visible Toolbox",
+        description: "inspect",
+        modality: "args",
+        args: [{ name: "query" }],
+        delegation: {
+          kind: "toolbox",
+          contract: "toolbox-polycast-adapter/v1",
+          effectClass: "inspect",
+          output: "canonical",
+        },
+      }),
+    );
+    const hiddenEffect = parseStoredCommand(
+      JSON.stringify({
+        id: "toolbox-hidden-effect",
+        title: "Hidden Effect",
+        description: "mutate without confirmation",
+        modality: "none",
+        delegation: {
+          kind: "toolbox",
+          contract: "toolbox-polycast-adapter/v1",
+          effectClass: "mutate",
+          output: "canonical",
+        },
+      }),
+    );
+    const visibleEffect = parseStoredCommand(
+      JSON.stringify({
+        id: "toolbox-confirmed-effect",
+        title: "Confirmed Effect",
+        description: "mutate with confirmation",
+        modality: "none",
+        delegation: {
+          kind: "toolbox",
+          contract: "toolbox-polycast-adapter/v1",
+          effectClass: "mutate",
+          output: "canonical",
+        },
+        x: { raycast: { mode: "fullOutput", needsConfirmation: true } },
+      }),
+    );
+    const hiddenTarget = parseStoredCommand(
+      JSON.stringify({
+        id: "toolbox-hidden-target",
+        title: "Hidden Target",
+        description: "agent-only",
+        modality: "none",
+        targets: ["agent-cli"],
+        delegation: {
+          kind: "toolbox",
+          contract: "toolbox-polycast-adapter/v1",
+          effectClass: "inspect",
+          output: "canonical",
+        },
+      }),
+    );
+
+    expect(visible).toMatchObject({
+      delegation: { kind: "toolbox", effectClass: "inspect", output: "canonical" },
+    });
+    if (!visible || !hiddenEffect || !visibleEffect || !hiddenTarget) {
+      throw new Error("Toolbox catalog fixtures did not parse");
+    }
+    expect(filterRaycastCommands([hiddenTarget, visibleEffect, hiddenEffect, visible])).toEqual([
+      visibleEffect,
+      visible,
+    ]);
+  });
+
+  test("place text input before the separator and preserve argument positions", () => {
+    const text = parseStoredCommand(
+      JSON.stringify({
+        id: "toolbox-text",
+        title: "Toolbox text",
+        description: "text",
+        modality: "text",
+      }),
+    );
+    const args = parseStoredCommand(
+      JSON.stringify({
+        id: "toolbox-args",
+        title: "Toolbox args",
+        description: "args",
+        modality: "args",
+        args: [{ name: "query" }],
+      }),
+    );
+    if (!text || !args) throw new Error("test commands did not parse");
+
+    expect(runArguments(text, "/tmp/commands", ["selected text"])).toEqual([
+      "run",
+      "--commands",
+      "/tmp/commands",
+      "toolbox-text",
+      "--text",
+      "selected text",
+      "--",
+    ]);
+    expect(runArguments(args, "/tmp/commands", ["literal --"])).toEqual([
+      "run",
+      "--commands",
+      "/tmp/commands",
+      "toolbox-args",
+      "--",
+      "literal --",
+    ]);
+  });
+
+  test("renders canonical result and failure status without rewriting output", () => {
+    const success = '{"result":"canonical","receipt":"toolbox://receipt/success"}\n';
+    const failure = '{"result":"failed","receipt":"toolbox://receipt/failure"}\n';
+
+    expect(formatRunResult(success, 0)).toContain("### Completed");
+    expect(formatRunResult(success, 0)).toContain(success);
+    expect(formatRunResult(failure, 17)).toContain("### Failed (exit code 17)");
+    expect(formatRunResult(failure, 17)).toContain("toolbox://receipt/failure");
+  });
+});
+
+describe("Raycast Toolbox dispatch harness", () => {
+  test("executes through the canonical Toolbox path and preserves success and failure", async () => {
+    const root = await mkdtemp(join(tmpdir(), "polycast-raycast-toolbox-"));
+    const toolbox = join(root, "bin", "toolbox");
+    const commands = join(root, "commands");
+    await mkdir(join(root, "bin"));
+    await writeFile(
+      toolbox,
+      `#!/usr/bin/env bash
+set -euo pipefail
+if [[ "\${3:-}" == "fail" ]]; then
+  printf '%s\\n' '{"result":"failed","receipt":"toolbox://receipt/failure"}'
+  printf '%s\\n' 'canonical failure' >&2
+  exit 17
+fi
+printf '%s\\n' '{"result":"canonical","receipt":"toolbox://receipt/success"}'
+printf '%s\\n' 'canonical warning' >&2
+`,
+    );
+    await chmod(toolbox, 0o755);
+
+    try {
+      const command = defineToolboxCommand({
+        id: "toolbox-raycast-fixture",
+        title: "Toolbox Raycast fixture",
+        description: "dispatch fixture",
+        executable: resolveToolboxExecutable(toolbox),
+        fixedArgv: ["knowledge", "search"],
+        modality: "args",
+        args: [{ name: "query" }],
+        effectClass: "inspect",
+        output: "canonical",
+      });
+      await writeCommandsJson([command], commands);
+      const stored = parseStoredCommand(JSON.stringify(command));
+      if (!stored) throw new Error("fixture command did not parse");
+
+      const invoke = (query: string) =>
+        spawnSync("bun", ["run", "src/cli.ts", ...runArguments(stored, commands, [query])], {
+          cwd: process.cwd(),
+          encoding: "utf8",
+        });
+
+      const success = invoke("success");
+      expect(success.status).toBe(0);
+      expect(success.stdout).toBe('{"result":"canonical","receipt":"toolbox://receipt/success"}\n');
+      expect(success.stderr).toBe("canonical warning\n");
+
+      const failure = invoke("fail");
+      expect(failure.status).toBe(17);
+      expect(failure.stdout).toBe('{"result":"failed","receipt":"toolbox://receipt/failure"}\n');
+      expect(failure.stderr).toBe("canonical failure\n");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
   });
 });
 
