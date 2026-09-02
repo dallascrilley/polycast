@@ -92,6 +92,28 @@ try {
 
   const help = run("bun", [resolve(packageRoot, "src/cli.ts"), "--help"], packageRoot);
   if (!help.stdout.includes("runner build")) fail("packed CLI help omits runner build");
+  const expectedDeviceActions = [
+    "agents  Agents",
+    "reviews  Reviews",
+    "agent-console  Agent Console",
+    "send-to-device  Send to Device",
+  ].join("\n");
+  const deviceActions = run(
+    "bun",
+    [resolve(packageRoot, "src/cli.ts"), "device", "list"],
+    packageRoot,
+  );
+  if (deviceActions.stdout.trim() !== expectedDeviceActions) {
+    fail("packed CLI device list differs from the four-action manifest");
+  }
+  const deviceBinActions = run(
+    "bun",
+    [resolve(packageRoot, "src/device-fabric-bin.ts"), "list"],
+    packageRoot,
+  );
+  if (deviceBinActions.stdout.trim() !== expectedDeviceActions) {
+    fail("packed device-fabric binary differs from the four-action manifest");
+  }
 
   const runners = run("bun", [resolve(packageRoot, "src/cli.ts"), "runner", "list"], packageRoot);
   if (!runners.stdout.includes("polycast.worktree-review")) {
@@ -111,7 +133,9 @@ try {
     fail("extracted package.json version differs from the package manifest");
   }
 
-  console.log(`package smoke passed: ${packageRecord.id}; packed CLI help and runner list succeeded`);
+  console.log(
+    `package smoke passed: ${packageRecord.id}; packed CLI, device binaries, and runner list succeeded`,
+  );
 } finally {
   await rm(temporaryRoot, { recursive: true, force: true });
 }

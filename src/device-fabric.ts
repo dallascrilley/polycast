@@ -535,13 +535,10 @@ export async function buildDeviceFabricShortcuts(
     throw new Error(`device fabric must contain exactly: ${expectedIds.join(", ")}`);
   }
 
-  await rm(outRoot, { recursive: true, force: true });
-  await mkdir(outRoot, { recursive: true });
-  const sources: string[] = [];
   const sourceRecords: Array<{
     id: DeviceFabricActionId;
     name: string;
-    sourcePath: string;
+    source: string;
   }> = [];
   for (const action of DEVICE_FABRIC_ACTIONS) {
     const sourcePath = join(sourceDir, `${action.id}.cherri`);
@@ -551,11 +548,17 @@ export async function buildDeviceFabricShortcuts(
       throw new Error(`${action.id}.cherri must declare '#define name ${action.name}'`);
     }
     assertSourceSafe(action.id, source);
-    const outputSource = join(outRoot, `${action.id}.cherri`);
-    await writeFile(outputSource, source);
+    sourceRecords.push({ id: action.id, name, source });
+  }
+
+  await rm(outRoot, { recursive: true, force: true });
+  await mkdir(outRoot, { recursive: true });
+  const sources: string[] = [];
+  for (const record of sourceRecords) {
+    const outputSource = join(outRoot, `${record.id}.cherri`);
+    await writeFile(outputSource, record.source);
     await writeFile(`${outputSource}${OWNERSHIP_MARKER}`, "polycast\n");
     sources.push(outputSource, `${outputSource}${OWNERSHIP_MARKER}`);
-    sourceRecords.push({ id: action.id, name, sourcePath });
   }
 
   const env = options.env ?? process.env;
@@ -568,7 +571,13 @@ export async function buildDeviceFabricShortcuts(
   if (!compileSkipped) {
     for (const record of sourceRecords) {
       const outputPath = join(outRoot, `${record.id}.shortcut`);
-      await compileDeviceShortcut(record.sourcePath, outputPath, record.id, record.name, env);
+      await compileDeviceShortcut(
+        join(outRoot, `${record.id}.cherri`),
+        outputPath,
+        record.id,
+        record.name,
+        env,
+      );
       await writeFile(`${outputPath}${OWNERSHIP_MARKER}`, "polycast\n");
       shortcuts.push(outputPath, `${outputPath}${OWNERSHIP_MARKER}`);
     }

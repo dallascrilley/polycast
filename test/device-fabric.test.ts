@@ -135,6 +135,36 @@ describe("device fabric", () => {
     }
   });
 
+  test("validates every source before replacing prior build output", async () => {
+    const root = await mkdtemp(join(tmpdir(), "polycast-device-fabric-preflight-"));
+    const isolatedSource = join(root, "source");
+    const out = join(root, "build");
+    await mkdir(isolatedSource);
+    await mkdir(out);
+    for (const action of DEVICE_FABRIC_ACTIONS) {
+      await copyFile(
+        join(sourceDir, `${action.id}.cherri`),
+        join(isolatedSource, `${action.id}.cherri`),
+      );
+    }
+    await writeFile(join(isolatedSource, "reviews.cherri"), "#define name Wrong Reviews\n");
+    const priorArtifact = join(out, "last-good.shortcut");
+    await writeFile(priorArtifact, "last-good");
+    try {
+      await expect(
+        buildDeviceFabricShortcuts({
+          dir: isolatedSource,
+          out,
+          env: { ...process.env, POLYCAST_SKIP_CHERRI: "1" },
+        }),
+      ).rejects.toThrow("reviews.cherri must declare '#define name Reviews'");
+      expect(await readFile(priorArtifact, "utf8")).toBe("last-good");
+      expect(await readdir(out)).toEqual(["last-good.shortcut"]);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
   test("describes deterministic native AppIntent patches before signing", () => {
     const first = DEVICE_FABRIC_ACTIONS.flatMap((action) => deviceFabricIntentSpecs(action.id));
     const second = DEVICE_FABRIC_ACTIONS.flatMap((action) => deviceFabricIntentSpecs(action.id));
