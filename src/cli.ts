@@ -59,6 +59,7 @@ Environment:
   POLYCAST_AGENT_BIN         agent-cli install dir
   POLYCAST_COMMANDS_DIR      JSON command store (default: ~/.polycast/commands on apply)
   POLYCAST_BIN               polycast executable for agent-cli stubs (default: polycast)
+  POLYCAST_TOOLBOX_BIN        setup-time override for canonical bin/toolbox resolution
   POLYCAST_RAYCAST_SNIPPET_EXPORT_DIR optional directory for latest-export discovery
 `;
 

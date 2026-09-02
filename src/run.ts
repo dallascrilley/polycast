@@ -117,19 +117,27 @@ export function executeCommand(cmd: CommandDef, options: RunOptions): number {
   }
 
   const positional = options.argv.filter((a) => a !== "--");
+  let bodyArgv = positional;
   let stdin: string | undefined;
 
   if (cmd.modality === "text") {
     let text = options.text ?? "";
+    const forwarded: string[] = [];
     let i = 0;
     while (i < positional.length) {
-      if (positional[i] === "--text") {
+      const arg = positional[i];
+      if (arg === undefined) break;
+      if (arg === "--text") {
         text = positional[i + 1] ?? "";
         i += 2;
         continue;
       }
+      forwarded.push(arg);
       i++;
     }
+    // --text is Polycast's launcher-to-stdin control flag, not a Toolbox
+    // argument. Never leak it into a canonical exec invocation.
+    bodyArgv = forwarded;
     if (!text && !process.stdin.isTTY) {
       text = readFileSync(0, "utf8");
     }
@@ -142,7 +150,7 @@ export function executeCommand(cmd: CommandDef, options: RunOptions): number {
   // shims and scripted callers see exactly what the body wrote.
   const captureStdout = process.stdout.isTTY === true;
 
-  const result = spawnInterpreter(cmd, positional, stdin, captureStdout);
+  const result = spawnInterpreter(cmd, bodyArgv, stdin, captureStdout);
 
   if (result.error) throw result.error;
 
@@ -151,7 +159,9 @@ export function executeCommand(cmd: CommandDef, options: RunOptions): number {
     // writeSync, not process.stdout.write: the CLI exits via process.exit and
     // an async write to a pipe can be dropped.
     writeSync(1, out);
-    if (needsTrailingNewline(out)) writeSync(1, "\n");
+    // Canonical exec bodies own their output bytes. In particular, do not
+    // append a newline that could corrupt a Toolbox result or receipt link.
+    if (cmd.body.lang !== "exec" && needsTrailingNewline(out)) writeSync(1, "\n");
   }
 
   return result.status ?? 1;

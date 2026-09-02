@@ -94,6 +94,14 @@ const crossTargetHintsSchema = z
         profile: z.string().regex(KEBAB_ID, "remote profile must be kebab-case"),
       })
       .optional(),
+    toolbox: z
+      .object({
+        contract: z.literal("toolbox-polycast-adapter/v1"),
+        fixed_argv: z.array(z.string()),
+        effect_class: z.enum(["inspect", "prepare", "mutate", "integrate"]),
+        output: z.literal("canonical"),
+      })
+      .optional(),
   })
   .optional();
 
@@ -140,6 +148,24 @@ export const commandDefSchema = z
         message: "body.source must be non-empty",
         path: ["body", "source"],
       });
+    }
+    if (cmd.x?.toolbox) {
+      if (cmd.body.lang !== "exec") {
+        ctx.addIssue({
+          code: "custom",
+          message: "Toolbox metadata requires an exec body",
+          path: ["x", "toolbox"],
+        });
+      } else if (
+        (cmd.body.args ?? []).length !== cmd.x.toolbox.fixed_argv.length ||
+        (cmd.body.args ?? []).some((arg, index) => arg !== cmd.x?.toolbox?.fixed_argv[index])
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Toolbox fixed argv does not match its exec body",
+          path: ["x", "toolbox", "fixed_argv"],
+        });
+      }
     }
   });
 

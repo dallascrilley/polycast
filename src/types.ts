@@ -62,6 +62,19 @@ export interface CommandArg {
 export type ScriptLang = "bash" | "node" | "applescript";
 export type BodyLang = ScriptLang | "exec";
 
+export type ToolboxEffectClass = "inspect" | "prepare" | "mutate" | "integrate";
+
+export interface ToolboxHints {
+  /** Versioned boundary shared with the canonical Toolbox executable. */
+  readonly contract: "toolbox-polycast-adapter/v1";
+  /** The canonical command prefix carried by the exec body. */
+  readonly fixed_argv: readonly string[];
+  /** Classification only; authorization remains in Toolbox. */
+  readonly effect_class: ToolboxEffectClass;
+  /** Canonical stdout/stderr/exit-status and receipt handling. */
+  readonly output: "canonical";
+}
+
 export interface ScriptBody {
   readonly lang: ScriptLang;
   /**
@@ -150,6 +163,8 @@ export interface CrossTargetHints {
   readonly remote?: {
     readonly profile: string;
   };
+  /** Metadata for a thin delegation to the canonical Toolbox executable. */
+  readonly toolbox?: ToolboxHints;
 }
 
 export interface CommandDef {

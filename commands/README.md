@@ -12,3 +12,33 @@ Default-export each file as a `CommandDef` via `defineCommand`.
 | [`file-to-inbox.ts`](file-to-inbox.ts) | `file-to-inbox` | files | Dropzone, Dropover, Shortcuts, agent-cli |
 
 Authoring walkthrough: [`docs/guides/first-command.md`](../docs/guides/first-command.md).
+
+## Canonical Toolbox bindings
+
+A Toolbox command stays authoritative for behavior, validation, policy, state,
+output, failures, and receipts. Bind it as a direct executable rather than
+copying its implementation into a shell body:
+
+```ts
+import { defineToolboxCommand, resolveToolboxExecutable } from "../src/toolbox-adapter.ts";
+
+const toolbox = resolveToolboxExecutable();
+
+export default defineToolboxCommand({
+  id: "toolbox-knowledge-search",
+  title: "Search Toolbox knowledge",
+  description: "Search the canonical Toolbox knowledge store.",
+  executable: toolbox,
+  fixedArgv: ["knowledge", "search"],
+  modality: "args",
+  args: [{ name: "query", placeholder: "Search terms" }],
+  effectClass: "inspect",
+  output: "canonical",
+});
+```
+
+`resolveToolboxExecutable()` performs setup-time path resolution and accepts
+`POLYCAST_TOOLBOX_BIN` as an override. `defineToolboxCommand()` emits a
+shell-free `exec` body and preserves the binding metadata. Polycast passes the
+canonical process's stdout, stderr, exit status, and any receipt reference
+through `polycast run`; it does not create an envelope or receipt of its own.

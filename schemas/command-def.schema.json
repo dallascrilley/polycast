@@ -287,6 +287,31 @@
           },
           "required": ["profile"],
           "additionalProperties": false
+        },
+        "toolbox": {
+          "type": "object",
+          "properties": {
+            "contract": {
+              "type": "string",
+              "const": "toolbox-polycast-adapter/v1"
+            },
+            "fixed_argv": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "effect_class": {
+              "type": "string",
+              "enum": ["inspect", "prepare", "mutate", "integrate"]
+            },
+            "output": {
+              "type": "string",
+              "const": "canonical"
+            }
+          },
+          "required": ["contract", "fixed_argv", "effect_class", "output"],
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
