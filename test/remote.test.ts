@@ -9,7 +9,7 @@ import { writeCommandsJson } from "../src/commands-store.ts";
 import { defineCommand } from "../src/define.ts";
 import { shortcutsRemoteSsh } from "../src/emitters/shortcuts-remote-ssh.ts";
 import { termuxShortcut } from "../src/emitters/termux-shortcut.ts";
-import { polycastApply, polycastList } from "../src/polycast-api.ts";
+import { polycastApply, polycastBuild, polycastList } from "../src/polycast-api.ts";
 import { cherriAvailable } from "../src/post-build.ts";
 import { emitCommand } from "../src/registry.ts";
 import { polycastRemote } from "../src/remote.ts";
@@ -143,6 +143,19 @@ describe("remote shortcut emitters", () => {
     expect(termuxShortcut.emit(local)).toEqual([]);
   });
 
+  test("remote callability reflects each transport's modality boundary", async () => {
+    const { isRemotelyCallable } = await import("../src/remote.ts");
+    expect(isRemotelyCallable(remoteTextCommand)).toBe(true);
+    expect(isRemotelyCallable({ ...remoteTextCommand, modality: "args" })).toBe(false);
+    expect(
+      isRemotelyCallable({
+        ...remoteTextCommand,
+        targets: ["termux-shortcut"],
+      }),
+    ).toBe(false);
+    expect(isRemotelyCallable(remoteNoneCommand)).toBe(true);
+  });
+
   test("list and apply a remote build without loading a profile or key", async () => {
     const root = await mkdtemp(join(tmpdir(), "polycast-remote-apply-"));
     const commands = join(root, "commands");
@@ -227,6 +240,60 @@ describe("remote shortcut emitters", () => {
       await rm(root, { recursive: true, force: true });
     }
   });
+
+  test("apply treats a compatibility-rejected Toolbox remote command as skipped", async () => {
+    const root = await mkdtemp(join(tmpdir(), "polycast-remote-toolbox-apply-"));
+    const commands = join(root, "commands");
+    const out = join(root, "build");
+    const store = join(root, "commands-store");
+    const mutation = defineCommand({
+      ...remoteNoneCommand,
+      id: "remote-toolbox-apply-mutate",
+      targets: ["shortcuts-remote-ssh"],
+      body: { lang: "exec", executable: "/usr/bin/false", args: ["deliver", "pr", "create"] },
+      delegation: {
+        kind: "toolbox",
+        contract: "toolbox-polycast-adapter/v1",
+        effectClass: "mutate",
+        output: "canonical",
+      },
+    });
+    const oldStore = process.env.POLYCAST_COMMANDS_DIR;
+    try {
+      await mkdir(commands, { recursive: true });
+      await writeFile(
+        join(commands, `${mutation.id}.ts`),
+        commandDefToModule(mutation, { defineImport: join(process.cwd(), "src/define.ts") }),
+      );
+      process.env.POLYCAST_COMMANDS_DIR = store;
+
+      const build = await polycastBuild({
+        dir: commands,
+        out,
+        targets: ["shortcuts-remote-ssh"],
+      });
+      expect(build.files).not.toContain(`commands/${mutation.id}.json`);
+      expect(build.skips).toEqual([
+        {
+          commandId: mutation.id,
+          target: "shortcuts-remote-ssh",
+          reason: 'effect class "mutate" requires a confirmation-capable local surface',
+        },
+      ]);
+      await expect(
+        polycastApply({
+          dir: commands,
+          out,
+          targets: ["shortcuts-remote-ssh"],
+          write: true,
+        }),
+      ).resolves.toMatchObject({ refused: 0 });
+    } finally {
+      if (oldStore === undefined) delete process.env.POLYCAST_COMMANDS_DIR;
+      else process.env.POLYCAST_COMMANDS_DIR = oldStore;
+      await rm(root, { recursive: true, force: true });
+    }
+  });
 });
 
 describe("forced remote host command", () => {
@@ -301,6 +368,33 @@ describe("forced remote host command", () => {
           input: Buffer.alloc(64 * 1024 + 1),
         }),
       ).rejects.toThrow("exceeds 65536 bytes");
+    } finally {
+      await rm(commands, { recursive: true, force: true });
+    }
+  });
+
+  test("rejects sensitive Toolbox effects even when the stored command opts into remote", async () => {
+    const commands = await mkdtemp(join(tmpdir(), "polycast-remote-toolbox-reject-"));
+    const mutation = defineCommand({
+      ...remoteNoneCommand,
+      id: "remote-toolbox-mutate",
+      body: { lang: "exec", executable: "/usr/bin/false", args: ["deliver", "pr", "create"] },
+      delegation: {
+        kind: "toolbox",
+        contract: "toolbox-polycast-adapter/v1",
+        effectClass: "mutate",
+        output: "canonical",
+      },
+    });
+    try {
+      await writeCommandsJson([mutation], commands);
+      await expect(
+        polycastRemote({
+          commandsDir: commands,
+          originalCommand: "polycast-remote --command remote-toolbox-mutate --protocol 1",
+          input: new Uint8Array(),
+        }),
+      ).rejects.toThrow("not remotely callable");
     } finally {
       await rm(commands, { recursive: true, force: true });
     }
