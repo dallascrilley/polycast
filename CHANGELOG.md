@@ -10,6 +10,9 @@
   receipt. Shortcuts now emit the files modality as argv, not newline text.
 - The flagship Raycast extension reads the command store, provides Orca
   worktree and argument pickers, and streams `polycast run` output.
+- Four Cherri-backed iPhone device actions: Agents, Reviews, Agent Console, and
+  Send to Device, with signed export, Tailscale preflight, native Taildrop, and
+  bounded local/allowlisted-remote entry points.
 
 ## [0.1.0] - 2026-08-26
 
