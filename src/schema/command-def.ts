@@ -171,9 +171,43 @@ export const commandDefSchema = z
 /** Draft 2020-12 JSON Schema for documentation and MCP clients. */
 export const COMMAND_DEF_SCHEMA_REL = "schemas/command-def.schema.json";
 
-export const commandDefJsonSchema = z.toJSONSchema(commandDefSchema, {
+const commandDefBaseJsonSchema = z.toJSONSchema(commandDefSchema, {
   target: "draft-2020-12",
 });
+
+/**
+ * Zod refinements do not project into JSON Schema, so keep the versioned
+ * Toolbox cross-field invariant explicit in the exported schema as well.
+ */
+export const commandDefJsonSchema = {
+  ...commandDefBaseJsonSchema,
+  allOf: [
+    {
+      if: {
+        required: ["delegation"],
+        properties: {
+          delegation: {
+            type: "object",
+            required: ["kind"],
+            properties: { kind: { const: "toolbox" } },
+          },
+        },
+      },
+      then: {
+        properties: {
+          body: {
+            type: "object",
+            required: ["lang", "args"],
+            properties: {
+              lang: { const: "exec" },
+              args: { type: "array", minItems: 1 },
+            },
+          },
+        },
+      },
+    },
+  ],
+};
 
 export function parseCommandDefJson(input: unknown): CommandDef {
   const parsed = commandDefSchema.parse(input);
