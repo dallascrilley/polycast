@@ -143,6 +143,19 @@ describe("remote shortcut emitters", () => {
     expect(termuxShortcut.emit(local)).toEqual([]);
   });
 
+  test("remote callability reflects each transport's modality boundary", async () => {
+    const { isRemotelyCallable } = await import("../src/remote.ts");
+    expect(isRemotelyCallable(remoteTextCommand)).toBe(true);
+    expect(isRemotelyCallable({ ...remoteTextCommand, modality: "args" })).toBe(false);
+    expect(
+      isRemotelyCallable({
+        ...remoteTextCommand,
+        targets: ["termux-shortcut"],
+      }),
+    ).toBe(false);
+    expect(isRemotelyCallable(remoteNoneCommand)).toBe(true);
+  });
+
   test("list and apply a remote build without loading a profile or key", async () => {
     const root = await mkdtemp(join(tmpdir(), "polycast-remote-apply-"));
     const commands = join(root, "commands");

@@ -3,7 +3,7 @@ import { readSync } from "node:fs";
 import { loadCommandJson } from "./commands-store.ts";
 import { executeCommand } from "./run.ts";
 import { toolboxTargetCompatibility } from "./toolbox-compatibility.ts";
-import { type CommandDef, REMOTE_COMMAND_TARGETS } from "./types.ts";
+import { type CommandDef, type CommandTarget, REMOTE_COMMAND_TARGETS } from "./types.ts";
 
 export const REMOTE_PROTOCOL_VERSION = 1;
 const MAX_REMOTE_TEXT_BYTES = 64 * 1024;
@@ -11,12 +11,30 @@ const FORCED_COMMAND = new RegExp(
   `^polycast-remote --command ([a-z0-9]+(?:-[a-z0-9]+)*) --protocol ${REMOTE_PROTOCOL_VERSION}$`,
 );
 
+function remoteTargetSupportsModality(
+  cmd: CommandDef,
+  target: (typeof REMOTE_COMMAND_TARGETS)[number],
+) {
+  if (target === "shortcuts-remote-ssh") return cmd.modality === "text" || cmd.modality === "none";
+  return cmd.modality === "none";
+}
+
+function isRemoteCommandTarget(
+  target: CommandTarget,
+): target is (typeof REMOTE_COMMAND_TARGETS)[number] {
+  return (REMOTE_COMMAND_TARGETS as readonly CommandTarget[]).includes(target);
+}
+
 export function isRemotelyCallable(cmd: CommandDef): boolean {
   if (!cmd.x?.remote) return false;
   const selectedTargets = cmd.targets
-    ? cmd.targets.filter((target) => (REMOTE_COMMAND_TARGETS as readonly string[]).includes(target))
+    ? cmd.targets.filter(isRemoteCommandTarget)
     : REMOTE_COMMAND_TARGETS;
-  return selectedTargets.some((target) => toolboxTargetCompatibility(cmd, target).compatible);
+  return selectedTargets.some(
+    (target) =>
+      remoteTargetSupportsModality(cmd, target) &&
+      toolboxTargetCompatibility(cmd, target).compatible,
+  );
 }
 
 export function parseForcedRemoteCommand(originalCommand: string | undefined): string {
