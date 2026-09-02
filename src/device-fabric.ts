@@ -41,7 +41,7 @@ const TAILSCALE_APP_DESCRIPTOR = {
   BundleIdentifier: "io.tailscale.ipn.ios",
   TeamIdentifier: "W5364U7YZB",
   Name: "Tailscale",
-};
+} as const;
 
 function deterministicActionUuid(action: DeviceFabricActionId, intent: string): string {
   const bytes = createHash("sha256")
@@ -52,6 +52,39 @@ function deterministicActionUuid(action: DeviceFabricActionId, intent: string): 
   bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80;
   const hex = bytes.toString("hex").toUpperCase();
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+export interface DeviceFabricIntentSpec {
+  readonly actionIndex: number;
+  readonly identifier: string;
+  readonly descriptor: {
+    readonly AppIntentIdentifier: string;
+    readonly BundleIdentifier: "io.tailscale.ipn.ios";
+    readonly TeamIdentifier: "W5364U7YZB";
+    readonly Name: "Tailscale";
+  };
+  readonly uuid: string;
+}
+
+export function deviceFabricIntentSpecs(
+  action: DeviceFabricActionId,
+): readonly DeviceFabricIntentSpec[] {
+  const connect: DeviceFabricIntentSpec = {
+    actionIndex: 0,
+    identifier: "io.tailscale.ipn.ios.ConnectIntent",
+    descriptor: { ...TAILSCALE_APP_DESCRIPTOR, AppIntentIdentifier: "ConnectIntent" },
+    uuid: deterministicActionUuid(action, "ConnectIntent"),
+  };
+  if (action !== "send-to-device") return [connect];
+  return [
+    connect,
+    {
+      actionIndex: 1,
+      identifier: "io.tailscale.ipn.ios.TaildropAppIntent",
+      descriptor: { ...TAILSCALE_APP_DESCRIPTOR, AppIntentIdentifier: "TaildropAppIntent" },
+      uuid: deterministicActionUuid(action, "TaildropAppIntent"),
+    },
+  ];
 }
 
 export interface DeviceFabricBuildOptions {
@@ -380,45 +413,31 @@ function patchTailscaleIntents(
   id: DeviceFabricActionId,
   env: NodeJS.ProcessEnv,
 ): void {
-  const connectId = extractPlist(path, "WFWorkflowActions.0.WFWorkflowActionIdentifier", env);
-  if (connectId !== "io.tailscale.ipn.ios.ConnectIntent") {
-    throw new Error(`${id}.cherri must begin with Tailscale ConnectIntent`);
-  }
-  patchPlist(
-    path,
-    "WFWorkflowActions.0.WFWorkflowActionParameters.AppIntentDescriptor",
-    { ...TAILSCALE_APP_DESCRIPTOR, AppIntentIdentifier: "ConnectIntent" },
-    env,
-  );
-  const connectUuid = deterministicActionUuid(id, "ConnectIntent");
-  insertPlist(path, "WFWorkflowActions.0.WFWorkflowActionParameters.UUID", connectUuid, env);
-  const connectBundle = extractPlist(
-    path,
-    "WFWorkflowActions.0.WFWorkflowActionParameters.AppIntentDescriptor.BundleIdentifier",
-    env,
-  );
-  const emittedConnectUuid = extractPlist(
-    path,
-    "WFWorkflowActions.0.WFWorkflowActionParameters.UUID",
-    env,
-  );
-  if (connectBundle !== "io.tailscale.ipn.ios" || emittedConnectUuid !== connectUuid) {
-    throw new Error(`${id}.cherri emitted invalid Tailscale AppIntent parameters`);
+  for (const spec of deviceFabricIntentSpecs(id)) {
+    const prefix = `WFWorkflowActions.${spec.actionIndex}`;
+    const emittedIdentifier = extractPlist(path, `${prefix}.WFWorkflowActionIdentifier`, env);
+    if (emittedIdentifier !== spec.identifier) {
+      throw new Error(`${id}.cherri emitted an unexpected Tailscale AppIntent`);
+    }
+    patchPlist(
+      path,
+      `${prefix}.WFWorkflowActionParameters.AppIntentDescriptor`,
+      spec.descriptor,
+      env,
+    );
+    insertPlist(path, `${prefix}.WFWorkflowActionParameters.UUID`, spec.uuid, env);
+    const emittedBundle = extractPlist(
+      path,
+      `${prefix}.WFWorkflowActionParameters.AppIntentDescriptor.BundleIdentifier`,
+      env,
+    );
+    const emittedUuid = extractPlist(path, `${prefix}.WFWorkflowActionParameters.UUID`, env);
+    if (emittedBundle !== "io.tailscale.ipn.ios" || emittedUuid !== spec.uuid) {
+      throw new Error(`${id}.cherri emitted invalid Tailscale AppIntent parameters`);
+    }
   }
   if (id !== "send-to-device") return;
 
-  const taildropId = extractPlist(path, "WFWorkflowActions.1.WFWorkflowActionIdentifier", env);
-  if (taildropId !== "io.tailscale.ipn.ios.TaildropAppIntent") {
-    throw new Error("send-to-device.cherri must end with Tailscale TaildropAppIntent");
-  }
-  patchPlist(
-    path,
-    "WFWorkflowActions.1.WFWorkflowActionParameters.AppIntentDescriptor",
-    { ...TAILSCALE_APP_DESCRIPTOR, AppIntentIdentifier: "TaildropAppIntent" },
-    env,
-  );
-  const taildropUuid = deterministicActionUuid(id, "TaildropAppIntent");
-  insertPlist(path, "WFWorkflowActions.1.WFWorkflowActionParameters.UUID", taildropUuid, env);
   patchPlist(
     path,
     "WFWorkflowActions.1.WFWorkflowActionParameters.destination",
@@ -438,16 +457,7 @@ function patchTailscaleIntents(
     "WFWorkflowActions.1.WFWorkflowActionParameters.files.Value.Type",
     env,
   );
-  const emittedTaildropUuid = extractPlist(
-    path,
-    "WFWorkflowActions.1.WFWorkflowActionParameters.UUID",
-    env,
-  );
-  if (
-    destinationType !== "Ask" ||
-    inputType !== "ExtensionInput" ||
-    emittedTaildropUuid !== taildropUuid
-  ) {
+  if (destinationType !== "Ask" || inputType !== "ExtensionInput") {
     throw new Error(
       "send-to-device.cherri must ask for a destination and pass Shortcut input files",
     );

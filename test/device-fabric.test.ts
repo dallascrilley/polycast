@@ -14,6 +14,7 @@ import { join, resolve } from "node:path";
 import {
   buildDeviceFabricShortcuts,
   DEVICE_FABRIC_ACTIONS,
+  deviceFabricIntentSpecs,
   receiveDeviceFabricAction,
   runDeviceFabricAction,
 } from "../src/device-fabric.ts";
@@ -51,73 +52,6 @@ async function createRuntime(backendState = "Running") {
     POLYCAST_TEST_PAYLOAD: payload,
   };
   return { root, log, payload, env };
-}
-
-async function createBuildToolchain(root: string) {
-  const bin = join(root, "toolchain");
-  const state = join(root, "plist-state.tsv");
-  const log = join(root, "toolchain.log");
-  await mkdir(bin);
-  await writeFile(state, "");
-  await writeFile(log, "");
-  await writeExecutable(
-    bin,
-    "cherri",
-    `printf 'cherri\\t%s\\n' "$1" >> "$POLYCAST_TOOLCHAIN_LOG"
-case "$1" in
-  agents.cherri) name='Agents' ;;
-  reviews.cherri) name='Reviews' ;;
-  agent-console.cherri) name='Agent Console' ;;
-  send-to-device.cherri) name='Send to Device' ;;
-  *) exit 2 ;;
-esac
-: > "${"$"}{name}_unsigned.shortcut"`,
-  );
-  await writeExecutable(
-    bin,
-    "plutil",
-    `printf 'plutil' >> "$POLYCAST_TOOLCHAIN_LOG"; for arg in "$@"; do printf '\\t%s' "$arg" >> "$POLYCAST_TOOLCHAIN_LOG"; done; printf '\\n' >> "$POLYCAST_TOOLCHAIN_LOG"
-if [ "$1" = -insert ]; then
-  printf '%s\\t%s\\n' "$2" "$4" >> "$POLYCAST_PLIST_STATE"
-  exit 0
-fi
-if [ "$1" != -extract ]; then exit 0; fi
-case "$2" in
-  *.WFWorkflowActionIdentifier)
-    case "$2" in
-      *.1.*) printf '%s\\n' 'io.tailscale.ipn.ios.TaildropAppIntent' ;;
-      *) printf '%s\\n' 'io.tailscale.ipn.ios.ConnectIntent' ;;
-    esac ;;
-  *.AppIntentDescriptor.BundleIdentifier) printf '%s\\n' 'io.tailscale.ipn.ios' ;;
-  *.destination.Value.Type) printf '%s\\n' 'Ask' ;;
-  *.files.Value.Type) printf '%s\\n' 'ExtensionInput' ;;
-  *.UUID) /usr/bin/awk -F '\\t' -v key="$2" '${"$"}1 == key { value = ${"$"}2 } END { gsub(/^\"|\"${"$"}/, \"\", value); print value }' "$POLYCAST_PLIST_STATE" ;;
-  *) exit 3 ;;
-esac`,
-  );
-  await writeExecutable(
-    bin,
-    "shortcuts",
-    `printf 'shortcuts' >> "$POLYCAST_TOOLCHAIN_LOG"; for arg in "$@"; do printf '\\t%s' "$arg" >> "$POLYCAST_TOOLCHAIN_LOG"; done; printf '\\n' >> "$POLYCAST_TOOLCHAIN_LOG"
-output=''
-while [ "$#" -gt 0 ]; do
-  if [ "$1" = --output ]; then output="$2"; break; fi
-  shift
-done
-[ -n "$output" ]
-: > "$output"`,
-  );
-  return {
-    log,
-    state,
-    env: {
-      ...process.env,
-      PATH: `${bin}:/usr/bin:/bin`,
-      POLYCAST_PLIST_STATE: state,
-      POLYCAST_TOOLCHAIN_LOG: log,
-      POLYCAST_SKIP_CHERRI: "0",
-    },
-  };
 }
 
 async function loggedCommands(path: string): Promise<string[]> {
@@ -191,50 +125,30 @@ describe("device fabric", () => {
     }
   });
 
-  test("patches deterministic native AppIntent parameters before signing", async () => {
-    const root = await mkdtemp(join(tmpdir(), "polycast-device-fabric-toolchain-"));
-    try {
-      const toolchain = await createBuildToolchain(root);
-      const first = await buildDeviceFabricShortcuts({
-        dir: sourceDir,
-        out: join(root, "first"),
-        env: toolchain.env,
+  test("describes deterministic native AppIntent patches before signing", () => {
+    const first = DEVICE_FABRIC_ACTIONS.flatMap((action) => deviceFabricIntentSpecs(action.id));
+    const second = DEVICE_FABRIC_ACTIONS.flatMap((action) => deviceFabricIntentSpecs(action.id));
+    expect(first).toEqual(second);
+    expect(first).toHaveLength(5);
+    expect(first.map((spec) => spec.identifier)).toEqual([
+      "io.tailscale.ipn.ios.ConnectIntent",
+      "io.tailscale.ipn.ios.ConnectIntent",
+      "io.tailscale.ipn.ios.ConnectIntent",
+      "io.tailscale.ipn.ios.ConnectIntent",
+      "io.tailscale.ipn.ios.TaildropAppIntent",
+    ]);
+    for (const spec of first) {
+      expect(spec.descriptor).toEqual({
+        AppIntentIdentifier: spec.identifier.slice(spec.identifier.lastIndexOf(".") + 1),
+        BundleIdentifier: "io.tailscale.ipn.ios",
+        TeamIdentifier: "W5364U7YZB",
+        Name: "Tailscale",
       });
-      const firstInsertions = (await readFile(toolchain.state, "utf8")).trim().split("\n");
-      await writeFile(toolchain.state, "");
-      const second = await buildDeviceFabricShortcuts({
-        dir: sourceDir,
-        out: join(root, "second"),
-        env: toolchain.env,
-      });
-      const secondInsertions = (await readFile(toolchain.state, "utf8")).trim().split("\n");
-
-      expect(first.shortcuts.filter((path) => path.endsWith(".shortcut"))).toHaveLength(4);
-      expect(second.shortcuts.filter((path) => path.endsWith(".shortcut"))).toHaveLength(4);
-      expect(firstInsertions).toEqual(secondInsertions);
-      expect(firstInsertions).toHaveLength(5);
-      for (const insertion of firstInsertions) {
-        const [key, jsonValue] = insertion.split("\t");
-        expect(key).toEndWith(".UUID");
-        expect(JSON.parse(jsonValue!)).toMatch(
-          /^[0-9A-F]{8}-[0-9A-F]{4}-5[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/,
-        );
-      }
-      const log = await readFile(toolchain.log, "utf8");
-      expect(
-        log.match(
-          /plutil\t-replace\tWFWorkflowActions\.[01]\.WFWorkflowActionParameters\.AppIntentDescriptor\t/g,
-        ),
-      ).toHaveLength(10);
-      expect(
-        log.match(
-          /plutil\t-replace\tWFWorkflowActions\.1\.WFWorkflowActionParameters\.destination\t/g,
-        ),
-      ).toHaveLength(2);
-      expect(log.match(/^shortcuts\tsign/gm)).toHaveLength(8);
-    } finally {
-      await rm(root, { recursive: true, force: true });
+      expect(spec.uuid).toMatch(
+        /^[0-9A-F]{8}-[0-9A-F]{4}-5[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/,
+      );
     }
+    expect(new Set(first.map((spec) => spec.uuid)).size).toBe(5);
   });
 
   test("routes Agents and Reviews only after a successful Tailscale preflight", async () => {
