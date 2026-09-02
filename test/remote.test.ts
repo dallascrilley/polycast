@@ -9,6 +9,7 @@ import { defineCommand } from "../src/define.ts";
 import { shortcutsRemoteSsh } from "../src/emitters/shortcuts-remote-ssh.ts";
 import { termuxShortcut } from "../src/emitters/termux-shortcut.ts";
 import { polycastApply, polycastList } from "../src/polycast-api.ts";
+import { cherriAvailable } from "../src/post-build.ts";
 import { emitCommand } from "../src/registry.ts";
 import { polycastRemote } from "../src/remote.ts";
 import type { CommandDef } from "../src/types.ts";
@@ -59,14 +60,16 @@ describe("remote shortcut emitters", () => {
       expect(cherri?.contents).toContain("'SSH Key', '')");
       expect(cherri?.contents).not.toContain("PRIVATE KEY");
 
-      const source = join(root, "remote.cherri");
-      await writeFile(source, cherri?.contents ?? "");
-      const compiled = spawnSync(
-        "cherri",
-        [source, "--skip-sign", `-o=${join(root, "remote.shortcut")}`],
-        { encoding: "utf8" },
-      );
-      expect(compiled.status).toBe(0);
+      if (cherriAvailable()) {
+        const source = join(root, "remote.cherri");
+        await writeFile(source, cherri?.contents ?? "");
+        const compiled = spawnSync(
+          "cherri",
+          [source, "--skip-sign", `-o=${join(root, "remote.shortcut")}`],
+          { encoding: "utf8" },
+        );
+        expect(compiled.status).toBe(0);
+      }
 
       expect(termuxShortcut.emit(remoteTextCommand)).toEqual([]);
       const [termux] = termuxShortcut.emit(remoteNoneCommand);
