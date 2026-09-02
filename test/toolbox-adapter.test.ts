@@ -35,11 +35,17 @@ printf '%s\\n' 'canonical warning' >&2
   return bin;
 }
 
-function run(commandDir: string, id: string, argv: readonly string[], env: NodeJS.ProcessEnv) {
+function run(
+  commandDir: string,
+  id: string,
+  argv: readonly string[],
+  env: NodeJS.ProcessEnv,
+  input?: string,
+) {
   return spawnSync(
     "bun",
     ["run", "src/cli.ts", "run", id, "--commands", commandDir, "--", ...argv],
-    { cwd: process.cwd(), env },
+    { cwd: process.cwd(), env, ...(input === undefined ? {} : { input }) },
   );
 }
 
@@ -127,6 +133,20 @@ describe("Toolbox adapter dispatch", () => {
       expect(await readFile(argvCapture)).toEqual(
         Buffer.from("knowledge\0search\0literal query\0$(not-a-command)\0--\0"),
       );
+
+      const argsStdin = run(
+        commands,
+        command.id,
+        ["stdin-arg"],
+        {
+          ...env,
+          TOOLBOX_READ_STDIN: "1",
+        },
+        "preserved stdin",
+      );
+      expect(argsStdin.status).toBe(0);
+      expect(await readFile(argvCapture)).toEqual(Buffer.from("knowledge\0search\0stdin-arg\0"));
+      expect(await readFile(stdinCapture, "utf8")).toBe("preserved stdin");
 
       const text = runText(commands, textCommand.id, "selected text", ["--text", "literal"], {
         ...env,
