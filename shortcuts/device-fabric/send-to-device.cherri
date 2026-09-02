@@ -1,0 +1,32 @@
+#define name Send to Device
+#define inputs file
+#define from sharesheet
+
+// Tailscale first; Taildrop then asks for an explicit device every run.
+rawAction("io.tailscale.ipn.ios.ConnectIntent", {
+    "AppIntentDescriptor": {
+        "AppIntentIdentifier": "ConnectIntent",
+        "BundleIdentifier": "io.tailscale.ipn.ios",
+        "TeamIdentifier": "W5364U7YZB",
+        "Name": "Tailscale"
+    },
+    "ShowWhenRun": false
+})
+
+rawAction("io.tailscale.ipn.ios.TaildropAppIntent", {
+    "AppIntentDescriptor": {
+        "AppIntentIdentifier": "TaildropAppIntent",
+        "BundleIdentifier": "io.tailscale.ipn.ios",
+        "TeamIdentifier": "W5364U7YZB",
+        "Name": "Tailscale"
+    },
+    "ShowWhenRun": true,
+    "files": "${ShortcutInput}",
+    "destination": {
+        "Value": {
+            "Type": "Ask",
+            "Prompt": "Choose a Taildrop destination"
+        },
+        "WFSerializationType": "WFTextTokenAttachment"
+    }
+})

@@ -38,7 +38,8 @@ remove stale build files yourself.
 
 ## Requirements
 
-- **macOS.** The launchers, the install paths, and `open`-based import are all macOS.
+- **macOS for launcher emission and Shortcut signing.** The bounded device runner
+  also works on Linux/Termux when its platform opener and Tailscale are present.
 - **[bun](https://bun.sh).** Required: it is the runtime, package manager, and
   test runner. `script/setup` fails fast without it.
 - **[Cherri](https://github.com/electrikmilk/cherri).** Optional, and only for
@@ -144,22 +145,41 @@ Mac's forced host command loads the canonical stored body and rejects arbitrary
 shell source. See
 [the remote SSH specification](docs/specs/remote-ssh.md).
 
+### iPhone device fabric
+
+Four native, Cherri-authored Shortcuts live under
+[`shortcuts/device-fabric/`](shortcuts/device-fabric/): **Agents**,
+**Reviews**, **Agent Console**, and **Send to Device**. Build their portable
+sources and signed exports separately from `CommandDef` emitters:
+
+```sh
+polycast device list
+polycast device build
+```
+
+The same bounded actions are available through
+`polycast device run <action> --target <local|authorized-remote>`. Every route
+runs a Tailscale preflight; remote profiles require an allowlist and fixed
+receiver command. See the [device fabric guide](docs/guides/device-fabric.md)
+for iPhone installation, saved-console profile setup, Taildrop destination
+selection, and the relationship to WKS-1420.
+
 ## Status
 
 P0 complete as of 2026-06-15. Every P0 criterion is validated, including PopClip
 and Raycast Level A visual proof, in [`LAUNCH_CRITERIA.md`](LAUNCH_CRITERIA.md).
 Level A for Shortcuts is still open and tracked there as P1-5.
 
-What is not there yet: this is macOS only, Dropover import is staged manually
-rather than programmatically, and the commands in `commands/` are a sample
-pack rather than a library. The `raycast-snippet` and `raycast-quicklink`
-emitters produce nothing until a command opts in, which is why the sample build
+What is not there yet: launcher installation remains macOS-focused, Dropover
+import is staged manually rather than programmatically, and the commands in
+`commands/` are a sample pack rather than a library. The `raycast-snippet` and
+`raycast-quicklink` emitters produce nothing until a command opts in, which is why the sample build
 above writes no `snippets.json`.
 
-- CLI: `list`, `build` (`--strict`), `targets`, `capture` (dry-run-first Raycast
-  snippet export capture), `apply` (`--write` to install,
-  `--import-shortcuts` for explicit Shortcuts.app import, `--prune` /
-  `--prune-only` to uninstall), `run`.
+- CLI: `list`, `build` (`--strict`), `targets`, `device` (`list`, `build`,
+  bounded local/remote `run`), `capture` (dry-run-first Raycast snippet export
+  capture), `apply` (`--write` to install, `--import-shortcuts` for explicit
+  Shortcuts.app import, `--prune` / `--prune-only` to uninstall), `run`.
 - MCP server (`bun run mcp`): stdio tools mirroring the non-UI CLI operations.
   Compiled Shortcuts are never imported through MCP. See the
   [capability map](docs/agent-native/capability-map.md).
@@ -177,6 +197,8 @@ bun run dev list                 # show commands + which surfaces each supports
 bun run dev build                # emit artifacts into ./build/<target>/
 bun run dev build --target popclip
 bun run dev targets              # list registered emitters
+bun run dev device list          # list the four bounded device actions
+bun run dev device build         # export Cherri sources and signed Shortcuts
 bun run dev runner list          # list RunnerDef files
 bun run dev runner targets       # list runner compiler targets
 bun run dev runner build         # emit all compatible runner targets into ./build/

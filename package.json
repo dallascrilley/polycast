@@ -1,7 +1,7 @@
 {
   "name": "@dallascrilley/polycast",
   "version": "0.1.0",
-  "description": "One command definition, cast to every macOS launcher (Raycast, PopClip, Dropzone, Shortcuts, agent tools)",
+  "description": "Portable command definitions and device actions cast to launchers, Shortcuts, and agent tools",
   "license": "MIT",
   "type": "module",
   "keywords": [
@@ -24,7 +24,8 @@
     "url": "https://github.com/dallascrilley/polycast/issues"
   },
   "bin": {
-    "polycast": "./src/cli.ts"
+    "polycast": "./src/cli.ts",
+    "polycast-device-fabric": "./src/device-fabric-bin.ts"
   },
   "scripts": {
     "dev": "bun run src/cli.ts",

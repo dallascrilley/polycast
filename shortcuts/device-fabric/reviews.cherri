@@ -1,0 +1,16 @@
+#define name Reviews
+
+#include 'actions/web'
+
+// Tailscale's native AppIntent establishes the tailnet path before the PWA opens.
+rawAction("io.tailscale.ipn.ios.ConnectIntent", {
+    "AppIntentDescriptor": {
+        "AppIntentIdentifier": "ConnectIntent",
+        "BundleIdentifier": "io.tailscale.ipn.ios",
+        "TeamIdentifier": "W5364U7YZB",
+        "Name": "Tailscale"
+    },
+    "ShowWhenRun": false
+})
+
+openURL("https://dallas-macbook.tail16923a.ts.net/reviews")
