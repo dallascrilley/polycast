@@ -1,4 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import {
   access,
@@ -40,6 +41,17 @@ const TAILSCALE_APP_DESCRIPTOR = {
   TeamIdentifier: "W5364U7YZB",
   Name: "Tailscale",
 };
+
+function deterministicActionUuid(action: DeviceFabricActionId, intent: string): string {
+  const bytes = createHash("sha256")
+    .update(`polycast/device-fabric/${action}/${intent}`)
+    .digest()
+    .subarray(0, 16);
+  bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x50;
+  bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80;
+  const hex = bytes.toString("hex").toUpperCase();
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
 
 export interface DeviceFabricBuildOptions {
   readonly dir?: string;
@@ -331,6 +343,10 @@ function patchPlist(path: string, keyPath: string, value: unknown, env: NodeJS.P
   runChecked(["plutil", "-replace", keyPath, "-json", JSON.stringify(value), path], env);
 }
 
+function insertPlist(path: string, keyPath: string, value: unknown, env: NodeJS.ProcessEnv): void {
+  runChecked(["plutil", "-insert", keyPath, "-json", JSON.stringify(value), path], env);
+}
+
 function extractPlist(path: string, keyPath: string, env: NodeJS.ProcessEnv): string {
   const command = ["plutil", "-extract", keyPath, "raw", "-o", "-", path] as const;
   const result = spawnSync(command[0], command.slice(1), { env, encoding: "utf8" });
@@ -353,13 +369,20 @@ function patchTailscaleIntents(
     { ...TAILSCALE_APP_DESCRIPTOR, AppIntentIdentifier: "ConnectIntent" },
     env,
   );
+  const connectUuid = deterministicActionUuid(id, "ConnectIntent");
+  insertPlist(path, "WFWorkflowActions.0.WFWorkflowActionParameters.UUID", connectUuid, env);
   const connectBundle = extractPlist(
     path,
     "WFWorkflowActions.0.WFWorkflowActionParameters.AppIntentDescriptor.BundleIdentifier",
     env,
   );
-  if (connectBundle !== "io.tailscale.ipn.ios") {
-    throw new Error(`${id}.cherri emitted an invalid Tailscale AppIntent descriptor`);
+  const emittedConnectUuid = extractPlist(
+    path,
+    "WFWorkflowActions.0.WFWorkflowActionParameters.UUID",
+    env,
+  );
+  if (connectBundle !== "io.tailscale.ipn.ios" || emittedConnectUuid !== connectUuid) {
+    throw new Error(`${id}.cherri emitted invalid Tailscale AppIntent parameters`);
   }
   if (id !== "send-to-device") return;
 
@@ -373,6 +396,8 @@ function patchTailscaleIntents(
     { ...TAILSCALE_APP_DESCRIPTOR, AppIntentIdentifier: "TaildropAppIntent" },
     env,
   );
+  const taildropUuid = deterministicActionUuid(id, "TaildropAppIntent");
+  insertPlist(path, "WFWorkflowActions.1.WFWorkflowActionParameters.UUID", taildropUuid, env);
   patchPlist(
     path,
     "WFWorkflowActions.1.WFWorkflowActionParameters.destination",
@@ -392,7 +417,16 @@ function patchTailscaleIntents(
     "WFWorkflowActions.1.WFWorkflowActionParameters.files.Value.Type",
     env,
   );
-  if (destinationType !== "Ask" || inputType !== "ExtensionInput") {
+  const emittedTaildropUuid = extractPlist(
+    path,
+    "WFWorkflowActions.1.WFWorkflowActionParameters.UUID",
+    env,
+  );
+  if (
+    destinationType !== "Ask" ||
+    inputType !== "ExtensionInput" ||
+    emittedTaildropUuid !== taildropUuid
+  ) {
     throw new Error(
       "send-to-device.cherri must ask for a destination and pass Shortcut input files",
     );
