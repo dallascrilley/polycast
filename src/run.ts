@@ -117,33 +117,15 @@ export function executeCommand(cmd: CommandDef, options: RunOptions): number {
   }
 
   // The CLI parser consumes its own separator before invoking this function.
-  // Every remaining value, including a literal "--", belongs to the body.
+  // Every remaining value belongs to the body, including literal control-like
+  // arguments such as "--" and "--text".
   const positional = options.argv;
-  let bodyArgv = positional;
-  let stdin: string | undefined;
+  let stdin = options.text;
 
   if (cmd.modality === "text") {
-    let text = options.text ?? "";
-    const forwarded: string[] = [];
-    let i = 0;
-    while (i < positional.length) {
-      const arg = positional[i];
-      if (arg === undefined) break;
-      if (arg === "--text") {
-        text = positional[i + 1] ?? "";
-        i += 2;
-        continue;
-      }
-      forwarded.push(arg);
-      i++;
+    if (stdin === undefined && !process.stdin.isTTY) {
+      stdin = readFileSync(0, "utf8");
     }
-    // --text is Polycast's launcher-to-stdin control flag, not a Toolbox
-    // argument. Never leak it into a canonical exec invocation.
-    bodyArgv = forwarded;
-    if (!text && !process.stdin.isTTY) {
-      text = readFileSync(0, "utf8");
-    }
-    stdin = text;
   }
 
   // On a terminal, capture stdout so a body whose output lacks a trailing
@@ -152,7 +134,7 @@ export function executeCommand(cmd: CommandDef, options: RunOptions): number {
   // shims and scripted callers see exactly what the body wrote.
   const captureStdout = process.stdout.isTTY === true;
 
-  const result = spawnInterpreter(cmd, bodyArgv, stdin, captureStdout);
+  const result = spawnInterpreter(cmd, positional, stdin, captureStdout);
 
   if (result.error) throw result.error;
 

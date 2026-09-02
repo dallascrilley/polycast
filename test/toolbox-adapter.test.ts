@@ -43,6 +43,20 @@ function run(commandDir: string, id: string, argv: readonly string[], env: NodeJ
   );
 }
 
+function runText(
+  commandDir: string,
+  id: string,
+  text: string,
+  argv: readonly string[],
+  env: NodeJS.ProcessEnv,
+) {
+  return spawnSync(
+    "bun",
+    ["run", "src/cli.ts", "run", id, "--commands", commandDir, "--text", text, "--", ...argv],
+    { cwd: process.cwd(), env },
+  );
+}
+
 describe("Toolbox adapter dispatch", () => {
   test("passes canonical results, receipts, diagnostics, status, and argv through unchanged", async () => {
     const root = await mkdtemp(join(tmpdir(), "polycast-toolbox-adapter-"));
@@ -102,12 +116,14 @@ describe("Toolbox adapter dispatch", () => {
         Buffer.from("knowledge\0search\0literal query\0$(not-a-command)\0--\0"),
       );
 
-      const text = run(commands, textCommand.id, ["--text", "selected text"], {
+      const text = runText(commands, textCommand.id, "selected text", ["--text", "literal"], {
         ...env,
         TOOLBOX_READ_STDIN: "1",
       });
       expect(text.status).toBe(0);
-      expect(await readFile(argvCapture)).toEqual(Buffer.from("knowledge\0search\0"));
+      expect(await readFile(argvCapture)).toEqual(
+        Buffer.from("knowledge\0search\0--text\0literal\0"),
+      );
       expect(await readFile(stdinCapture, "utf8")).toBe("selected text");
 
       const failure = run(commands, command.id, ["fail"], env);
