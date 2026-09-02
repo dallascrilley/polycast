@@ -34,6 +34,15 @@ const execBodySchema = z.object({
 
 const commandBodySchema = z.discriminatedUnion("lang", [scriptBodySchema, execBodySchema]);
 
+const commandDelegationSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("toolbox"),
+    contract: z.literal("toolbox-polycast-adapter/v1"),
+    effectClass: z.enum(["inspect", "prepare", "mutate", "integrate"]),
+    output: z.literal("canonical"),
+  }),
+]);
+
 const shortcutsInputSchema = z.enum(SHORTCUTS_INPUTS);
 
 const crossTargetHintsSchema = z
@@ -94,14 +103,6 @@ const crossTargetHintsSchema = z
         profile: z.string().regex(KEBAB_ID, "remote profile must be kebab-case"),
       })
       .optional(),
-    toolbox: z
-      .object({
-        contract: z.literal("toolbox-polycast-adapter/v1"),
-        fixed_argv: z.array(z.string()),
-        effect_class: z.enum(["inspect", "prepare", "mutate", "integrate"]),
-        output: z.literal("canonical"),
-      })
-      .optional(),
   })
   .optional();
 
@@ -115,6 +116,7 @@ export const commandDefSchema = z
     modality: z.enum(["text", "files", "args", "none"]),
     args: z.array(commandArgSchema).optional(),
     body: commandBodySchema,
+    delegation: commandDelegationSchema.optional(),
     targets: z.array(z.enum(COMMAND_TARGETS)).min(1).optional(),
     x: crossTargetHintsSchema,
     author: z.string().optional(),
@@ -149,21 +151,18 @@ export const commandDefSchema = z
         path: ["body", "source"],
       });
     }
-    if (cmd.x?.toolbox) {
+    if (cmd.delegation?.kind === "toolbox") {
       if (cmd.body.lang !== "exec") {
         ctx.addIssue({
           code: "custom",
-          message: "Toolbox metadata requires an exec body",
-          path: ["x", "toolbox"],
+          message: "Toolbox delegation requires an exec body",
+          path: ["delegation"],
         });
-      } else if (
-        (cmd.body.args ?? []).length !== cmd.x.toolbox.fixed_argv.length ||
-        (cmd.body.args ?? []).some((arg, index) => arg !== cmd.x?.toolbox?.fixed_argv[index])
-      ) {
+      } else if (!cmd.body.args || cmd.body.args.length === 0) {
         ctx.addIssue({
           code: "custom",
-          message: "Toolbox fixed argv does not match its exec body",
-          path: ["x", "toolbox", "fixed_argv"],
+          message: "Toolbox delegation requires a fixed command prefix in body.args",
+          path: ["body", "args"],
         });
       }
     }
@@ -172,9 +171,43 @@ export const commandDefSchema = z
 /** Draft 2020-12 JSON Schema for documentation and MCP clients. */
 export const COMMAND_DEF_SCHEMA_REL = "schemas/command-def.schema.json";
 
-export const commandDefJsonSchema = z.toJSONSchema(commandDefSchema, {
+const commandDefBaseJsonSchema = z.toJSONSchema(commandDefSchema, {
   target: "draft-2020-12",
 });
+
+/**
+ * Zod refinements do not project into JSON Schema, so keep the versioned
+ * Toolbox cross-field invariant explicit in the exported schema as well.
+ */
+export const commandDefJsonSchema = {
+  ...commandDefBaseJsonSchema,
+  allOf: [
+    {
+      if: {
+        required: ["delegation"],
+        properties: {
+          delegation: {
+            type: "object",
+            required: ["kind"],
+            properties: { kind: { const: "toolbox" } },
+          },
+        },
+      },
+      then: {
+        properties: {
+          body: {
+            type: "object",
+            required: ["lang", "args"],
+            properties: {
+              lang: { const: "exec" },
+              args: { type: "array", minItems: 1 },
+            },
+          },
+        },
+      },
+    },
+  ],
+};
 
 export function parseCommandDefJson(input: unknown): CommandDef {
   const parsed = commandDefSchema.parse(input);

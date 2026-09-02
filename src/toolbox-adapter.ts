@@ -33,7 +33,7 @@ export interface ToolboxBinding {
   readonly output: "canonical";
   readonly icon?: string;
   readonly targets?: readonly CommandTarget[];
-  readonly x?: Omit<CrossTargetHints, "toolbox">;
+  readonly x?: CrossTargetHints;
   readonly author?: string;
 }
 
@@ -106,13 +106,6 @@ function findOnPath(name: string): string | undefined {
  * adapter-owned receipt handling here.
  */
 export function defineToolboxCommand(binding: ToolboxBinding): CommandDef {
-  const toolboxHints = {
-    contract: TOOLBOX_ADAPTER_CONTRACT,
-    fixed_argv: [...binding.fixedArgv],
-    effect_class: binding.effectClass,
-    output: binding.output,
-  } as const;
-
   return defineCommand({
     id: binding.id,
     title: binding.title,
@@ -125,8 +118,14 @@ export function defineToolboxCommand(binding: ToolboxBinding): CommandDef {
       executable: binding.executable,
       args: [...binding.fixedArgv],
     },
+    delegation: {
+      kind: "toolbox",
+      contract: TOOLBOX_ADAPTER_CONTRACT,
+      effectClass: binding.effectClass,
+      output: binding.output,
+    },
     ...(binding.targets ? { targets: [...binding.targets] } : {}),
-    x: { ...binding.x, toolbox: toolboxHints },
+    ...(binding.x ? { x: { ...binding.x } } : {}),
     ...(binding.author ? { author: binding.author } : {}),
   });
 }
@@ -136,5 +135,9 @@ export const toolboxCommand = defineToolboxCommand;
 
 /** Runtime classifier for a validated command carrying Toolbox metadata. */
 export function isToolboxCommand(cmd: CommandDef): boolean {
-  return cmd.body.lang === "exec" && cmd.x?.toolbox?.contract === TOOLBOX_ADAPTER_CONTRACT;
+  return (
+    cmd.body.lang === "exec" &&
+    cmd.delegation?.kind === "toolbox" &&
+    cmd.delegation.contract === TOOLBOX_ADAPTER_CONTRACT
+  );
 }

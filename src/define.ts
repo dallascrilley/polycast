@@ -35,18 +35,6 @@ export function assertValid(cmd: CommandDef): void {
   if (cmd.x?.remote && !ID_RE.test(cmd.x.remote.profile)) {
     throw new Error(`command "${cmd.id}" has an invalid remote profile name`);
   }
-  if (cmd.x?.toolbox) {
-    if (cmd.body.lang !== "exec") {
-      throw new Error(`command "${cmd.id}" Toolbox metadata requires an exec body`);
-    }
-    const fixedArgv = cmd.body.args ?? [];
-    if (
-      fixedArgv.length !== cmd.x.toolbox.fixed_argv.length ||
-      fixedArgv.some((arg, index) => arg !== cmd.x?.toolbox?.fixed_argv[index])
-    ) {
-      throw new Error(`command "${cmd.id}" Toolbox fixed argv does not match its exec body`);
-    }
-  }
   for (const arg of cmd.args ?? []) {
     if (arg.picker && arg.type && arg.type !== "text") {
       throw new Error(
@@ -60,5 +48,15 @@ export function assertValid(cmd: CommandDef): void {
     }
   } else if (!cmd.body.source.trim()) {
     throw new Error(`command "${cmd.id}" has an empty body`);
+  }
+  if (cmd.delegation?.kind === "toolbox") {
+    if (cmd.body.lang !== "exec") {
+      throw new Error(`command "${cmd.id}" Toolbox delegation requires an exec body`);
+    }
+    if (!cmd.body.args || cmd.body.args.length === 0) {
+      throw new Error(
+        `command "${cmd.id}" Toolbox delegation requires a fixed command prefix in body.args`,
+      );
+    }
   }
 }

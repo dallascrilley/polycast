@@ -5,7 +5,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadCommandJson, writeCommandsJson } from "../src/commands-store.ts";
 import { parseCommandDefJson } from "../src/schema/command-def.ts";
-import { defineToolboxCommand, resolveToolboxExecutable } from "../src/toolbox-adapter.ts";
+import {
+  defineToolboxCommand,
+  isToolboxCommand,
+  resolveToolboxExecutable,
+} from "../src/toolbox-adapter.ts";
 
 async function writeToolboxFixture(root: string): Promise<string> {
   const bin = join(root, "bin", "toolbox");
@@ -35,7 +39,7 @@ function run(commandDir: string, id: string, argv: readonly string[], env: NodeJ
   return spawnSync(
     "bun",
     ["run", "src/cli.ts", "run", id, "--commands", commandDir, "--", ...argv],
-    { cwd: process.cwd(), encoding: "utf8", env },
+    { cwd: process.cwd(), env },
   );
 }
 
@@ -76,20 +80,24 @@ describe("Toolbox adapter dispatch", () => {
         executable: resolvedToolbox,
         args: ["knowledge", "search"],
       });
-      expect(command.x?.toolbox).toEqual({
+      expect(command.delegation).toEqual({
+        kind: "toolbox",
         contract: "toolbox-polycast-adapter/v1",
-        fixed_argv: ["knowledge", "search"],
-        effect_class: "inspect",
+        effectClass: "inspect",
         output: "canonical",
       });
+      expect(command.x).toBeUndefined();
+      expect(isToolboxCommand(command)).toBe(true);
       await writeCommandsJson([command, textCommand], commands);
-      expect((await loadCommandJson(command.id, commands)).x?.toolbox).toEqual(command.x?.toolbox);
+      expect((await loadCommandJson(command.id, commands)).delegation).toEqual(command.delegation);
 
       const env = { ...process.env, TOOLBOX_ARGV: argvCapture, TOOLBOX_STDIN: stdinCapture };
       const success = run(commands, command.id, ["literal query", "$(not-a-command)"], env);
       expect(success.status).toBe(0);
-      expect(success.stdout).toBe('{"result":"canonical","receipt":"toolbox://receipt/success"}\n');
-      expect(success.stderr).toBe("canonical warning\n");
+      expect(success.stdout).toEqual(
+        Buffer.from('{"result":"canonical","receipt":"toolbox://receipt/success"}\n'),
+      );
+      expect(success.stderr).toEqual(Buffer.from("canonical warning\n"));
       expect(await readFile(argvCapture)).toEqual(
         Buffer.from("knowledge\0search\0literal query\0$(not-a-command)\0"),
       );
@@ -104,14 +112,16 @@ describe("Toolbox adapter dispatch", () => {
 
       const failure = run(commands, command.id, ["fail"], env);
       expect(failure.status).toBe(17);
-      expect(failure.stdout).toBe('{"result":"failed","receipt":"toolbox://receipt/failure"}\n');
-      expect(failure.stderr).toBe("canonical failure\n");
+      expect(failure.stdout).toEqual(
+        Buffer.from('{"result":"failed","receipt":"toolbox://receipt/failure"}\n'),
+      );
+      expect(failure.stderr).toEqual(Buffer.from("canonical failure\n"));
     } finally {
       await rm(root, { recursive: true, force: true });
     }
   });
 
-  test("rejects stored Toolbox metadata that drifts from the exec prefix", () => {
+  test("keeps the fixed prefix in the exec body without duplicating it in delegation metadata", () => {
     const command = defineToolboxCommand({
       id: "toolbox-drift",
       title: "Toolbox drift",
@@ -123,15 +133,20 @@ describe("Toolbox adapter dispatch", () => {
       effectClass: "inspect",
       output: "canonical",
     });
-    const drifted = {
+    const parsed = parseCommandDefJson({
       ...command,
       body: {
         lang: "exec" as const,
         executable: command.body.lang === "exec" ? command.body.executable : "",
         args: ["deliver", "inspect"],
       },
-    };
-    expect(() => parseCommandDefJson(drifted)).toThrow("fixed argv does not match");
+    });
+    expect(parsed.body).toEqual({
+      lang: "exec",
+      executable: "/resolved/canonical/bin/toolbox",
+      args: ["deliver", "inspect"],
+    });
+    expect(parsed.delegation).toEqual(command.delegation);
   });
 
   test("rejects an executable path that is not canonical bin/toolbox", async () => {

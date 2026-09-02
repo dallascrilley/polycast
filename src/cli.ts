@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { join, resolve } from "node:path";
 import { operatorApprovedShortcutImport } from "./apply.ts";
+import { deviceFabricCli } from "./device-fabric.ts";
 import {
   captureRaycastSnippets,
   type RaycastSnippetCapturePlan,
@@ -27,6 +28,10 @@ const HELP = `polycast — one command definition, cast to many launchers
 Usage:
   polycast list [--dir <commands>]
   polycast build [--dir <commands>] [--out <dir>] [--target <a,b>] [--strict]
+  polycast device list
+  polycast device build [--dir <source>] [--out <dir>]
+  polycast device run <action> --target <local|authorized-remote> [--destination <device>] [--] [files...]
+  polycast device receive --forced
   polycast targets
   polycast runner list [--dir <runners>]
   polycast runner targets
@@ -52,6 +57,9 @@ Options:
 
 Environment:
   POLYCAST_SKIP_CHERRI=1     skip Cherri compile step
+  POLYCAST_DEVICE_FABRIC_REMOTES comma-separated saved SSH profiles allowed as remote targets
+  POLYCAST_DEVICE_FABRIC_CONSOLE_PROFILE saved SSH/mosh profile (default: agent-console)
+  POLYCAST_DEVICE_FABRIC_CONSOLE_TRANSPORT ssh or mosh (default: ssh)
   POLYCAST_RAYCAST_DIR       Raycast script install dir (default: ~/.polycast/raycast)
   POLYCAST_POPCLIP_EXTENSIONS PopClip extensions dir
   POLYCAST_DROPZONE_ACTIONS  Dropzone Actions folder
@@ -361,6 +369,7 @@ async function cmdRemote(flags: Flags): Promise<void> {
 
 async function main(): Promise<void> {
   const [sub, ...rest] = process.argv.slice(2);
+  if (sub === "device") process.exit(await deviceFabricCli(rest));
   const flags = parseFlags(rest, { stopAtSeparator: sub === "run" });
 
   switch (sub) {

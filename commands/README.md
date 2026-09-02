@@ -39,6 +39,7 @@ export default defineToolboxCommand({
 
 `resolveToolboxExecutable()` performs setup-time path resolution and accepts
 `POLYCAST_TOOLBOX_BIN` as an override. `defineToolboxCommand()` emits a
-shell-free `exec` body and preserves the binding metadata. Polycast passes the
-canonical process's stdout, stderr, exit status, and any receipt reference
+shell-free `exec` body and emits the top-level `delegation` metadata required by
+the contract. The fixed prefix is stored only in `body.args`; Polycast passes
+the canonical process's stdout, stderr, exit status, and any receipt reference
 through `polycast run`; it does not create an envelope or receipt of its own.

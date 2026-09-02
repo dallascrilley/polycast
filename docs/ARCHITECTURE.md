@@ -17,7 +17,7 @@ MCP server over the same API. It does not run a long-lived production service.
 | `src/emitters/*` | One module per target. `src/registry.ts` is the list. |
 | `src/validate/` | Runs emitter validation and applies strict or default severity rules. |
 | `src/post-build.ts` | Compiles `.cherri` files to `.shortcut` files when Cherri is available. |
-| `src/cli.ts` | `polycast list \| build \| targets \| capture \| apply \| run` (entry and `bin`). |
+| `src/cli.ts` | `polycast list \| build \| targets \| device \| capture \| apply \| run` (entry and `bin`). |
 | `src/importers/raycast-snippets.ts` | Validates and filters Raycast exports, plans deterministic capture output, and owns generated capture files. |
 | `src/polycast-api.ts` | Shared API used by both the CLI and the MCP tools. |
 | `src/mcp/server.ts` | stdio MCP server (`bun run mcp`). |
@@ -30,6 +30,8 @@ MCP server over the same API. It does not run a long-lived production service.
 | `src/runners/codex-cli.ts` | Build-only Codex CLI wrapper, prompt, and metadata adapter. |
 | `src/runner-api.ts` | Runner-wide preflight, unique-path validation, file writes, and mode application. |
 | `runners/*.ts` | Portable runner definitions, kept separate from `CommandDef`. |
+| `src/device-fabric.ts` | Builds the four native Cherri iPhone actions, repairs Cherri's nested AppIntent serialization before signing, and runs the bounded local/remote protocol. |
+| `shortcuts/device-fabric/*.cherri` | Canonical iPhone action sources: Agents, Reviews, Agent Console, and Send to Device. |
 
 ## Command lifecycle
 
@@ -54,6 +56,24 @@ MCP server over the same API. It does not run a long-lived production service.
    builds that command in an isolated temporary directory; it does not install
    the result.
 
+## Device fabric lifecycle
+
+1. The four Cherri files are the reviewable iPhone action sources. Their names
+   and file set are closed; the builder rejects missing or additional actions.
+2. `polycast device build` copies those sources to `build/device-fabric/`.
+   Where Cherri, `plutil`, and the macOS `shortcuts` CLI are available, it
+   compiles deterministic unsigned workflows, repairs Cherri's dictionary
+   serialization for Tailscale AppIntent descriptors, verifies the Connect and
+   Taildrop parameter shapes, and signs installable `.shortcut` exports.
+3. `polycast device run` exposes the same four action IDs locally. It requires
+   an explicit target and a running Tailscale backend before opening a PWA,
+   invoking a saved SSH/mosh profile, or sending files with Taildrop.
+4. A non-local target must be a saved SSH profile in
+   `POLYCAST_DEVICE_FABRIC_REMOTES`. The client sends a bounded JSON envelope to
+   the fixed `polycast device receive --forced` command; the receiver validates
+   both `SSH_ORIGINAL_COMMAND` and the closed payload schema before local
+   dispatch. No shell body or credential crosses the protocol.
+
 ## The load-bearing idea: the I/O modality contract
 
 Each launcher differs mainly in *what the body receives*. PopClip sends the
@@ -68,6 +88,11 @@ lives in the executable, not in launcher shims. See
 [`docs/decisions/0001-exec-body-file-to-inbox.md`](decisions/0001-exec-body-file-to-inbox.md).
 An emitter declares which modalities it `supports` and returns `[]` for anything
 it cannot represent, so `build` skips a surface rather than mis-emitting for it.
+
+A Toolbox-backed command adds the versioned `delegation` contract described in
+[`docs/decisions/0002-toolbox-adapter-contract.md`](decisions/0002-toolbox-adapter-contract.md).
+Its `exec` body names the verified canonical executable and fixed command prefix;
+Polycast owns only launcher adaptation and passes canonical results through.
 
 This is the decision that makes one definition safe to cast everywhere: the
 generator never guesses at a mapping it cannot honor. See `src/registry.ts` for
@@ -116,8 +141,10 @@ the support declarations and `docs/specs/modality-matrix.md` for the matrix.
   never changes or copies the export. Build recursively loads the generated
   modules through the same `CommandDef` validator as hand-authored commands.
 - PopClip uses native `stdin: text` in `Config.json`, so bodies read stdin.
-- macOS-only by design, since these are macOS launchers.
-- No external services and no secrets. Local codegen only.
+- Launcher emitters and Shortcut signing are macOS-focused. The bounded device
+  runner also supports Linux/Termux hosts with the required opener and tools.
+- No external services and no embedded secrets. Local codegen and tailnet-only
+  device routing.
 
 ## Environments
 
