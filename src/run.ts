@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync, writeSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { isToolboxCommand } from "./toolbox-adapter.ts";
 import type { CommandDef, ExecBody } from "./types.ts";
 import { wrappedScript } from "./wrappers.ts";
 
@@ -116,24 +117,17 @@ export function executeCommand(cmd: CommandDef, options: RunOptions): number {
     }
   }
 
-  const positional = options.argv.filter((a) => a !== "--");
-  let stdin: string | undefined;
+  // The CLI parser consumes its own separator before invoking this function.
+  // Every remaining value belongs to the body, including literal control-like
+  // arguments such as "--" and "--text".
+  const positional = options.argv;
+  let stdin: string | undefined = options.text;
 
   if (cmd.modality === "text") {
-    let text = options.text ?? "";
-    let i = 0;
-    while (i < positional.length) {
-      if (positional[i] === "--text") {
-        text = positional[i + 1] ?? "";
-        i += 2;
-        continue;
-      }
-      i++;
+    stdin ??= "";
+    if (!stdin && !process.stdin.isTTY) {
+      stdin = readFileSync(0, "utf8");
     }
-    if (!text && !process.stdin.isTTY) {
-      text = readFileSync(0, "utf8");
-    }
-    stdin = text;
   }
 
   // On a terminal, capture stdout so a body whose output lacks a trailing
@@ -151,7 +145,11 @@ export function executeCommand(cmd: CommandDef, options: RunOptions): number {
     // writeSync, not process.stdout.write: the CLI exits via process.exit and
     // an async write to a pipe can be dropped.
     writeSync(1, out);
-    if (needsTrailingNewline(out)) writeSync(1, "\n");
+    // Canonical exec bodies own their output bytes. In particular, do not
+    // append a newline that could corrupt a Toolbox result or receipt link.
+    if (!isToolboxCommand(cmd) && needsTrailingNewline(out)) {
+      writeSync(1, "\n");
+    }
   }
 
   return result.status ?? 1;

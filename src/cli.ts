@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { join, resolve } from "node:path";
 import { operatorApprovedShortcutImport } from "./apply.ts";
+import { loadCommandJson } from "./commands-store.ts";
 import { deviceFabricCli } from "./device-fabric.ts";
 import {
   captureRaycastSnippets,
@@ -67,11 +68,13 @@ Environment:
   POLYCAST_AGENT_BIN         agent-cli install dir
   POLYCAST_COMMANDS_DIR      JSON command store (default: ~/.polycast/commands on apply)
   POLYCAST_BIN               polycast executable for agent-cli stubs (default: polycast)
+  POLYCAST_TOOLBOX_BIN        setup-time override for canonical bin/toolbox resolution
   POLYCAST_RAYCAST_SNIPPET_EXPORT_DIR optional directory for latest-export discovery
 `;
 
 interface Flags {
   readonly _: string[];
+  readonly afterSeparator: readonly string[];
   readonly dir: string;
   readonly out: string;
   readonly commands?: string;
@@ -93,6 +96,7 @@ interface ParseFlagOptions {
 
 function parseFlags(argv: string[], options: ParseFlagOptions = {}): Flags {
   const positional: string[] = [];
+  let afterSeparator: readonly string[] = [];
   let dir = options.defaultDir ?? "commands";
   let out = "build";
   let commands: string | undefined;
@@ -109,7 +113,7 @@ function parseFlags(argv: string[], options: ParseFlagOptions = {}): Flags {
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (options.stopAtSeparator && a === "--") {
-      positional.push(...argv.slice(i + 1));
+      afterSeparator = argv.slice(i + 1);
       break;
     }
     if (a === "--dir") dir = argv[++i] ?? dir;
@@ -130,6 +134,7 @@ function parseFlags(argv: string[], options: ParseFlagOptions = {}): Flags {
   }
   return {
     _: positional,
+    afterSeparator,
     dir,
     out,
     commands,
@@ -339,18 +344,32 @@ function cmdTargets(): void {
 async function cmdRun(
   id: string | undefined,
   flags: Flags,
-  runArgv: readonly string[],
+  beforeSeparator: readonly string[],
 ): Promise<void> {
   if (!id) {
     console.error("usage: polycast run <id> [--commands <dir>] [--] [args...]");
     process.exit(1);
   }
   const commandsDir = flags.commands ?? join(resolve(flags.out), "commands");
+  const command = await loadCommandJson(id, commandsDir);
+  const bodyBeforeSeparator: string[] = [];
+  let text: string | undefined;
+  for (let i = 0; i < beforeSeparator.length; i++) {
+    const arg = beforeSeparator[i];
+    if (arg === undefined) break;
+    if (command.modality === "text" && arg === "--text") {
+      text = beforeSeparator[i + 1] ?? "";
+      i++;
+    } else {
+      bodyBeforeSeparator.push(arg);
+    }
+  }
   process.exit(
     await polycastRun({
       id,
       commandsDir,
-      argv: runArgv,
+      argv: [...bodyBeforeSeparator, ...flags.afterSeparator],
+      ...(text === undefined ? {} : { text }),
     }),
   );
 }

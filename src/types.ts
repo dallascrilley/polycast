@@ -78,7 +78,6 @@ export interface ToolboxDelegation {
 }
 
 export type CommandDelegation = ToolboxDelegation;
-
 export interface ScriptBody {
   readonly lang: ScriptLang;
   /**
