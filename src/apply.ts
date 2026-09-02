@@ -389,6 +389,32 @@ async function applyCommandsJson(outRoot: string, write: boolean): Promise<Apply
   const dest = commandsStoreDir();
   const results: ApplyResult[] = [];
   const entries = await readdir(src).catch(() => []);
+  const expected = new Set(entries.filter((name) => name.endsWith(".json")));
+
+  // A deleted command must revoke the host-side authorization represented by
+  // its owned JSON file before the current store is copied in.
+  for (const name of await readdir(dest).catch(() => [])) {
+    if (!name.endsWith(`.json${OWNERSHIP_MARKER}`)) continue;
+    const commandName = name.slice(0, -OWNERSHIP_MARKER.length);
+    if (expected.has(commandName)) continue;
+    const commandPath = join(dest, commandName);
+    const markerPath = join(dest, name);
+    results.push({
+      target: "commands-store",
+      action: write ? "prune" : "would prune",
+      path: commandPath,
+    });
+    results.push({
+      target: "commands-store",
+      action: write ? "prune" : "would prune",
+      path: markerPath,
+    });
+    if (write) {
+      await rm(commandPath, { force: true });
+      await rm(markerPath, { force: true });
+    }
+  }
+
   for (const name of entries) {
     if (!name.endsWith(".json")) continue;
     const to = join(dest, name);

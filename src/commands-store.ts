@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { parseCommandDefJson } from "./schema/command-def.ts";
@@ -25,6 +25,12 @@ export async function writeCommandsJson(
 ): Promise<string[]> {
   const root = resolve(dir);
   await mkdir(root, { recursive: true });
+  const expected = new Set(commands.map((cmd) => `${cmd.id}.json`));
+  for (const entry of await readdir(root, { withFileTypes: true })) {
+    if (entry.isFile() && entry.name.endsWith(".json") && !expected.has(entry.name)) {
+      await rm(join(root, entry.name));
+    }
+  }
   const written: string[] = [];
   for (const cmd of commands) {
     const name = `${cmd.id}.json`;

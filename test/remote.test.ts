@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { applyBuilt } from "../src/apply.ts";
 import { commandDefToModule } from "../src/command-source.ts";
 import { writeCommandsJson } from "../src/commands-store.ts";
 import { defineCommand } from "../src/define.ts";
@@ -59,6 +60,25 @@ describe("remote shortcut emitters", () => {
       expect(cherri?.contents).not.toContain("tr '[:lower:]'");
       expect(cherri?.contents).toContain("'SSH Key', '')");
       expect(cherri?.contents).not.toContain("PRIVATE KEY");
+
+      const substringBody = defineCommand({
+        ...remoteTextCommand,
+        id: "remote-id",
+        body: { lang: "bash", source: "id" },
+      });
+      const [substringCherri] = shortcutsRemoteSsh.emit(substringBody);
+      expect(
+        shortcutsRemoteSsh.validate?.(substringBody, substringCherri ? [substringCherri] : []),
+      ).toEqual([]);
+      const appendedBody = (substringCherri?.contents ?? "").replace(
+        ", 'SSH Key', '')",
+        ", 'SSH Key', ''); runShellScript('id')",
+      );
+      expect(
+        shortcutsRemoteSsh
+          .validate?.(substringBody, [{ path: "remote-id.cherri", contents: appendedBody }])
+          .some((issue) => issue.severity === "error"),
+      ).toBe(true);
 
       if (cherriAvailable()) {
         const source = join(root, "remote.cherri");
@@ -142,7 +162,7 @@ describe("remote shortcut emitters", () => {
       await writeCommandsJson([remoteTextCommand], join(out, "commands"));
       await writeFile(
         join(out, "shortcuts-remote-ssh", "remote-uppercase.cherri"),
-        "#include 'actions/network'\npolycast-remote --command remote-uppercase --protocol 1\n",
+        "#include 'actions/network'\nrunSSHScript('polycast-remote --command remote-uppercase --protocol 1', ShortcutInput, 'host.example.test', '2222', 'operator', 'SSH Key', '')\n",
       );
       process.env.POLYCAST_REMOTE_PROFILES = join(root, "missing-profiles.json");
       process.env.POLYCAST_COMMANDS_DIR = commandsStore;
@@ -158,6 +178,50 @@ describe("remote shortcut emitters", () => {
     } finally {
       if (oldProfiles === undefined) delete process.env.POLYCAST_REMOTE_PROFILES;
       else process.env.POLYCAST_REMOTE_PROFILES = oldProfiles;
+      if (oldStore === undefined) delete process.env.POLYCAST_COMMANDS_DIR;
+      else process.env.POLYCAST_COMMANDS_DIR = oldStore;
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("revokes deleted remotely callable commands from reused build and host stores", async () => {
+    const root = await mkdtemp(join(tmpdir(), "polycast-remote-revoke-"));
+    const out = join(root, "build");
+    const store = join(root, "commands-store");
+    const revoked = defineCommand({
+      ...remoteNoneCommand,
+      id: "remote-revoked",
+      title: "Remote Revoked",
+      body: { lang: "bash", source: "echo should-not-run" },
+    });
+    const oldStore = process.env.POLYCAST_COMMANDS_DIR;
+    try {
+      process.env.POLYCAST_COMMANDS_DIR = store;
+      await mkdir(join(out, "shortcuts-remote-ssh"), { recursive: true });
+      await writeCommandsJson([remoteTextCommand, revoked], join(out, "commands"));
+      await applyBuilt({
+        outRoot: out,
+        write: true,
+        targets: ["shortcuts-remote-ssh"],
+      });
+      await access(join(store, "remote-revoked.json"));
+
+      await writeCommandsJson([remoteTextCommand], join(out, "commands"));
+      await expect(access(join(out, "commands", "remote-revoked.json"))).rejects.toThrow();
+      await applyBuilt({
+        outRoot: out,
+        write: true,
+        targets: ["shortcuts-remote-ssh"],
+      });
+      await expect(access(join(store, "remote-revoked.json"))).rejects.toThrow();
+      await expect(
+        polycastRemote({
+          commandsDir: store,
+          originalCommand: "polycast-remote --command remote-revoked --protocol 1",
+          input: new Uint8Array(),
+        }),
+      ).rejects.toThrow();
+    } finally {
       if (oldStore === undefined) delete process.env.POLYCAST_COMMANDS_DIR;
       else process.env.POLYCAST_COMMANDS_DIR = oldStore;
       await rm(root, { recursive: true, force: true });

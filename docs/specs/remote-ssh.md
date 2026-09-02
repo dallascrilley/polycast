@@ -71,6 +71,8 @@ The forced entry runs `polycast remote --forced`; it accepts only the exact
 command JSON, requires the command's explicit remote opt-in, and supports only
 `none` (empty stdin) and UTF-8 `text` (at most 64 KiB). `args` and files are
 rejected until their JSON-envelope and transfer semantics are designed.
+Applying the current build reconciles owned command JSON, so deleting a remotely
+callable command revokes its host-side entry as well.
 
 Termux output invokes the existing `mac-exec` command. It currently supports
 only `none`: Termux:Widget has no defined text-entry/stdin contract. Polycast

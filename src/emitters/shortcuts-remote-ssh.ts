@@ -20,6 +20,19 @@ function canEmitRemoteShortcut(cmd: CommandDef): boolean {
   return (cmd.modality === "text" || cmd.modality === "none") && Boolean(cmd.x?.remote);
 }
 
+const CHERRI_STRING_LITERAL = String.raw`'(?:[^'\\]|\\.)*'`;
+
+function isExpectedRemoteSourceLine(line: string, cmd: CommandDef): boolean {
+  return (
+    line.startsWith("#define name ") ||
+    line === "#define inputs text" ||
+    line === "#include 'actions/network'" ||
+    new RegExp(
+      `^runSSHScript\\('polycast-remote --command ${cmd.id} --protocol ${REMOTE_PROTOCOL_VERSION}', ${remoteInput(cmd)}, ${CHERRI_STRING_LITERAL}, '\\d+', ${CHERRI_STRING_LITERAL}, 'SSH Key', ''\\)$`,
+    ).test(line)
+  );
+}
+
 export const shortcutsRemoteSsh: Emitter = {
   target: "shortcuts-remote-ssh",
   supports: ["text", "none"],
@@ -70,9 +83,10 @@ export const shortcutsRemoteSsh: Emitter = {
         severity: "error",
       });
     }
-    if (
-      cherri.contents.includes(cmd.body.lang === "exec" ? cmd.body.executable : cmd.body.source)
-    ) {
+    const unexpectedSource = cherri.contents
+      .split("\n")
+      .filter((line) => line.length > 0 && !isExpectedRemoteSourceLine(line, cmd));
+    if (unexpectedSource.length > 0) {
       issues.push({
         target: this.target,
         message: "remote shortcut must not embed command body",
