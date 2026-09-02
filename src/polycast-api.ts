@@ -160,10 +160,9 @@ async function validateBuilt(
     for (const target of targets) {
       const emitter = emitters.find((candidate) => candidate.target === target);
       if (!emitter) continue;
-      if (cmd.targets && !cmd.targets.includes(emitter.target)) continue;
+      if (!commandTargetCompatibility(cmd, target).compatible) continue;
       let files: readonly EmittedFile[];
       if (emitter.target === "shortcuts-remote-ssh") {
-        if (!emitter.canEmit?.(cmd)) continue;
         files = [
           {
             path: `${cmd.id}.cherri`,

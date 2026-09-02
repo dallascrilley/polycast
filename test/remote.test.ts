@@ -9,7 +9,7 @@ import { writeCommandsJson } from "../src/commands-store.ts";
 import { defineCommand } from "../src/define.ts";
 import { shortcutsRemoteSsh } from "../src/emitters/shortcuts-remote-ssh.ts";
 import { termuxShortcut } from "../src/emitters/termux-shortcut.ts";
-import { polycastApply, polycastList } from "../src/polycast-api.ts";
+import { polycastApply, polycastBuild, polycastList } from "../src/polycast-api.ts";
 import { cherriAvailable } from "../src/post-build.ts";
 import { emitCommand } from "../src/registry.ts";
 import { polycastRemote } from "../src/remote.ts";
@@ -221,6 +221,60 @@ describe("remote shortcut emitters", () => {
           input: new Uint8Array(),
         }),
       ).rejects.toThrow();
+    } finally {
+      if (oldStore === undefined) delete process.env.POLYCAST_COMMANDS_DIR;
+      else process.env.POLYCAST_COMMANDS_DIR = oldStore;
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("apply treats a compatibility-rejected Toolbox remote command as skipped", async () => {
+    const root = await mkdtemp(join(tmpdir(), "polycast-remote-toolbox-apply-"));
+    const commands = join(root, "commands");
+    const out = join(root, "build");
+    const store = join(root, "commands-store");
+    const mutation = defineCommand({
+      ...remoteNoneCommand,
+      id: "remote-toolbox-apply-mutate",
+      targets: ["shortcuts-remote-ssh"],
+      body: { lang: "exec", executable: "/usr/bin/false", args: ["deliver", "pr", "create"] },
+      delegation: {
+        kind: "toolbox",
+        contract: "toolbox-polycast-adapter/v1",
+        effectClass: "mutate",
+        output: "canonical",
+      },
+    });
+    const oldStore = process.env.POLYCAST_COMMANDS_DIR;
+    try {
+      await mkdir(commands, { recursive: true });
+      await writeFile(
+        join(commands, `${mutation.id}.ts`),
+        commandDefToModule(mutation, { defineImport: join(process.cwd(), "src/define.ts") }),
+      );
+      process.env.POLYCAST_COMMANDS_DIR = store;
+
+      const build = await polycastBuild({
+        dir: commands,
+        out,
+        targets: ["shortcuts-remote-ssh"],
+      });
+      expect(build.files).not.toContain(`commands/${mutation.id}.json`);
+      expect(build.skips).toEqual([
+        {
+          commandId: mutation.id,
+          target: "shortcuts-remote-ssh",
+          reason: 'effect class "mutate" requires a confirmation-capable local surface',
+        },
+      ]);
+      await expect(
+        polycastApply({
+          dir: commands,
+          out,
+          targets: ["shortcuts-remote-ssh"],
+          write: true,
+        }),
+      ).resolves.toMatchObject({ refused: 0 });
     } finally {
       if (oldStore === undefined) delete process.env.POLYCAST_COMMANDS_DIR;
       else process.env.POLYCAST_COMMANDS_DIR = oldStore;
