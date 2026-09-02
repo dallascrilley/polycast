@@ -8,7 +8,7 @@ import { defaultCommandsDir, loadCommandJson, writeCommandsJson } from "./comman
 import { assertValid } from "./define.ts";
 import { loadCommands } from "./load.ts";
 import { compileCherriArtifacts } from "./post-build.ts";
-import { emitCatalogs, emitCommand, emitters } from "./registry.ts";
+import { commandTargetCompatibility, emitCatalogs, emitCommand, emitters } from "./registry.ts";
 import { executeCommand } from "./run.ts";
 import { COMMAND_DEF_SCHEMA_REL } from "./schema/command-def.ts";
 import { targetNeedsCommandsStore } from "./shim.ts";
@@ -57,8 +57,15 @@ export interface BuildSummary {
   readonly outRoot: string;
   readonly written: number;
   readonly skipped: number;
+  readonly skips: readonly BuildSkip[];
   readonly files: readonly string[];
   readonly issues: readonly string[];
+}
+
+export interface BuildSkip {
+  readonly commandId: string;
+  readonly target: string;
+  readonly reason: string;
 }
 
 export type BuildPreview =
@@ -93,7 +100,9 @@ export class PolycastError extends Error {
 
 function emitterListedForCommand(emitter: (typeof emitters)[number], cmd: CommandDef): boolean {
   if (cmd.targets && !cmd.targets.includes(emitter.target)) return false;
-  if (emitter.supports.includes(cmd.modality)) {
+  const compatibility = commandTargetCompatibility(cmd, emitter.target);
+  if (cmd.delegation?.kind === "toolbox" && !compatibility.compatible) return false;
+  if (compatibility.compatible) {
     const canEmit = emitter.canEmit ? emitter.canEmit(cmd) : emitter.emit(cmd).length > 0;
     if (canEmit) return true;
   }
@@ -199,10 +208,20 @@ async function buildCommands(
   const files: string[] = [];
   let written = 0;
   let skipped = 0;
+  const skips: BuildSkip[] = [];
   const issues: string[] = [];
 
-  // The JSON body store is build output like anything else, so it counts.
-  for (const name of await writeCommandsJson(commands, join(outRoot, "commands"))) {
+  // A delegated body is runtime output for an admitted dispatcher surface, not
+  // a fallback way to expose a command rejected by every selected target.
+  const storedCommands = commands.filter(
+    (cmd) =>
+      cmd.delegation?.kind !== "toolbox" ||
+      targets.some(
+        (target) =>
+          targetNeedsCommandsStore(target) && commandTargetCompatibility(cmd, target).compatible,
+      ),
+  );
+  for (const name of await writeCommandsJson(storedCommands, join(outRoot, "commands"))) {
     files.push(`commands/${name}`);
     written++;
   }
@@ -211,6 +230,11 @@ async function buildCommands(
     for (const result of emitCommand(cmd, targets)) {
       if (result.skipped) {
         skipped++;
+        skips.push({
+          commandId: cmd.id,
+          target: result.target,
+          reason: result.reason ?? "surface produced no command artifact",
+        });
         continue;
       }
       const emitter = emitters.find((e) => e.target === result.target);
@@ -249,7 +273,7 @@ async function buildCommands(
     throw new PolycastError(issues.join("\n"), "VALIDATION_FAILED");
   }
 
-  return { outRoot, written, skipped, files, issues: [] };
+  return { outRoot, written, skipped, skips, files, issues: [] };
 }
 
 export async function polycastBuild(options: PolycastBuildOptions = {}): Promise<BuildSummary> {

@@ -286,6 +286,9 @@ async function cmdBuild(flags: Flags): Promise<void> {
     for (const file of summary.files) {
       console.log(`emit  ${file}`);
     }
+    for (const skip of summary.skips) {
+      console.log(`skip  ${skip.commandId}/${skip.target} (${skip.reason})`);
+    }
     console.log(
       `\n${summary.written} file(s) written to ${summary.outRoot}, ${summary.skipped} target(s) skipped.`,
     );

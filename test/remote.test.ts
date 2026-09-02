@@ -305,4 +305,31 @@ describe("forced remote host command", () => {
       await rm(commands, { recursive: true, force: true });
     }
   });
+
+  test("rejects sensitive Toolbox effects even when the stored command opts into remote", async () => {
+    const commands = await mkdtemp(join(tmpdir(), "polycast-remote-toolbox-reject-"));
+    const mutation = defineCommand({
+      ...remoteNoneCommand,
+      id: "remote-toolbox-mutate",
+      body: { lang: "exec", executable: "/usr/bin/false", args: ["deliver", "pr", "create"] },
+      delegation: {
+        kind: "toolbox",
+        contract: "toolbox-polycast-adapter/v1",
+        effectClass: "mutate",
+        output: "canonical",
+      },
+    });
+    try {
+      await writeCommandsJson([mutation], commands);
+      await expect(
+        polycastRemote({
+          commandsDir: commands,
+          originalCommand: "polycast-remote --command remote-toolbox-mutate --protocol 1",
+          input: new Uint8Array(),
+        }),
+      ).rejects.toThrow("not remotely callable");
+    } finally {
+      await rm(commands, { recursive: true, force: true });
+    }
+  });
 });

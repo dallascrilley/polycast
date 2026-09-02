@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { commandDefToModule } from "../src/command-source.ts";
@@ -57,6 +57,59 @@ describe("polycast-api", () => {
       expect(summary.files).toContain("commands/uppercase.json");
     } finally {
       await rm(summary.outRoot, { recursive: true, force: true });
+    }
+  });
+
+  test("polycastBuild reports each incompatible Toolbox surface with a reason", async () => {
+    const out = await mkdtemp(join(tmpdir(), "polycast-toolbox-gate-"));
+    const dir = join(out, "commands");
+    const cmd = {
+      ...sample,
+      id: "toolbox-sensitive-test",
+      modality: "args" as const,
+      args: [{ name: "query" }],
+      body: {
+        lang: "exec" as const,
+        executable: "/verified/toolbox/bin/toolbox",
+        args: ["deliver", "pr", "create"],
+      },
+      delegation: {
+        kind: "toolbox" as const,
+        contract: "toolbox-polycast-adapter/v1" as const,
+        effectClass: "integrate" as const,
+        output: "canonical" as const,
+      },
+    };
+    await mkdir(dir, { recursive: true });
+    await writeFile(
+      join(dir, `${cmd.id}.ts`),
+      `export default ${JSON.stringify(cmd, null, 2)} as const;\n`,
+    );
+    try {
+      const summary = await polycastBuild({ dir, out: join(out, "build") });
+      expect(summary.skips).toContainEqual({
+        commandId: cmd.id,
+        target: "raycast-script",
+        reason: 'effect class "integrate" requires x.raycast.needsConfirmation: true',
+      });
+      expect(summary.files).toContain(`agent-cli/${cmd.id}`);
+      expect(summary.files.some((path) => path.startsWith("raycast-script/"))).toBe(false);
+
+      const rejected = await polycastBuild({
+        dir,
+        out: join(out, "rejected-build"),
+        targets: ["raycast-script"],
+      });
+      expect(rejected.files).not.toContain(`commands/${cmd.id}.json`);
+      expect(rejected.skips).toEqual([
+        {
+          commandId: cmd.id,
+          target: "raycast-script",
+          reason: 'effect class "integrate" requires x.raycast.needsConfirmation: true',
+        },
+      ]);
+    } finally {
+      await rm(out, { recursive: true, force: true });
     }
   });
 

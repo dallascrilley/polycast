@@ -93,6 +93,13 @@ A Toolbox-backed command adds the versioned `delegation` contract described in
 [`docs/decisions/0002-toolbox-adapter-contract.md`](decisions/0002-toolbox-adapter-contract.md).
 Its `exec` body names the verified canonical executable and fixed command prefix;
 Polycast owns only launcher adaptation and passes canonical results through.
+The registry admits that delegation only when the surface preserves its input
+modality and canonical output/failure semantics. `inspect` and `prepare` use
+compatible executing surfaces; `mutate` and `integrate` require an explicit
+terminal invocation or Raycast's `needsConfirmation` gate and are never cast to
+catalog-only or remote targets. Every compiler skip carries the rejected target
+and reason; Toolbox remains the only owner of authorization and destructive-action
+policy.
 
 This is the decision that makes one definition safe to cast everywhere: the
 generator never guesses at a mapping it cannot honor. See `src/registry.ts` for

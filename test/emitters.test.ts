@@ -10,7 +10,12 @@ import { raycastQuicklink } from "../src/emitters/raycast-quicklink.ts";
 import { raycastScript } from "../src/emitters/raycast-script.ts";
 import { raycastSnippet } from "../src/emitters/raycast-snippet.ts";
 import { shortcutsCherri } from "../src/emitters/shortcuts-cherri.ts";
-import { emitCatalogs, emitCommand, emitters } from "../src/registry.ts";
+import {
+  commandTargetCompatibility,
+  emitCatalogs,
+  emitCommand,
+  emitters,
+} from "../src/registry.ts";
 import type { CommandDef } from "../src/types.ts";
 
 const argsCmd: CommandDef = defineCommand({
@@ -40,6 +45,31 @@ const filesCmd: CommandDef = defineCommand({
   modality: "files",
   body: { lang: "bash", source: 'for f in "$@"; do basename "$f"; done' },
 });
+
+function toolboxCommand(
+  effectClass: "inspect" | "prepare" | "mutate" | "integrate",
+  overrides: Partial<CommandDef> = {},
+): CommandDef {
+  return defineCommand({
+    id: `toolbox-${effectClass}`,
+    title: `Toolbox ${effectClass}`,
+    description: `Exercise ${effectClass} admission.`,
+    modality: "args",
+    args: [{ name: "value" }],
+    body: {
+      lang: "exec",
+      executable: "/verified/toolbox/bin/toolbox",
+      args: ["knowledge", "search"],
+    },
+    delegation: {
+      kind: "toolbox",
+      contract: "toolbox-polycast-adapter/v1",
+      effectClass,
+      output: "canonical",
+    },
+    ...overrides,
+  });
+}
 
 describe("raycast-script emitter", () => {
   test("emits a header + polycast run stub for an args command", () => {
@@ -294,6 +324,74 @@ describe("registry", () => {
 
   test("throws on unknown target", () => {
     expect(() => emitCommand(argsCmd, ["nope"])).toThrow(/unknown target/);
+  });
+
+  test("admits Toolbox inspect commands only on modality and output compatible surfaces", () => {
+    const cmd = toolboxCommand("inspect");
+    expect(commandTargetCompatibility(cmd, "raycast-script")).toEqual({ compatible: true });
+    expect(commandTargetCompatibility(cmd, "popclip")).toEqual({
+      compatible: false,
+      reason: 'input modality "args" is unsupported',
+    });
+    expect(commandTargetCompatibility(cmd, "raycast-quicklink")).toEqual({
+      compatible: false,
+      reason: "surface does not preserve canonical Toolbox output and failure semantics",
+    });
+    expect(
+      commandTargetCompatibility(
+        toolboxCommand("inspect", { x: { raycast: { mode: "compact" } } }),
+        "raycast-script",
+      ),
+    ).toEqual({
+      compatible: false,
+      reason: "surface does not preserve canonical Toolbox output and failure semantics",
+    });
+  });
+
+  test("requires a confirmation-capable local surface for Toolbox mutation and integration", () => {
+    const mutation = toolboxCommand("mutate");
+    expect(commandTargetCompatibility(mutation, "agent-cli")).toEqual({ compatible: true });
+    expect(commandTargetCompatibility(mutation, "raycast-script")).toEqual({
+      compatible: false,
+      reason: 'effect class "mutate" requires x.raycast.needsConfirmation: true',
+    });
+
+    const confirmed = toolboxCommand("integrate", {
+      x: { raycast: { needsConfirmation: true } },
+    });
+    expect(commandTargetCompatibility(confirmed, "raycast-script")).toEqual({ compatible: true });
+    expect(commandTargetCompatibility(confirmed, "shortcuts-cherri")).toEqual({
+      compatible: false,
+      reason: 'effect class "integrate" requires a confirmation-capable local surface',
+    });
+  });
+
+  test("keeps sensitive Toolbox effects off existing remote transports", () => {
+    const remote = toolboxCommand("mutate", {
+      modality: "none",
+      args: undefined,
+      x: { remote: { profile: "tablet" } },
+    });
+    for (const target of ["shortcuts-remote-ssh", "termux-shortcut"] as const) {
+      expect(commandTargetCompatibility(remote, target)).toEqual({
+        compatible: false,
+        reason: 'effect class "mutate" requires a confirmation-capable local surface',
+      });
+      expect(emitCommand(remote, [target])[0]?.files).toEqual([]);
+    }
+  });
+
+  test("filters Toolbox commands out of non-executing Raycast catalogs", () => {
+    const delegatedSnippet = toolboxCommand("inspect", {
+      modality: "none",
+      args: undefined,
+      x: { raycast: { snippet: { text: "must not leak" } } },
+      targets: ["raycast-snippet"],
+    });
+    expect(emitCatalogs([delegatedSnippet], ["raycast-snippet"])[0]).toMatchObject({
+      skipped: true,
+      files: [],
+    });
   });
 });
 

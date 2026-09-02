@@ -2,6 +2,7 @@ import { isUtf8 } from "node:buffer";
 import { readSync } from "node:fs";
 import { loadCommandJson } from "./commands-store.ts";
 import { executeCommand } from "./run.ts";
+import { toolboxTargetCompatibility } from "./toolbox-compatibility.ts";
 import { type CommandDef, REMOTE_COMMAND_TARGETS } from "./types.ts";
 
 export const REMOTE_PROTOCOL_VERSION = 1;
@@ -12,10 +13,10 @@ const FORCED_COMMAND = new RegExp(
 
 export function isRemotelyCallable(cmd: CommandDef): boolean {
   if (!cmd.x?.remote) return false;
-  return (
-    !cmd.targets ||
-    cmd.targets.some((target) => (REMOTE_COMMAND_TARGETS as readonly string[]).includes(target))
-  );
+  const selectedTargets = cmd.targets
+    ? cmd.targets.filter((target) => (REMOTE_COMMAND_TARGETS as readonly string[]).includes(target))
+    : REMOTE_COMMAND_TARGETS;
+  return selectedTargets.some((target) => toolboxTargetCompatibility(cmd, target).compatible);
 }
 
 export function parseForcedRemoteCommand(originalCommand: string | undefined): string {
