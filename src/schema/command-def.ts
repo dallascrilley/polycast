@@ -89,6 +89,11 @@ const crossTargetHintsSchema = z
         inputs: z.array(shortcutsInputSchema).min(1).optional(),
       })
       .optional(),
+    remote: z
+      .object({
+        profile: z.string().regex(KEBAB_ID, "remote profile must be kebab-case"),
+      })
+      .optional(),
   })
   .optional();
 

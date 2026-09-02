@@ -15,12 +15,17 @@ export const COMMAND_TARGETS = [
   "dropzone",
   "dropover-script",
   "shortcuts-cherri",
+  "shortcuts-remote-ssh",
+  "termux-shortcut",
   "raycast-snippet",
   "raycast-quicklink",
   "agent-cli",
 ] as const;
 
 export type CommandTarget = (typeof COMMAND_TARGETS)[number];
+
+/** Targets that are remote transports rather than local launchers. */
+export const REMOTE_COMMAND_TARGETS = ["shortcuts-remote-ssh", "termux-shortcut"] as const;
 
 /**
  * What the command body receives as input. This is the single semantic that
@@ -140,6 +145,10 @@ export interface CrossTargetHints {
     readonly color?: string;
     readonly from?: string;
     readonly inputs?: readonly ShortcutsInput[];
+  };
+  /** Explicit remote opt-in. Connection details remain in private local configuration. */
+  readonly remote?: {
+    readonly profile: string;
   };
 }
 

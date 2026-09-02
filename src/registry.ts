@@ -6,6 +6,8 @@ import { raycastQuicklink } from "./emitters/raycast-quicklink.ts";
 import { raycastScript } from "./emitters/raycast-script.ts";
 import { raycastSnippet } from "./emitters/raycast-snippet.ts";
 import { shortcutsCherri } from "./emitters/shortcuts-cherri.ts";
+import { shortcutsRemoteSsh } from "./emitters/shortcuts-remote-ssh.ts";
+import { termuxShortcut } from "./emitters/termux-shortcut.ts";
 import type { CommandDef, CommandTarget, EmittedFile, Emitter } from "./types.ts";
 
 /**
@@ -19,6 +21,8 @@ export const emitters: readonly Emitter[] = [
   dropzone,
   dropoverScript,
   shortcutsCherri,
+  shortcutsRemoteSsh,
+  termuxShortcut,
   raycastSnippet,
   raycastQuicklink,
   agentCli,

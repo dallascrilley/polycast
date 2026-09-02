@@ -336,6 +336,24 @@ async function applyTarget(
     return results;
   }
 
+  if (target === "shortcuts-remote-ssh") {
+    results.push({
+      target,
+      action: "note",
+      path: "Transfer the compiled .shortcut to the intended iPhone or iPad. It is credential-bearing build output; do not import it into the Mac's local Shortcuts library.",
+    });
+    return results;
+  }
+
+  if (target === "termux-shortcut") {
+    results.push({
+      target,
+      action: "note",
+      path: "Copy the generated .sh file to the tablet's Termux:Widget shortcut directory. The script reuses mac-exec and does not install SSH configuration.",
+    });
+    return results;
+  }
+
   if (target === "agent-cli") {
     const dest = agentBinDir();
     const entries = await readdir(srcDir).catch(() => []);

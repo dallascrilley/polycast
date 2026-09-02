@@ -264,8 +264,8 @@ describe("agent-cli emitter", () => {
 });
 
 describe("registry", () => {
-  test("has eight emitters", () => {
-    expect(emitters.length).toBe(8);
+  test("has ten emitters", () => {
+    expect(emitters.length).toBe(10);
   });
 
   test("emitCommand marks skips", () => {

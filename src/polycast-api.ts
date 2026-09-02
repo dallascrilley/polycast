@@ -200,7 +200,7 @@ async function buildCommands(
         files.push(await writeEmitted(outRoot, result.target, file));
         written++;
       }
-      if (result.target === "shortcuts-cherri") {
+      if (result.target === "shortcuts-cherri" || result.target === "shortcuts-remote-ssh") {
         // Compiled .shortcut files and their markers are written here, after
         // the emitter ran, so they have to be counted here too.
         const compiled = await compileCherriArtifacts(join(outRoot, result.target), result.files);

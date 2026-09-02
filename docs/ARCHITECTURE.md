@@ -41,7 +41,9 @@ MCP server over the same API. It does not run a long-lived production service.
 3. `polycastBuild` writes one JSON body file at
    `build/commands/<id>.json` and the native files produced by compatible
    emitters. The output root is configurable.
-4. Thin launcher shims call `polycast run --commands <dir> <id>`. For targets
+4. Thin local launcher shims call `polycast run --commands <dir> <id>`. Remote
+   targets send a fixed command ID plus protocol version to `polycast remote`
+   on the host; they never carry body source. For targets
    that use the dispatcher, `apply --write` copies the JSON body store to
    `POLYCAST_COMMANDS_DIR` and installs the launcher files.
 5. `polycastRun` loads the JSON file, validates its command ID, and executes the
@@ -105,6 +107,9 @@ the support declarations and `docs/specs/modality-matrix.md` for the matrix.
   normal `apply --write` never opens a UI; `--import-shortcuts` is a separate
   operator-consent flag for importing them. `apply --prune` does not remove
   imported Shortcuts or stale files under `build/shortcuts-cherri/`.
+- `shortcuts-remote-ssh` is opt-in through `x.remote.profile`; its build output
+  is credential-bearing and must be transferred directly to the intended iOS
+  device. The host accepts it only through the forced remote protocol.
 - `capture --from raycast-snippets` reads a regular export file and writes only
   its marked `commands/raycast-snippets/` files when `--write` is present. It
   never changes or copies the export. Build recursively loads the generated
