@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import Ajv2020 from "ajv/dist/2020.js";
 import { defineCommand } from "../src/define.ts";
 import {
   commandDefJsonSchema,
@@ -137,6 +138,21 @@ describe("command-def schema", () => {
         delegation: { ...cmd.delegation, effectClass: "authorized" },
       }),
     ).toThrow();
+
+    const validateJson = new Ajv2020({ strict: false }).compile(commandDefJsonSchema);
+    expect(validateJson(cmd)).toBe(true);
+    expect(
+      validateJson({
+        ...cmd,
+        body: { lang: "bash", source: "toolbox knowledge search" },
+      }),
+    ).toBe(false);
+    expect(
+      validateJson({
+        ...cmd,
+        body: { lang: "exec", executable: "/verified/toolbox/bin/toolbox" },
+      }),
+    ).toBe(false);
   });
 
   test("requires args when modality is args", () => {
