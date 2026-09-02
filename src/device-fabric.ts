@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { readSync } from "node:fs";
 import {
   access,
@@ -8,13 +8,17 @@ import {
   mkdtemp,
   readdir,
   readFile,
+  readlink,
   realpath,
+  rename,
   rm,
   stat,
+  symlink,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
+import { setTimeout as delay } from "node:timers/promises";
 import { OWNERSHIP_MARKER } from "./constants.ts";
 
 export const DEVICE_FABRIC_ACTIONS = [
@@ -119,6 +123,12 @@ interface RemoteEnvelope {
 interface SynchronousCommandResult {
   readonly status: number | null;
   readonly stderr?: string | Buffer | null;
+}
+
+interface DeviceFabricSourceRecord {
+  readonly id: DeviceFabricActionId;
+  readonly name: string;
+  readonly source: string;
 }
 
 function requireAction(id: string): DeviceFabricActionId {
@@ -466,20 +476,18 @@ function patchTailscaleIntents(
 }
 
 async function compileDeviceShortcut(
-  sourcePath: string,
-  outputPath: string,
-  id: DeviceFabricActionId,
-  name: string,
+  stageRoot: string,
+  record: DeviceFabricSourceRecord,
   env: NodeJS.ProcessEnv,
 ): Promise<void> {
   const workDir = await mkdtemp(join(tmpdir(), "polycast-device-fabric-"));
   try {
-    const localSource = join(workDir, basename(sourcePath));
-    await copyFile(sourcePath, localSource);
+    const localSource = join(workDir, `${record.id}.cherri`);
+    await copyFile(join(stageRoot, `${record.id}.cherri`), localSource);
     runChecked(["cherri", basename(localSource), "--skip-sign", "--derive-uuids"], env, workDir);
-    const unsigned = join(workDir, `${name}_unsigned.shortcut`);
+    const unsigned = join(workDir, `${record.name}_unsigned.shortcut`);
     await access(unsigned);
-    patchTailscaleIntents(unsigned, id, env);
+    patchTailscaleIntents(unsigned, record.id, env);
     runChecked(
       [
         "shortcuts",
@@ -489,7 +497,7 @@ async function compileDeviceShortcut(
         "--input",
         unsigned,
         "--output",
-        outputPath,
+        join(stageRoot, `${record.id}.shortcut`),
       ],
       env,
     );
@@ -506,6 +514,85 @@ async function canonicalizePotentialPath(path: string): Promise<string> {
     const parent = dirname(path);
     if (parent === path) return path;
     return join(await canonicalizePotentialPath(parent), basename(path));
+  }
+}
+
+const PUBLICATION_LOCK_POLL_MS = 25;
+
+async function pathExists(path: string): Promise<boolean> {
+  try {
+    await access(path);
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return false;
+    throw error;
+  }
+}
+
+function lockOwnerAlive(owner: string): boolean {
+  const pid = Number(owner.split(":")[0]);
+  if (!Number.isSafeInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "EPERM";
+  }
+}
+
+async function acquirePublicationLock(lockPath: string): Promise<void> {
+  const owner = `${process.pid}:${randomUUID()}`;
+  let deadOwner: string | undefined;
+  for (;;) {
+    try {
+      await symlink(owner, lockPath);
+      return;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+    }
+    const holder = await readlink(lockPath).catch((error: NodeJS.ErrnoException) => {
+      if (error.code === "ENOENT") return undefined;
+      throw error;
+    });
+    if (holder === undefined) continue;
+    if (holder === deadOwner) {
+      const reclaimPath = `${lockPath}.reclaim-${randomUUID()}`;
+      try {
+        await rename(lockPath, reclaimPath);
+        await rm(reclaimPath, { force: true });
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      }
+      deadOwner = undefined;
+    } else {
+      deadOwner = lockOwnerAlive(holder) ? undefined : holder;
+    }
+    await delay(PUBLICATION_LOCK_POLL_MS);
+  }
+}
+
+async function publishStagedBuild(stagingRoot: string, outRoot: string): Promise<void> {
+  const lockPath = join(dirname(outRoot), `.${basename(outRoot)}.publish.lock`);
+  const backupRoot = join(dirname(outRoot), `.${basename(outRoot)}.previous`);
+  await acquirePublicationLock(lockPath);
+  try {
+    if (await pathExists(backupRoot)) {
+      // A publication died mid-swap: the backup is the live output when the
+      // stage never landed, and stale once it did.
+      if (await pathExists(outRoot)) await rm(backupRoot, { recursive: true, force: true });
+      else await rename(backupRoot, outRoot);
+    }
+    const replaced = await pathExists(outRoot);
+    if (replaced) await rename(outRoot, backupRoot);
+    try {
+      await rename(stagingRoot, outRoot);
+    } catch (error) {
+      if (replaced) await rename(backupRoot, outRoot);
+      throw error;
+    }
+    if (replaced) await rm(backupRoot, { recursive: true, force: true });
+  } finally {
+    await rm(lockPath, { force: true });
   }
 }
 
@@ -535,11 +622,7 @@ export async function buildDeviceFabricShortcuts(
     throw new Error(`device fabric must contain exactly: ${expectedIds.join(", ")}`);
   }
 
-  const sourceRecords: Array<{
-    id: DeviceFabricActionId;
-    name: string;
-    source: string;
-  }> = [];
+  const sourceRecords: DeviceFabricSourceRecord[] = [];
   for (const action of DEVICE_FABRIC_ACTIONS) {
     const sourcePath = join(sourceDir, `${action.id}.cherri`);
     const source = await readFile(sourcePath, "utf8");
@@ -551,39 +634,41 @@ export async function buildDeviceFabricShortcuts(
     sourceRecords.push({ id: action.id, name, source });
   }
 
-  await rm(outRoot, { recursive: true, force: true });
-  await mkdir(outRoot, { recursive: true });
-  const sources: string[] = [];
-  for (const record of sourceRecords) {
-    const outputSource = join(outRoot, `${record.id}.cherri`);
-    await writeFile(outputSource, record.source);
-    await writeFile(`${outputSource}${OWNERSHIP_MARKER}`, "polycast\n");
-    sources.push(outputSource, `${outputSource}${OWNERSHIP_MARKER}`);
-  }
-
   const env = options.env ?? process.env;
   const compileSkipped =
     env.POLYCAST_SKIP_CHERRI === "1" ||
     !commandAvailable("cherri", env) ||
     !commandAvailable("plutil", env) ||
     !commandAvailable("shortcuts", env);
-  const shortcuts: string[] = [];
-  if (!compileSkipped) {
-    for (const record of sourceRecords) {
-      const outputPath = join(outRoot, `${record.id}.shortcut`);
-      await compileDeviceShortcut(
-        join(outRoot, `${record.id}.cherri`),
-        outputPath,
-        record.id,
-        record.name,
-        env,
-      );
-      await writeFile(`${outputPath}${OWNERSHIP_MARKER}`, "polycast\n");
-      shortcuts.push(outputPath, `${outputPath}${OWNERSHIP_MARKER}`);
-    }
-  }
 
-  return { outRoot, sources, shortcuts, compileSkipped };
+  await mkdir(dirname(outRoot), { recursive: true });
+  const stagingRoot = await mkdtemp(join(dirname(outRoot), `.${basename(outRoot)}.staging-`));
+  try {
+    const sources: string[] = [];
+    for (const record of sourceRecords) {
+      const stagedSource = join(stagingRoot, `${record.id}.cherri`);
+      await writeFile(stagedSource, record.source);
+      await writeFile(`${stagedSource}${OWNERSHIP_MARKER}`, "polycast\n");
+      const outputSource = join(outRoot, `${record.id}.cherri`);
+      sources.push(outputSource, `${outputSource}${OWNERSHIP_MARKER}`);
+    }
+
+    const shortcuts: string[] = [];
+    if (!compileSkipped) {
+      for (const record of sourceRecords) {
+        await compileDeviceShortcut(stagingRoot, record, env);
+        const stagedOutput = join(stagingRoot, `${record.id}.shortcut`);
+        await writeFile(`${stagedOutput}${OWNERSHIP_MARKER}`, "polycast\n");
+        const outputPath = join(outRoot, `${record.id}.shortcut`);
+        shortcuts.push(outputPath, `${outputPath}${OWNERSHIP_MARKER}`);
+      }
+    }
+
+    await publishStagedBuild(stagingRoot, outRoot);
+    return { outRoot, sources, shortcuts, compileSkipped };
+  } finally {
+    await rm(stagingRoot, { recursive: true, force: true });
+  }
 }
 
 export async function deviceFabricCli(argv: readonly string[]): Promise<number> {

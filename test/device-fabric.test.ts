@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
+  access,
+  appendFile,
   chmod,
   copyFile,
   mkdir,
@@ -8,10 +10,11 @@ import {
   readFile,
   rm,
   symlink,
+  watch,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import {
   buildDeviceFabricShortcuts,
   DEVICE_FABRIC_ACTIONS,
@@ -26,6 +29,113 @@ async function writeExecutable(binDir: string, name: string, body: string): Prom
   const path = join(binDir, name);
   await writeFile(path, `#!/bin/sh\nset -eu\n${body}\n`);
   await chmod(path, 0o755);
+}
+
+async function waitForPath(path: string): Promise<void> {
+  try {
+    await access(path);
+    return;
+  } catch {}
+
+  const controller = new AbortController();
+  const watcher = watch(dirname(path), { signal: controller.signal });
+  try {
+    try {
+      await access(path);
+      return;
+    } catch {}
+    for await (const event of watcher) {
+      if (event.filename === basename(path)) {
+        await access(path);
+        return;
+      }
+    }
+    throw new Error(`stopped waiting for ${path}`);
+  } finally {
+    controller.abort();
+  }
+}
+
+async function createBuildTools(root: string) {
+  const bin = join(root, "bin");
+  const log = join(root, "compile.log");
+  const barrier = join(root, "barrier");
+  const release = join(barrier, "release");
+  await mkdir(bin);
+  await mkdir(barrier);
+  const fifo = Bun.spawnSync(["mkfifo", release]);
+  if (fifo.exitCode !== 0) throw new Error("mkfifo failed");
+  await writeFile(log, "");
+  await writeExecutable(
+    bin,
+    "cherri",
+    `case "$1" in
+  agents.cherri) name='Agents';;
+  reviews.cherri) name='Reviews';;
+  agent-console.cherri) name='Agent Console';;
+  send-to-device.cherri) name='Send to Device';;
+  *) exit 2;;
+esac
+contents="$(cat "$1")"
+case "$contents" in *SOURCE_A*) marker=A;; *SOURCE_B*) marker=B;; *) marker=none;; esac
+printf '%s\\t%s\\t%s\\n' "$POLYCAST_TEST_BUILD" "$name" "$marker" >> "$POLYCAST_TEST_LOG"
+if [ "$POLYCAST_TEST_BUILD" = A ] && [ "$1" = agents.cherri ]; then
+  : > "$POLYCAST_TEST_BARRIER/a"
+  cat "$POLYCAST_TEST_BARRIER/release" > /dev/null
+fi
+if [ "$POLYCAST_TEST_BUILD" = B ] && [ "$1" = agents.cherri ]; then
+  printf 'release\n' > "$POLYCAST_TEST_BARRIER/release"
+fi
+cp "$1" "\${name}_unsigned.shortcut"`,
+  );
+  await writeExecutable(
+    bin,
+    "plutil",
+    `if [ "$1" = -extract ]; then
+  case "$2" in
+    WFWorkflowActions.0.WFWorkflowActionIdentifier) printf '%s\\n' 'io.tailscale.ipn.ios.ConnectIntent';;
+    WFWorkflowActions.1.WFWorkflowActionIdentifier) printf '%s\\n' 'io.tailscale.ipn.ios.TaildropAppIntent';;
+    WFWorkflowActions.0.WFWorkflowActionParameters.AppIntentDescriptor.BundleIdentifier) printf '%s\\n' 'io.tailscale.ipn.ios';;
+    WFWorkflowActions.1.WFWorkflowActionParameters.AppIntentDescriptor.BundleIdentifier) printf '%s\\n' 'io.tailscale.ipn.ios';;
+    WFWorkflowActions.0.WFWorkflowActionParameters.UUID)
+      case "$6" in
+        *Agents_unsigned.shortcut) printf '%s\\n' "$POLYCAST_TEST_UUID_AGENTS";;
+        *Reviews_unsigned.shortcut) printf '%s\\n' "$POLYCAST_TEST_UUID_REVIEWS";;
+        *'Agent Console_unsigned.shortcut') printf '%s\\n' "$POLYCAST_TEST_UUID_CONSOLE";;
+        *'Send to Device_unsigned.shortcut') printf '%s\\n' "$POLYCAST_TEST_UUID_SEND0";;
+        *) exit 3;;
+      esac;;
+    WFWorkflowActions.1.WFWorkflowActionParameters.UUID) printf '%s\\n' "$POLYCAST_TEST_UUID_SEND1";;
+    WFWorkflowActions.1.WFWorkflowActionParameters.destination.Value.Type) printf '%s\\n' Ask;;
+    WFWorkflowActions.1.WFWorkflowActionParameters.files.Value.Type) printf '%s\\n' ExtensionInput;;
+    *) exit 4;;
+  esac
+fi`,
+  );
+  await writeExecutable(
+    bin,
+    "shortcuts",
+    `input=''
+output=''
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --input) input="$2"; shift 2;;
+    --output) output="$2"; shift 2;;
+    *) shift;;
+  esac
+done
+cp "$input" "$output"`,
+  );
+  return {
+    log,
+    barrier,
+    env: {
+      ...process.env,
+      PATH: `${bin}:${process.env.PATH ?? ""}`,
+      POLYCAST_TEST_LOG: log,
+      POLYCAST_TEST_BARRIER: barrier,
+    },
+  };
 }
 
 async function createRuntime(backendState = "Running") {
@@ -160,6 +270,142 @@ describe("device fabric", () => {
       ).rejects.toThrow("reviews.cherri must declare '#define name Reviews'");
       expect(await readFile(priorArtifact, "utf8")).toBe("last-good");
       expect(await readdir(out)).toEqual(["last-good.shortcut"]);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("preserves prior output when Cherri compilation fails", async () => {
+    const root = await mkdtemp(join(tmpdir(), "polycast-device-fabric-compile-failure-"));
+    const isolatedSource = join(root, "source");
+    const out = join(root, "build");
+    const bin = join(root, "bin");
+    await mkdir(isolatedSource);
+    await mkdir(out);
+    await mkdir(bin);
+    for (const action of DEVICE_FABRIC_ACTIONS) {
+      await copyFile(
+        join(sourceDir, `${action.id}.cherri`),
+        join(isolatedSource, `${action.id}.cherri`),
+      );
+    }
+    await writeExecutable(bin, "cherri", "exit 7");
+    await writeExecutable(bin, "plutil", ":");
+    await writeExecutable(bin, "shortcuts", ":");
+    const priorArtifact = join(out, "last-good.shortcut");
+    await writeFile(priorArtifact, "last-good");
+    try {
+      await expect(
+        buildDeviceFabricShortcuts({
+          dir: isolatedSource,
+          out,
+          env: {
+            ...process.env,
+            PATH: `${bin}:${process.env.PATH ?? ""}`,
+            POLYCAST_SKIP_CHERRI: "0",
+          },
+        }),
+      ).rejects.toThrow("cherri");
+      expect(await readFile(priorArtifact, "utf8")).toBe("last-good");
+      expect(await readdir(out)).toEqual(["last-good.shortcut"]);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("reclaims malformed publication locks", async () => {
+    const root = await mkdtemp(join(tmpdir(), "polycast-device-fabric-stale-lock-"));
+    const out = join(root, "build");
+    const lockPath = join(root, ".build.publish.lock");
+    await symlink("invalid-owner", lockPath);
+    try {
+      const summary = await buildDeviceFabricShortcuts({
+        dir: sourceDir,
+        out,
+        env: { ...process.env, POLYCAST_SKIP_CHERRI: "1" },
+      });
+      expect(summary.compileSkipped).toBe(true);
+      expect(await readdir(out)).toHaveLength(8);
+      await expect(access(lockPath)).rejects.toThrow();
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  test("isolates concurrent compilation inputs", async () => {
+    const root = await mkdtemp(join(tmpdir(), "polycast-device-fabric-concurrent-"));
+    const sourceA = join(root, "source-a");
+    const sourceB = join(root, "source-b");
+    const out = join(root, "build");
+    await mkdir(sourceA);
+    await mkdir(sourceB);
+    await mkdir(out);
+    for (const action of DEVICE_FABRIC_ACTIONS) {
+      const sourcePath = join(sourceDir, `${action.id}.cherri`);
+      await copyFile(sourcePath, join(sourceA, `${action.id}.cherri`));
+      await copyFile(sourcePath, join(sourceB, `${action.id}.cherri`));
+      await appendFile(join(sourceA, `${action.id}.cherri`), "\n// SOURCE_A\n");
+      await appendFile(join(sourceB, `${action.id}.cherri`), "\n// SOURCE_B\n");
+    }
+    const tools = await createBuildTools(root);
+    const specs = DEVICE_FABRIC_ACTIONS.map((action) => deviceFabricIntentSpecs(action.id));
+    const env = {
+      ...tools.env,
+      POLYCAST_SKIP_CHERRI: "0",
+      POLYCAST_TEST_UUID_AGENTS: specs[0]![0]!.uuid,
+      POLYCAST_TEST_UUID_REVIEWS: specs[1]![0]!.uuid,
+      POLYCAST_TEST_UUID_CONSOLE: specs[2]![0]!.uuid,
+      POLYCAST_TEST_UUID_SEND0: specs[3]![0]!.uuid,
+      POLYCAST_TEST_UUID_SEND1: specs[3]![1]!.uuid,
+    };
+    try {
+      const repo = resolve(import.meta.dir, "..");
+      const startBuild = (dir: string, build: string) =>
+        Bun.spawn(
+          [
+            "bun",
+            "run",
+            join(repo, "src", "cli.ts"),
+            "device",
+            "build",
+            "--dir",
+            dir,
+            "--out",
+            out,
+          ],
+          {
+            cwd: repo,
+            env: { ...env, POLYCAST_TEST_BUILD: build },
+            stdout: "ignore",
+            stderr: "pipe",
+          },
+        );
+      const processA = startBuild(sourceA, "A");
+      await waitForPath(join(tools.barrier, "a"));
+      const processB = startBuild(sourceB, "B");
+      const [codeA, errorA, codeB, errorB] = await Promise.all([
+        processA.exited,
+        new Response(processA.stderr).text(),
+        processB.exited,
+        new Response(processB.stderr).text(),
+      ]);
+      expect({ codeA, errorA, codeB, errorB }).toEqual({
+        codeA: 0,
+        errorA: "",
+        codeB: 0,
+        errorB: "",
+      });
+      const records = (await readFile(tools.log, "utf8"))
+        .trim()
+        .split("\n")
+        .map((line) => line.split("\t"));
+      expect(
+        records.filter(([build]) => build === "A").map(([, name, marker]) => `${name}:${marker}`),
+      ).toEqual(["Agents:A", "Reviews:A", "Agent Console:A", "Send to Device:A"]);
+      expect(
+        records.filter(([build]) => build === "B").map(([, name, marker]) => `${name}:${marker}`),
+      ).toEqual(["Agents:B", "Reviews:B", "Agent Console:B", "Send to Device:B"]);
+      expect(await readdir(out)).toHaveLength(16);
     } finally {
       await rm(root, { recursive: true, force: true });
     }
