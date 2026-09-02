@@ -1,3 +1,6 @@
+import { toolboxTargetCompatibility } from "../../../src/toolbox-compatibility";
+import type { CrossTargetHints, ToolboxDelegation } from "../../../src/types";
+
 export type StoredModality = "text" | "files" | "args" | "none";
 export type StoredArgType = "text" | "password" | "dropdown";
 
@@ -22,10 +25,14 @@ export interface StoredCommand {
   readonly icon?: string;
   readonly modality: StoredModality;
   readonly args?: readonly StoredArg[];
+  readonly delegation?: ToolboxDelegation;
+  readonly targets?: readonly string[];
+  readonly x?: Pick<CrossTargetHints, "raycast">;
 }
 
 const modalities: readonly StoredModality[] = ["text", "files", "args", "none"];
 const argTypes: readonly StoredArgType[] = ["text", "password", "dropdown"];
+const raycastModes: readonly string[] = ["silent", "fullOutput", "compact", "inline"];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -37,6 +44,58 @@ function isModality(value: unknown): value is StoredModality {
 
 function isArgType(value: unknown): value is StoredArgType {
   return typeof value === "string" && argTypes.includes(value as StoredArgType);
+}
+
+function parseDelegation(value: unknown): ToolboxDelegation | null | undefined {
+  if (value === undefined) return undefined;
+  if (
+    !isRecord(value) ||
+    value.kind !== "toolbox" ||
+    value.contract !== "toolbox-polycast-adapter/v1" ||
+    (value.effectClass !== "inspect" &&
+      value.effectClass !== "prepare" &&
+      value.effectClass !== "mutate" &&
+      value.effectClass !== "integrate") ||
+    value.output !== "canonical"
+  ) {
+    return null;
+  }
+  return {
+    kind: "toolbox",
+    contract: "toolbox-polycast-adapter/v1",
+    effectClass: value.effectClass,
+    output: "canonical",
+  };
+}
+
+function parseRaycastHints(
+  value: unknown,
+): Pick<NonNullable<CrossTargetHints["raycast"]>, "mode" | "needsConfirmation"> | null | undefined {
+  if (value === undefined) return undefined;
+  if (!isRecord(value)) return null;
+
+  if (value.mode !== undefined && !raycastModes.includes(String(value.mode))) return null;
+  if (value.needsConfirmation !== undefined && typeof value.needsConfirmation !== "boolean") {
+    return null;
+  }
+
+  const hints: {
+    mode?: NonNullable<CrossTargetHints["raycast"]>["mode"];
+    needsConfirmation?: boolean;
+  } = {};
+  if (value.mode !== undefined) {
+    hints.mode = value.mode as NonNullable<CrossTargetHints["raycast"]>["mode"];
+  }
+  if (value.needsConfirmation !== undefined) hints.needsConfirmation = value.needsConfirmation;
+  return hints;
+}
+
+function parseTargets(value: unknown): readonly string[] | null | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value) || value.some((target) => typeof target !== "string" || !target)) {
+    return null;
+  }
+  return value;
 }
 
 function parseArg(value: unknown): StoredArg | null {
@@ -111,6 +170,9 @@ export function parseStoredCommand(raw: string): StoredCommand | null {
       icon?: string;
       modality: StoredModality;
       args?: readonly StoredArg[];
+      delegation?: ToolboxDelegation;
+      targets?: readonly string[];
+      x?: Pick<CrossTargetHints, "raycast">;
     } = {
       id: parsed.id,
       title: parsed.title,
@@ -134,10 +196,39 @@ export function parseStoredCommand(raw: string): StoredCommand | null {
     }
     if (command.modality === "args" && !command.args) return null;
 
+    const delegation = parseDelegation(parsed.delegation);
+    if (delegation === null) return null;
+    if (delegation) command.delegation = delegation;
+
+    const targets = parseTargets(parsed.targets);
+    if (targets === null) return null;
+    if (targets) command.targets = targets;
+
+    if (parsed.x !== undefined) {
+      if (!isRecord(parsed.x)) return null;
+      const raycast = parseRaycastHints(parsed.x.raycast);
+      if (raycast === null) return null;
+      if (raycast) command.x = { raycast };
+    }
+
     return command;
   } catch {
     return null;
   }
+}
+
+/** Filter the command store to commands the flagship Raycast surface can honor. */
+export function isRaycastVisible(command: StoredCommand): boolean {
+  if (command.modality === "files") return false;
+  if (!command.delegation) return true;
+  if (command.targets && !command.targets.includes("raycast-script")) return false;
+  return toolboxTargetCompatibility(command, "raycast-script").compatible;
+}
+
+export function filterRaycastCommands(commands: readonly StoredCommand[]): StoredCommand[] {
+  return commands
+    .filter(isRaycastVisible)
+    .sort((left, right) => left.title.localeCompare(right.title));
 }
 
 export function buildArgv(args: readonly StoredArg[], values: Record<string, string>): string[] {
