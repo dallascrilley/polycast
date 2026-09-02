@@ -116,7 +116,9 @@ export function executeCommand(cmd: CommandDef, options: RunOptions): number {
     }
   }
 
-  const positional = options.argv.filter((a) => a !== "--");
+  // The CLI parser consumes its own separator before invoking this function.
+  // Every remaining value, including a literal "--", belongs to the body.
+  const positional = options.argv;
   let bodyArgv = positional;
   let stdin: string | undefined;
 

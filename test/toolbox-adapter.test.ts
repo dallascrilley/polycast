@@ -92,14 +92,14 @@ describe("Toolbox adapter dispatch", () => {
       expect((await loadCommandJson(command.id, commands)).delegation).toEqual(command.delegation);
 
       const env = { ...process.env, TOOLBOX_ARGV: argvCapture, TOOLBOX_STDIN: stdinCapture };
-      const success = run(commands, command.id, ["literal query", "$(not-a-command)"], env);
+      const success = run(commands, command.id, ["literal query", "$(not-a-command)", "--"], env);
       expect(success.status).toBe(0);
       expect(success.stdout).toEqual(
         Buffer.from('{"result":"canonical","receipt":"toolbox://receipt/success"}\n'),
       );
       expect(success.stderr).toEqual(Buffer.from("canonical warning\n"));
       expect(await readFile(argvCapture)).toEqual(
-        Buffer.from("knowledge\0search\0literal query\0$(not-a-command)\0"),
+        Buffer.from("knowledge\0search\0literal query\0$(not-a-command)\0--\0"),
       );
 
       const text = run(commands, textCommand.id, ["--text", "selected text"], {
