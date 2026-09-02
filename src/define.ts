@@ -35,6 +35,20 @@ export function assertValid(cmd: CommandDef): void {
   if (cmd.x?.remote && !ID_RE.test(cmd.x.remote.profile)) {
     throw new Error(`command "${cmd.id}" has an invalid remote profile name`);
   }
+  for (const step of cmd.x?.shortcuts?.workflow ?? []) {
+    if (step.kind === "open-console" && !ID_RE.test(step.profile)) {
+      throw new Error(`command "${cmd.id}" has an invalid console profile name`);
+    }
+    if (step.kind === "native-capture" && !ID_RE.test(step.capture)) {
+      throw new Error(`command "${cmd.id}" has an invalid native action capture name`);
+    }
+    if (
+      (step.kind === "require-reachable" || step.kind === "open-url") &&
+      !/^[a-z][a-z0-9+.-]*:/.test(step.url)
+    ) {
+      throw new Error(`command "${cmd.id}" has a workflow step with a non-URL "url"`);
+    }
+  }
   for (const arg of cmd.args ?? []) {
     if (arg.picker && arg.type && arg.type !== "text") {
       throw new Error(

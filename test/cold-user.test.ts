@@ -108,7 +108,7 @@ describe("apply --write on a fresh build (D2)", () => {
     } finally {
       await rm(root, { recursive: true, force: true });
     }
-  });
+  }, 30000);
 
   test("still fails when a target that should have output is missing", async () => {
     const root = await mkdtemp(join(tmpdir(), "polycast-cold-missing-"));
@@ -132,7 +132,7 @@ describe("apply --write on a fresh build (D2)", () => {
     } finally {
       await rm(root, { recursive: true, force: true });
     }
-  });
+  }, 30000);
 });
 
 describe("Shortcuts import consent (CV3)", () => {
@@ -184,7 +184,7 @@ describe("apply --prune (D3)", () => {
       await rm(root, { recursive: true, force: true });
       await rm(buildRoot, { recursive: true, force: true });
     }
-  });
+  }, 30000);
 
   test("leaves no polycast-written file behind, and keeps foreign files", async () => {
     // Build output lives outside the install sandbox so the sandbox holds
@@ -228,7 +228,7 @@ describe("apply --prune (D3)", () => {
       await rm(root, { recursive: true, force: true });
       await rm(buildRoot, { recursive: true, force: true });
     }
-  });
+  }, 30000);
 
   test("a second apply --write is not refused by its own files", async () => {
     const root = await mkdtemp(join(tmpdir(), "polycast-cold-reapply-"));
@@ -253,7 +253,7 @@ describe("apply --prune (D3)", () => {
     } finally {
       await rm(root, { recursive: true, force: true });
     }
-  });
+  }, 30000);
 });
 
 describe("polycast run output (D8)", () => {

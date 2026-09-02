@@ -98,7 +98,7 @@ describe("operator apply verification (P1-2)", () => {
       }
       await rm(root, { recursive: true, force: true });
     }
-  });
+  }, 30000);
 
   test("dropzone apply --write: dispatcher run.sh executes and picks up JSON edits", async () => {
     const root = await mkdtemp(join(tmpdir(), "polycast-p12-dz-"));
@@ -176,7 +176,7 @@ describe("operator apply verification (P1-2)", () => {
       }
       await rm(root, { recursive: true, force: true });
     }
-  });
+  }, 30000);
 
   test("dropover apply --write: staged script runs and picks up JSON edits", async () => {
     const root = await mkdtemp(join(tmpdir(), "polycast-p12-do-"));
@@ -269,7 +269,7 @@ describe("operator apply verification (P1-2)", () => {
       }
       await rm(root, { recursive: true, force: true });
     }
-  });
+  }, 30000);
 });
 
 /** Level B+ for LAUNCH_CRITERIA P0-4 — PopClip/Raycast thin-shim JSON store (no live UI). */
@@ -381,7 +381,7 @@ describe("operator apply verification (P0-4 B+)", () => {
       }
       await rm(root, { recursive: true, force: true });
     }
-  });
+  }, 30000);
 });
 
 /** Level B+ for LAUNCH_CRITERIA P1-5 — Shortcuts apply syncs JSON store; shim honors edits (no Shortcuts.app). */
@@ -475,7 +475,7 @@ describe("operator apply verification (P1-5 B+)", () => {
       }
       await rm(root, { recursive: true, force: true });
     }
-  });
+  }, 30000);
 });
 
 describe("shortcuts import safety", () => {

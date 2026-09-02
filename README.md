@@ -144,6 +144,26 @@ Mac's forced host command loads the canonical stored body and rejects arbitrary
 shell source. See
 [the remote SSH specification](docs/specs/remote-ssh.md).
 
+### Native iPhone device-fabric Shortcuts (WKS-1420 / WKS-1546)
+
+`x.shortcuts.workflow` replaces the shell dispatcher entirely with a bounded
+list of native Cherri actions (`downloadURL`, `openURL`, `rawAction`) for
+commands where an arbitrary shared-text shell call would be the wrong shape.
+`commands/agents.ts`, `commands/reviews.ts`, `commands/agent-console.ts`, and
+`commands/send-to-device.ts` are the four exact iPhone actions
+[WKS-1420](https://linear.app/dallascrilley/issue/WKS-1420/add-four-bounded-iphone-device-fabric-shortcuts)
+asks for: **Agents** and **Reviews** open authenticated PWAs behind a
+Tailscale reachability preflight, **Agent Console** opens a fixed Blink Shell
+mosh command against a saved on-device host profile, and **Send to Device**
+delegates to Tailscale's own native Send File/Taildrop action. Agent Console
+and Send to Device each need one piece of private, un-committed local
+configuration (a Blink profile, a decompiled native action capture) before
+`shortcuts-cherri` builds them; without it, `build` skips just that command
+instead of failing. Full design and the exact private config file shapes:
+[`docs/specs/device-fabric.md`](docs/specs/device-fabric.md); capturing a
+third-party native action:
+[`docs/guides/native-action-capture.md`](docs/guides/native-action-capture.md).
+
 ## Status
 
 P0 complete as of 2026-06-15. Every P0 criterion is validated, including PopClip

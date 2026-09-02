@@ -33,3 +33,8 @@ export function wrappedScript(cmd: CommandDef): string {
 export function escapeCherriString(source: string): string {
   return source.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
+
+/** Escape a value for embedding in a Cherri double-quoted string literal (e.g. `rawAction` arguments). */
+export function escapeCherriDoubleQuoted(source: string): string {
+  return source.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}

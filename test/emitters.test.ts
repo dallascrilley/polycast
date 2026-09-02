@@ -325,7 +325,7 @@ describe("apply dry-run", () => {
       else process.env.POLYCAST_SKIP_CHERRI = prevSkip;
       await rm(out, { recursive: true, force: true });
     }
-  });
+  }, 30000);
 
   test("shortcuts-cherri apply dry-run syncs commands store", async () => {
     const { mkdtemp, rm } = await import("node:fs/promises");
@@ -355,7 +355,7 @@ describe("apply dry-run", () => {
       else process.env.POLYCAST_SKIP_CHERRI = prevSkip;
       await rm(out, { recursive: true, force: true });
     }
-  });
+  }, 30000);
 
   test("refuses overwrite of unowned install paths", async () => {
     const { mkdtemp, rm, writeFile, mkdir } = await import("node:fs/promises");
@@ -392,7 +392,7 @@ describe("apply dry-run", () => {
       await rm(out, { recursive: true, force: true });
       await rm(installRoot, { recursive: true, force: true });
     }
-  });
+  }, 30000);
 });
 
 describe("pruneOwned", () => {

@@ -1,12 +1,23 @@
+import type { ConsoleProfile } from "../console-profiles.ts";
+import { loadConsoleProfile } from "../console-profiles.ts";
 import { OWNERSHIP_MARKER } from "../constants.ts";
+import { loadCapturedAction } from "../native-action-capture.ts";
+import { MissingPrivateConfig } from "../private-config.ts";
 import {
   shortcutsArgsShim,
   shortcutsFilesShim,
   shortcutsNoneShim,
   shortcutsTextShim,
 } from "../shim.ts";
-import type { CommandArg, CommandDef, EmittedFile, Emitter, ValidationIssue } from "../types.ts";
-import { escapeCherriString } from "../wrappers.ts";
+import type {
+  CommandArg,
+  CommandDef,
+  EmittedFile,
+  Emitter,
+  ShortcutWorkflowStep,
+  ValidationIssue,
+} from "../types.ts";
+import { escapeCherriDoubleQuoted, escapeCherriString } from "../wrappers.ts";
 
 function cherriPromptType(arg: CommandArg): "Text" | "Number" {
   return arg.type === "password" ? "Text" : "Text";
@@ -72,6 +83,74 @@ function runShellScriptLine(cmd: CommandDef): string {
   return `runShellScript('${script}', ${inputArg}, '/bin/bash')`;
 }
 
+/** Serialize a decompiled `rawAction` parameter value as a Cherri literal. */
+function cherriLiteral(value: unknown): string {
+  if (value === null || value === undefined) return "nil";
+  if (typeof value === "string") return `"${escapeCherriDoubleQuoted(value)}"`;
+  if (typeof value === "boolean" || typeof value === "number") return String(value);
+  if (Array.isArray(value)) return `[${value.map(cherriLiteral).join(", ")}]`;
+  if (typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>).map(
+      ([key, entryValue]) => `"${escapeCherriDoubleQuoted(key)}": ${cherriLiteral(entryValue)}`,
+    );
+    return `{${entries.join(", ")}}`;
+  }
+  throw new Error(`unsupported rawAction literal value: ${JSON.stringify(value)}`);
+}
+
+/**
+ * Blink Shell's documented X-Callback-URL scheme: a fixed command against a
+ * host already saved in Blink's own on-device Hosts configuration. Neither
+ * the profile name nor `blinkKey`/`hostAlias` are SSH credentials — Blink
+ * owns the actual key material.
+ */
+function blinkCallbackUrl(profile: ConsoleProfile): string {
+  const cmd = encodeURIComponent(`mosh ${profile.hostAlias}`);
+  const key = encodeURIComponent(profile.blinkKey);
+  return `blinkshell://run?key=${key}&cmd=${cmd}`;
+}
+
+function emitWorkflowStep(step: ShortcutWorkflowStep): string[] {
+  switch (step.kind) {
+    case "require-reachable":
+      // A private `.ts.net` route only resolves and responds when Tailscale
+      // is connected, so a failed request halts the Shortcut with iOS's
+      // native error UI before any private route opens.
+      return [`downloadURL("${escapeCherriDoubleQuoted(step.url)}")`, ""];
+    case "open-url":
+      return [`openURL("${escapeCherriDoubleQuoted(step.url)}")`, ""];
+    case "open-console":
+      return [
+        `openURL("${escapeCherriDoubleQuoted(blinkCallbackUrl(loadConsoleProfile(step.profile)))}")`,
+        "",
+      ];
+    case "native-capture": {
+      const action = loadCapturedAction(step.capture);
+      return [
+        `rawAction("${escapeCherriDoubleQuoted(action.identifier)}", ${cherriLiteral(action.params)})`,
+        "",
+      ];
+    }
+  }
+}
+
+/**
+ * A bounded native workflow replaces the shell dispatcher entirely: every
+ * step is a standard, documented Cherri action (`downloadURL`, `openURL`,
+ * `rawAction`), never `runShellScript`. See `ShortcutWorkflowStep` in
+ * `types.ts` for the security rationale of each step kind.
+ */
+function emitWorkflowCherri(cmd: CommandDef, workflow: readonly ShortcutWorkflowStep[]): string[] {
+  const lines: string[] = ["#include 'actions/web'"];
+  if (cmd.modality === "text" || cmd.modality === "files") {
+    lines.push("@shortcutInput = ShortcutInput", "");
+  }
+  for (const step of workflow) {
+    lines.push(...emitWorkflowStep(step));
+  }
+  return lines;
+}
+
 export const shortcutsCherri: Emitter = {
   target: "shortcuts-cherri",
   supports: ["text", "none", "args", "files"],
@@ -92,12 +171,27 @@ export const shortcutsCherri: Emitter = {
     const inputs = defaultInputs(cmd);
     if (inputs.length > 0) lines.push(`#define inputs ${inputs.join(", ")}`);
 
-    lines.push("#include 'actions/mac'");
-
-    if (cmd.modality === "args") {
-      lines.push(...emitArgsCherri(cmd));
+    const workflow = cmd.x?.shortcuts?.workflow;
+    if (workflow && workflow.length > 0) {
+      let workflowLines: string[];
+      try {
+        workflowLines = emitWorkflowCherri(cmd, workflow);
+      } catch (err) {
+        // Blink console profiles and captured native actions are private,
+        // un-committed, per-operator config. Not having captured one yet is
+        // a legitimate build-environment state, not a build failure: skip
+        // this command for this target instead of failing every command.
+        if (err instanceof MissingPrivateConfig) return [];
+        throw err;
+      }
+      lines.push(...workflowLines);
     } else {
-      lines.push(runShellScriptLine(cmd), "");
+      lines.push("#include 'actions/mac'");
+      if (cmd.modality === "args") {
+        lines.push(...emitArgsCherri(cmd));
+      } else {
+        lines.push(runShellScriptLine(cmd), "");
+      }
     }
 
     return [
@@ -112,18 +206,60 @@ export const shortcutsCherri: Emitter = {
     if (!cherri) {
       return [{ target: this.target, message: "missing .cherri file", severity: "error" }];
     }
-    if (!cherri.contents.includes("runShellScript")) {
-      issues.push({
-        target: this.target,
-        message: "cherri missing runShellScript",
-        severity: "error",
-      });
-    }
     const nameLine = cherri.contents.split("\n").find((l) => l.startsWith("#define name "));
     if (nameLine && /^#define name\s+["']/.test(nameLine)) {
       issues.push({
         target: this.target,
         message: "quoted #define name — quotes land in the shortcut name and compiled filename",
+        severity: "error",
+      });
+    }
+
+    const workflow = cmd.x?.shortcuts?.workflow;
+    if (workflow && workflow.length > 0) {
+      if (cherri.contents.includes("runShellScript")) {
+        issues.push({
+          target: this.target,
+          message: "native workflow must not fall back to the shell dispatcher",
+          severity: "error",
+        });
+      }
+      if (!cherri.contents.includes("#include 'actions/web'")) {
+        issues.push({
+          target: this.target,
+          message: "native workflow missing web actions include",
+          severity: "error",
+        });
+      }
+      for (const step of workflow) {
+        if (
+          step.kind === "require-reachable" &&
+          !cherri.contents.includes(`downloadURL("${escapeCherriDoubleQuoted(step.url)}")`)
+        ) {
+          issues.push({
+            target: this.target,
+            message: `native workflow missing reachability check for ${step.url}`,
+            severity: "error",
+          });
+        }
+        if (
+          step.kind === "open-url" &&
+          !cherri.contents.includes(`openURL("${escapeCherriDoubleQuoted(step.url)}")`)
+        ) {
+          issues.push({
+            target: this.target,
+            message: `native workflow missing openURL for ${step.url}`,
+            severity: "error",
+          });
+        }
+      }
+      return issues;
+    }
+
+    if (!cherri.contents.includes("runShellScript")) {
+      issues.push({
+        target: this.target,
+        message: "cherri missing runShellScript",
         severity: "error",
       });
     }

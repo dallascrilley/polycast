@@ -113,6 +113,35 @@ export const SHORTCUTS_INPUTS = [
 
 export type ShortcutsInput = (typeof SHORTCUTS_INPUTS)[number];
 
+/**
+ * A native action step for the `shortcuts-cherri` target that replaces the
+ * shell dispatcher entirely. Every step compiles to a standard, documented
+ * Cherri action:
+ *
+ * - `require-reachable`: `downloadURL(url)`. A private `.ts.net` URL only
+ *   resolves and responds when Tailscale is connected, so a failed request
+ *   halts the Shortcut with iOS's native error UI before any private route
+ *   opens — this is the Tailscale connectivity preflight.
+ * - `open-url`: `openURL(url)`. `url` is committed as ordinary source; it is
+ *   never a secret (a PWA route or a fixed `blinkshell://` callback).
+ * - `open-console`: resolves a named private `ConsoleProfile` (Blink Shell
+ *   URL key + saved host alias, never committed) and emits the equivalent
+ *   fixed `openURL('blinkshell://run?key=...&cmd=mosh <alias>')`. The
+ *   command carries only the profile name.
+ * - `native-capture`: resolves a named private `CapturedAction` — a
+ *   `rawAction(identifier, params)` pair recovered by decompiling a Shortcut
+ *   that was authored once, by hand, using a third-party app's native
+ *   Shortcuts action (e.g. Tailscale's Send File/Taildrop action). Apple does
+ *   not publish third-party App Intent identifiers and Cherri's standard
+ *   library has no built-in wrapper for them, so Polycast cannot originate
+ *   this data; see docs/guides/native-action-capture.md.
+ */
+export type ShortcutWorkflowStep =
+  | { readonly kind: "require-reachable"; readonly url: string }
+  | { readonly kind: "open-url"; readonly url: string }
+  | { readonly kind: "open-console"; readonly profile: string }
+  | { readonly kind: "native-capture"; readonly capture: string };
+
 /** Target-specific hints that have no home in the language-agnostic core. */
 export interface CrossTargetHints {
   readonly raycast?: {
@@ -145,6 +174,11 @@ export interface CrossTargetHints {
     readonly color?: string;
     readonly from?: string;
     readonly inputs?: readonly ShortcutsInput[];
+    /**
+     * Replace the shell dispatcher with a bounded native iPhone workflow.
+     * The command body remains the universal local/remote implementation.
+     */
+    readonly workflow?: readonly ShortcutWorkflowStep[];
   };
   /** Explicit remote opt-in. Connection details remain in private local configuration. */
   readonly remote?: {

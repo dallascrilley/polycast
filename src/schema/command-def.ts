@@ -36,6 +36,13 @@ const commandBodySchema = z.discriminatedUnion("lang", [scriptBodySchema, execBo
 
 const shortcutsInputSchema = z.enum(SHORTCUTS_INPUTS);
 
+const shortcutWorkflowStepSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("require-reachable"), url: z.string().url() }),
+  z.object({ kind: z.literal("open-url"), url: z.string().min(1) }),
+  z.object({ kind: z.literal("open-console"), profile: z.string().regex(KEBAB_ID) }),
+  z.object({ kind: z.literal("native-capture"), capture: z.string().regex(KEBAB_ID) }),
+]);
+
 const crossTargetHintsSchema = z
   .object({
     raycast: z
@@ -87,6 +94,7 @@ const crossTargetHintsSchema = z
         color: z.string().optional(),
         from: z.string().optional(),
         inputs: z.array(shortcutsInputSchema).min(1).optional(),
+        workflow: z.array(shortcutWorkflowStepSchema).min(1).optional(),
       })
       .optional(),
     remote: z
