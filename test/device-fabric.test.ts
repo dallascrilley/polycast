@@ -7,6 +7,7 @@ import {
   readdir,
   readFile,
   rm,
+  symlink,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -111,11 +112,20 @@ describe("device fabric", () => {
         join(isolatedSource, `${action.id}.cherri`),
       );
     }
+    const sourceAlias = join(root, "SOURCE-ALIAS");
+    await symlink(isolatedSource, sourceAlias, "dir");
     try {
       await expect(
         buildDeviceFabricShortcuts({
           dir: isolatedSource,
           out: root,
+          env: { ...process.env, POLYCAST_SKIP_CHERRI: "1" },
+        }),
+      ).rejects.toThrow("must not equal, contain, or be contained by its source");
+      await expect(
+        buildDeviceFabricShortcuts({
+          dir: isolatedSource,
+          out: sourceAlias,
           env: { ...process.env, POLYCAST_SKIP_CHERRI: "1" },
         }),
       ).rejects.toThrow("must not equal, contain, or be contained by its source");

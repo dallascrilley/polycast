@@ -8,12 +8,13 @@ import {
   mkdtemp,
   readdir,
   readFile,
+  realpath,
   rm,
   stat,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { basename, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { OWNERSHIP_MARKER } from "./constants.ts";
 
 export const DEVICE_FABRIC_ACTIONS = [
@@ -497,13 +498,26 @@ async function compileDeviceShortcut(
   }
 }
 
+async function canonicalizePotentialPath(path: string): Promise<string> {
+  try {
+    return await realpath(path);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    const parent = dirname(path);
+    if (parent === path) return path;
+    return join(await canonicalizePotentialPath(parent), basename(path));
+  }
+}
+
 export async function buildDeviceFabricShortcuts(
   options: DeviceFabricBuildOptions = {},
 ): Promise<DeviceFabricBuildSummary> {
   const sourceDir = resolve(options.dir ?? "shortcuts/device-fabric");
   const outRoot = resolve(options.out ?? "build/device-fabric");
-  const sourceContainsOutput = relative(sourceDir, outRoot);
-  const outputContainsSource = relative(outRoot, sourceDir);
+  const canonicalSourceDir = await realpath(sourceDir);
+  const canonicalOutRoot = await canonicalizePotentialPath(outRoot);
+  const sourceContainsOutput = relative(canonicalSourceDir, canonicalOutRoot);
+  const outputContainsSource = relative(canonicalOutRoot, canonicalSourceDir);
   const overlapsSource =
     sourceContainsOutput === "" ||
     outputContainsSource === "" ||
