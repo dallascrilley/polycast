@@ -15,31 +15,10 @@ Authoring walkthrough: [`docs/guides/first-command.md`](../docs/guides/first-com
 
 ## Canonical Toolbox bindings
 
-A Toolbox command stays authoritative for behavior, validation, policy, state,
-output, failures, and receipts. Bind it as a direct executable rather than
-copying its implementation into a shell body:
-
-```ts
-import { defineToolboxCommand, resolveToolboxExecutable } from "../src/toolbox-adapter.ts";
-
-const toolbox = resolveToolboxExecutable();
-
-export default defineToolboxCommand({
-  id: "toolbox-knowledge-search",
-  title: "Search Toolbox knowledge",
-  description: "Search the canonical Toolbox knowledge store.",
-  executable: toolbox,
-  fixedArgv: ["knowledge", "search"],
-  modality: "args",
-  args: [{ name: "query", placeholder: "Search terms" }],
-  effectClass: "inspect",
-  output: "canonical",
-});
-```
-
-`resolveToolboxExecutable()` performs setup-time path resolution and accepts
-`POLYCAST_TOOLBOX_BIN` as an override. `defineToolboxCommand()` emits a
-shell-free `exec` body and emits the top-level `delegation` metadata required by
-the contract. The fixed prefix is stored only in `body.args`; Polycast passes
-the canonical process's stdout, stderr, exit status, and any receipt reference
-through `polycast run`; it does not create an envelope or receipt of its own.
+Keep Toolbox authoritative for behavior, validation, policy, state, output,
+failures, and receipts. The maintainer workflow, copyable binding, target
+qualification rules, and canonical Knowledge fixture are in the
+[Toolbox conversion guide](../docs/guides/toolbox-conversion.md). The committed
+[Knowledge fixture](../test/fixtures/toolbox-knowledge-command.ts) is test-only:
+its canonical executable path is setup-time machine state, not sample-pack
+source.

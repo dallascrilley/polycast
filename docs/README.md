@@ -5,6 +5,7 @@
 | `ARCHITECTURE.md` | Module map, the I/O modality contract, and key decisions. |
 | `DESIGN.md` | The structural insight behind the IR, plus the roadmap. |
 | `specs/` | Per-launcher format research and the destination mapping. |
+| `guides/toolbox-conversion.md` | Maintainer guide for qualifying a Toolbox tool for multiple surfaces. |
 | `guides/runner.md` | Portable RunnerDef authoring, target compatibility, and build-only output. |
 | `verification/` | Operator and CI proof for `LAUNCH_CRITERIA.md`. |
 | `decisions/` | Architecture Decision Records (ADRs). One file per decision, numbered. |
