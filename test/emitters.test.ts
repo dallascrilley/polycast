@@ -233,6 +233,41 @@ describe("shortcuts-cherri emitter", () => {
     expect(file?.contents.split("\n")[0]).toBe("#define name Two Words Second Line");
   });
 
+  test("gives generated shortcuts deterministic, polished presentation defaults", () => {
+    const cmd = defineCommand({
+      id: "send-to-device",
+      title: "send-to-device",
+      description: "send a command to another device",
+      modality: "none",
+      body: { lang: "bash", source: "true" },
+    });
+    const [first] = shortcutsCherri.emit(cmd);
+    const [second] = shortcutsCherri.emit(cmd);
+
+    expect(first?.contents).toContain("#define name Send to Device");
+    expect(first?.contents).toContain("#define glyph rocket");
+    expect(first?.contents).toMatch(
+      /#define color (red|orange|yellow|green|teal|lightblue|blue|violet|purple|pink)/,
+    );
+    expect(second?.contents).toBe(first?.contents);
+  });
+
+  test("keeps explicit Shortcut presentation hints authoritative", () => {
+    const cmd = defineCommand({
+      id: "review-queue",
+      title: "review-queue",
+      description: "review queued work",
+      modality: "none",
+      body: { lang: "bash", source: "true" },
+      x: { shortcuts: { name: "Inbox Review", color: "darkblue", glyph: "eye" } },
+    });
+    const [file] = shortcutsCherri.emit(cmd);
+
+    expect(file?.contents).toContain("#define name Inbox Review");
+    expect(file?.contents).toContain("#define color darkblue");
+    expect(file?.contents).toContain("#define glyph eye");
+  });
+
   test("validate rejects a quoted #define name", () => {
     const quoted = [
       {
